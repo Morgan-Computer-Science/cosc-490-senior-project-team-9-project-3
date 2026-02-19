@@ -66,28 +66,28 @@ o Account options
 
 4) Data Plan (Firebase)
 Cloud Firestore Collections (Real-time)
- users
+- users
 o profile info (name, major, year, etc.)
- courses
+- courses
 o course offerings for CS
- faculty
+- faculty
 o department info, contact details
- chat_sessions
+- chat_sessions
 o session metadata (userId, timestamps)
- messages
+- messages
 o messages tied to a session (role, content, timestamp)
- curriculum_updates
+- curriculum_updates
 o used to push real-time curriculum changes
 
 Firebase Storage
- Stores uploaded files (if needed for curriculum files or user documents)
+- Stores uploaded files (if needed for curriculum files or user documents)
 
 5) App Architecture Plan (Android/Kotlin)
 Pattern: MVVM
- View (UI): Activities/Fragments/Compose UI
- ViewModel: State + event handling
- Repository: Firebase operations (Auth, Firestore, Storage)
- Models: Gson-serializable data classes
+- View (UI): Activities/Fragments/Compose UI
+- ViewModel: State + event handling
+- Repository: Firebase operations (Auth, Firestore, Storage)
+- Models: Gson-serializable data classes
 
 6) AI Chat Flow (Gemini + Context)
 1. User types or speaks → converted to text
@@ -101,8 +101,8 @@ o Emotional reading signal (if available)
 6. UI updates in real-time (Firestore listener)
 
 7) UI/UX Requirements
- Responsive Design: Works on different phone sizes
- Dark/Light Mode: Automatic theme switching
- Typing Indicator: Visible during AI generation
- Profile Management: Edit + save instantly
- Smooth navigation between: Chat / Catalog / Department / Profile
+- Responsive Design: Works on different phone sizes
+- Dark/Light Mode: Automatic theme switching
+- Typing Indicator: Visible during AI generation
+- Profile Management: Edit + save instantly
+- Smooth navigation between: Chat / Catalog / Department / Profile

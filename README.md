@@ -9,37 +9,37 @@ academic journey with ease.
 
 2) Feature List
 AI Agent
- Intelligent Responses: Leverages Gemini for natural, context-aware conversations
- University-Specific Knowledge: Trained on Morgan State University curriculum
+- Intelligent Responses: Leverages Gemini for natural, context-aware conversations
+- University-Specific Knowledge: Trained on Morgan State University curriculum
 data
- Multi-turn Conversations: Maintains context throughout the chat session
- Real-time Typing Indicators: Visual feedback during AI response generation
- Emotional reading
+- Multi-turn Conversations: Maintains context throughout the chat session
+- Real-time Typing Indicators: Visual feedback during AI response generation
+- Emotional reading
 Course &amp; Department Information
- Course Catalog: Browse Morgan State’s complete Computer Science course offerings
- Department Information: Access faculty details and contact info
+- Course Catalog: Browse Morgan State’s complete Computer Science course offerings
+- Department Information: Access faculty details and contact info
 Firebase Integration
- Firebase Integration: Real-time curriculum data updates
+- Firebase Integration: Real-time curriculum data updates
 
- Firebase Authentication: Secure sign-in with email/password (including Google sign-
+- Firebase Authentication: Secure sign-in with email/password (including Google sign-
 in)
- Cloud Firestore: Real-time database
- Firebase Storage: File storage
+- Cloud Firestore: Real-time database
+- Firebase Storage: File storage
 
 Account &amp; UX
- Profile Management: View and edit user information
- Morgan State University Pattern Colors
- Secure Logout: Easy session management
- Dark/Light Modes: Automatic theme switching
- Responsive Design
+- Profile Management: View and edit user information
+- Morgan State University Pattern Colors
+- Secure Logout: Easy session management
+- Dark/Light Modes: Automatic theme switching
+- Responsive Design
 Frontend (Android)
- Android Studio + Kotlin
- Android Speech Recognizer: Voice input
+- Android Studio + Kotlin
+- Android Speech Recognizer: Voice input
 Libraries &amp; Architecture (Android)
- MVVM Pattern: Clean architecture
- StateFlow: Reactive state management
- Dependency Injection: Manual DI
- Gson: JSON serialization
+- MVVM Pattern: Clean architecture
+- StateFlow: Reactive state management
+- Dependency Injection: Manual DI
+- Gson: JSON serialization
 
 3) Screens / Pages (Planned App/Website Views)
 A) Authentication Screens

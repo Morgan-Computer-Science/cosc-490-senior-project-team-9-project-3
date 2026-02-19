@@ -1,9 +1,9 @@
 Website Plan Document
 
-Morgan State CS AI Advisor
+CS AI Advisor
 1) Core Product Summary
-The Morgan State AI Faculty is an innovative mobile application that provides personalized
-academic assistance to students at Morgan State University. Powered by Gemini’s technology
+The AI Faculty is an innovative mobile application that provides personalized
+academic assistance to students at University. Powered by Gemini’s technology
 and integrated with university-specific data, this chat agent helps students navigate their
 academic journey with ease.
 

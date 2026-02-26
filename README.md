@@ -2,7 +2,7 @@ Website Plan Document
 
 CS AI Advisor
 1) Core Product Summary
-The AI Faculty is an innovative mobile application that provides personalized
+The AI Faculty is an innovative web application that provides personalized
 academic assistance to students at University. Powered by Gemini’s technology
 and integrated with university-specific data, this chat agent helps students navigate their
 academic journey with ease.

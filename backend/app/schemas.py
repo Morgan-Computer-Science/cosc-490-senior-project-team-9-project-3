@@ -39,3 +39,73 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     user_id: Optional[int] = None
+
+
+# ---------- Course ----------
+
+class CourseBase(BaseModel):
+    code: str
+    title: str
+    description: Optional[str] = None
+    credits: Optional[int] = 3
+    department: Optional[str] = "Computer Science"
+    level: Optional[str] = None           # e.g., Undergraduate, Graduate
+    semester_offered: Optional[str] = None  # e.g., "Fall,Spring"
+
+
+class CourseCreate(CourseBase):
+    """Fields required when creating a course."""
+    pass
+
+
+class CourseUpdate(BaseModel):
+    """Fields allowed when updating a course (all optional)."""
+    code: Optional[str] = None
+    title: Optional[str] = None
+    description: Optional[str] = None
+    credits: Optional[int] = None
+    department: Optional[str] = None
+    level: Optional[str] = None
+    semester_offered: Optional[str] = None
+
+
+class CourseOut(CourseBase):
+    id: int
+
+    class Config:
+        from_attributes = True
+
+
+# ---------- Faculty ----------
+
+class FacultyBase(BaseModel):
+    name: str
+    title: Optional[str] = None
+    email: EmailStr
+    office: Optional[str] = None
+    phone: Optional[str] = None
+    department: Optional[str] = "Computer Science"
+    office_hours: Optional[str] = None
+
+
+class FacultyCreate(FacultyBase):
+    """Fields required when creating a faculty member."""
+    pass
+
+
+class FacultyUpdate(BaseModel):
+    """Fields allowed when updating a faculty member (all optional)."""
+    name: Optional[str] = None
+    title: Optional[str] = None
+    email: Optional[EmailStr] = None
+    office: Optional[str] = None
+    phone: Optional[str] = None
+    department: Optional[str] = None
+    office_hours: Optional[str] = None
+
+
+class FacultyOut(FacultyBase):
+    id: int
+
+    class Config:
+        from_attributes = True

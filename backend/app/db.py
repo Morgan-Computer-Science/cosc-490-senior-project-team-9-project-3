@@ -1,5 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.orm import Session
 
 # SQLite database URL. The file will be created in the backend/ folder.
 DATABASE_URL = "sqlite:///./morgan_ai.db"
@@ -23,3 +24,12 @@ def init_db() -> None:
     """
     from . import models  # import models so Base knows them
     Base.metadata.create_all(bind=engine)
+
+
+# FastAPI dependency that gives a DB session to each request
+def get_db():
+    db: Session = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

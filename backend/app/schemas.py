@@ -27,7 +27,7 @@ class UserRead(UserBase):
     created_at: datetime
 
     class Config:
-        from_attributes = True  # enables ORM mode
+        from_attributes = True  
 
 
 # ---------- Token schemas ----------
@@ -49,8 +49,8 @@ class CourseBase(BaseModel):
     description: Optional[str] = None
     credits: Optional[int] = 3
     department: Optional[str] = "Computer Science"
-    level: Optional[str] = None           # e.g., Undergraduate, Graduate
-    semester_offered: Optional[str] = None  # e.g., "Fall,Spring"
+    level: Optional[str] = None          
+    semester_offered: Optional[str] = None  
 
 
 class CourseCreate(CourseBase):

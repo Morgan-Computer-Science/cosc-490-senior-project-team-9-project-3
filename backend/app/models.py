@@ -30,13 +30,13 @@ class Course(Base):
     __tablename__ = "courses"
 
     id = Column(Integer, primary_key=True, index=True)
-    code = Column(String, unique=True, index=True, nullable=False)  # e.g., COSC 490
+    code = Column(String, unique=True, index=True, nullable=False)  
     title = Column(String, nullable=False)
     description = Column(Text, nullable=True)
     credits = Column(Integer, default=3)
     department = Column(String, default="Computer Science")
-    level = Column(String, nullable=True)  # e.g., Undergraduate, Graduate
-    semester_offered = Column(String, nullable=True)  # e.g., "Fall,Spring"
+    level = Column(String, nullable=True)  
+    semester_offered = Column(String, nullable=True)  
 
 
 class Faculty(Base):
@@ -69,9 +69,9 @@ class Message(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     session_id = Column(Integer, ForeignKey("chat_sessions.id"), nullable=False)
-    sender = Column(String, nullable=False)  # "user" or "ai"
+    sender = Column(String, nullable=False)  
     content = Column(Text, nullable=False)
-    emotion = Column(String, nullable=True)  # e.g., "positive", "negative", "neutral"
+    emotion = Column(String, nullable=True)  # "positive", "negative", "neutral"
     created_at = Column(DateTime, default=datetime.utcnow)
 
     session = relationship("ChatSession", back_populates="messages")
@@ -82,7 +82,7 @@ class CurriculumUpdate(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     course_code = Column(String, nullable=False)  # matches Course.code
-    update_type = Column(String, nullable=False)  # e.g., "prerequisite-change"
+    update_type = Column(String, nullable=False)  # "prerequisite-change"
     description = Column(Text, nullable=True)
     effective_date = Column(String, nullable=True)  # store as string for now
     created_at = Column(DateTime, default=datetime.utcnow)

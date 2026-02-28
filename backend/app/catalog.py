@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from . import models, schemas
 from .db import get_db
-from .auth import get_current_user  # same dependency used by /auth/me
+from .auth import get_current_user  
 
 router = APIRouter(
     prefix="/catalog",

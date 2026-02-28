@@ -9,7 +9,7 @@ from .db import get_db
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-# This tells FastAPI where clients will get tokens from (used in docs)
+# This tells FastAPI where clients will get tokens from 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 

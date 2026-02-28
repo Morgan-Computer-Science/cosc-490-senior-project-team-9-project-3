@@ -7,10 +7,10 @@ from .catalog import router as catalog_router
 
 app = FastAPI(title="Morgan State CS AI Advisor Backend")
 
-# CORS for your website frontend
+# CORS for website frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # later restrict to your frontend URL(s)
+    allow_origins=["*"],  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

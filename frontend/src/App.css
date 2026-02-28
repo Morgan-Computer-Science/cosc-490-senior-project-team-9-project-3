@@ -1,0 +1,167 @@
+:root {
+  --bg-dark: #0b0e14;
+  --card-bg: #161b22;
+  --accent-primary: #7c4dff; /* Electric Purple */
+  --accent-secondary: #00e5ff; /* Cyan AI Glow */
+  --text-main: #e6edf3;
+  --text-dim: #8b949e;
+  --glass: rgba(255, 255, 255, 0.03);
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* --- Futuristic Login Page --- */
+.login-page {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: radial-gradient(circle at center, #1a1f2e 0%, #0b0e14 100%);
+}
+
+.login-card {
+  background: var(--card-bg);
+  padding: 3rem;
+  border-radius: 16px;
+  border: 1px solid #30363d;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  text-align: center;
+}
+
+.login-card h2 {
+  font-weight: 300;
+  letter-spacing: 2px;
+  margin-bottom: 2rem;
+  background: linear-gradient(
+    to right,
+    var(--accent-primary),
+    var(--accent-secondary)
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.login-card input {
+  width: 100%;
+  padding: 14px;
+  margin-bottom: 1rem;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  color: white;
+  outline: none;
+}
+
+.login-card input:focus {
+  border-color: var(--accent-secondary);
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.2);
+}
+
+.login-card button {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(
+    45deg,
+    var(--accent-primary),
+    var(--accent-secondary)
+  );
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.login-card button:hover {
+  opacity: 0.9;
+}
+
+/* --- Clean Dashboard Layout --- */
+.App-header {
+  background: #161b22;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #30363d;
+}
+
+.App-header h1 {
+  font-size: 1.2rem;
+  font-weight: 400;
+  color: var(--accent-secondary);
+}
+
+.dashboard {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.course-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+.course-card {
+  background: var(--card-bg);
+  border: 1px solid #30363d;
+  padding: 1.5rem;
+  border-radius: 12px;
+  transition:
+    transform 0.2s,
+    border-color 0.2s;
+}
+
+.course-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent-primary);
+}
+
+.course-card h3 {
+  margin: 0 0 10px 0;
+  font-size: 1.1rem;
+  color: #fff;
+}
+
+.course-card p {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.course-card span {
+  display: inline-block;
+  margin-top: 15px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--accent-secondary);
+  border: 1px solid var(--accent-secondary);
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+.logout-btn {
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid #30363d;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.logout-btn:hover {
+  color: white;
+  border-color: #8b949e;
+}

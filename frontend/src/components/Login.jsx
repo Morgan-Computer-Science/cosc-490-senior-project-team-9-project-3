@@ -1,15 +1,15 @@
 import React, { useState } from "react";
+import "./Login.css";
 
-const Login = ({ setToken }) => {
-  const [username, setUsername] = useState("");
+const Login = ({ setToken, setView }) => {
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Create form data as required by FastAPI OAuth2
     const formData = new FormData();
-    formData.append("username", username);
+    formData.append("username", email);
     formData.append("password", password);
 
     try {
@@ -20,32 +20,54 @@ const Login = ({ setToken }) => {
 
       if (response.ok) {
         const data = await response.json();
-        localStorage.setItem("token", data.access_token); // Save automatically!
-        setToken(data.access_token); // Update App state
+        localStorage.setItem("token", data.access_token);
+        setToken(data.access_token);
       } else {
-        alert("Invalid credentials. Check your Morgan State login.");
+        alert("Invalid credentials. Check your email and password.");
       }
     } catch (err) {
       console.error("Login failed:", err);
+      alert("Cannot connect to server.");
     }
   };
 
   return (
     <div className="login-container">
-      <h2>MSU AI Advisor Login</h2>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          placeholder="Username"
-          onChange={(e) => setUsername(e.target.value)}
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <button type="submit">Login</button>
-      </form>
+      <div className="login-card">
+        <h2>AI Faculty Advisor Login</h2>
+        <form onSubmit={handleSubmit}>
+          <input
+            type="text"
+            placeholder="Email"
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <button type="submit">Login</button>
+        </form>
+
+        {/* Toggle to Signup View */}
+        <p style={{ marginTop: "15px", fontSize: "14px" }}>
+          Don't have an account?{" "}
+          <button
+            onClick={() => setView("signup")}
+            style={{
+              background: "none",
+              border: "none",
+              color: "#002D72",
+              cursor: "pointer",
+              textDecoration: "underline",
+            }}
+          >
+            Sign Up here
+          </button>
+        </p>
+      </div>
     </div>
   );
 };

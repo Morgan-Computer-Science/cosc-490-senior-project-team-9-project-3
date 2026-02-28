@@ -1,0 +1,78 @@
+/* Container to center the form on the screen */
+.signup-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f0f4f8; /* Light grey/blue background */
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* The actual form box */
+.signup-form {
+  background: white;
+  padding: 40px;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px;
+  border-top: 5px solid #002d72; /* Morgan Navy Blue */
+}
+
+.signup-form h2 {
+  color: #002d72;
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+/* Styling all inputs and selects */
+.signup-form input,
+.signup-form select {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-sizing: border-box; /* Important for padding */
+  font-size: 14px;
+}
+
+/* Focus effect */
+.signup-form input:focus,
+.signup-form select:focus {
+  border-color: #ffb81c; /* Morgan Gold */
+  outline: none;
+  box-shadow: 0 0 5px rgba(255, 184, 28, 0.5);
+}
+
+/* The Submit Button */
+.signup-form button {
+  width: 100%;
+  padding: 12px;
+  background-color: #002d72;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  font-size: 16px;
+}
+
+.signup-form button:hover {
+  background-color: #001f4d;
+}
+
+/* Small link for "Back to Login" */
+.login-link {
+  display: block;
+  text-align: center;
+  margin-top: 15px;
+  color: #002d72;
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.login-link:hover {
+  text-decoration: underline;
+}

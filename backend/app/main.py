@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .db import init_db
 from .auth import router as auth_router
 from .catalog import router as catalog_router
+from .chat import router as chat_router
 
 app = FastAPI(title="Morgan State CS AI Advisor Backend")
 
@@ -31,3 +32,4 @@ async def health_check():
 # Register auth routes under /auth
 app.include_router(auth_router)
 app.include_router(catalog_router)
+app.include_router(chat_router)

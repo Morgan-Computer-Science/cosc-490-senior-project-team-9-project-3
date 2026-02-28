@@ -109,3 +109,40 @@ class FacultyOut(FacultyBase):
 
     class Config:
         from_attributes = True
+
+
+
+# ---------- Chat ----------
+
+class ChatSessionBase(BaseModel):
+    title: Optional[str] = None
+
+
+class ChatSessionCreate(ChatSessionBase):
+    pass
+
+
+class ChatSessionOut(ChatSessionBase):
+    id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ChatMessageBase(BaseModel):
+    content: str
+
+
+class ChatMessageCreate(ChatMessageBase):
+    pass  # user sends content; session_id comes from the URL
+
+
+class ChatMessageOut(ChatMessageBase):
+    id: int
+    session_id: int
+    sender: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

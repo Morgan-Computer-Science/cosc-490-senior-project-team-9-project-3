@@ -2,7 +2,7 @@ Website Plan Document
 
 CS AI Advisor
 1) Core Product Summary
-The AI Faculty is an innovative mobile application that provides personalized
+The AI Faculty is an innovative web application that provides personalized
 academic assistance to students at University. Powered by Gemini’s technology
 and integrated with university-specific data, this chat agent helps students navigate their
 academic journey with ease.
@@ -18,13 +18,7 @@ data
 Course &amp; Department Information
 - Course Catalog: Browse Morgan State’s complete Computer Science course offerings
 - Department Information: Access faculty details and contact info
-Firebase Integration
-- Firebase Integration: Real-time curriculum data updates
 
-- Firebase Authentication: Secure sign-in with email/password (including Google sign-
-in)
-- Cloud Firestore: Real-time database
-- Firebase Storage: File storage
 
 Account &amp; UX
 - Profile Management: View and edit user information
@@ -64,23 +58,6 @@ o View/edit user information
 o Dark/Light mode
 o Account options
 
-4) Data Plan (Firebase)
-Cloud Firestore Collections (Real-time)
-- users
-o profile info (name, major, year, etc.)
-- courses
-o course offerings for CS
-- faculty
-o department info, contact details
-- chat_sessions
-o session metadata (userId, timestamps)
-- messages
-o messages tied to a session (role, content, timestamp)
-- curriculum_updates
-o used to push real-time curriculum changes
-
-Firebase Storage
-- Stores uploaded files (if needed for curriculum files or user documents)
 
 5) App Architecture Plan (Android/Kotlin)
 Pattern: MVVM

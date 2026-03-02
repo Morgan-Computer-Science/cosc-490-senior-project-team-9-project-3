@@ -6,7 +6,7 @@ from .auth import router as auth_router
 from .catalog import router as catalog_router
 from .chat import router as chat_router
 
-app = FastAPI(title="Morgan State CS AI Advisor Backend")
+app = FastAPI(title="Morgan State AI Advisor Backend")
 
 # CORS for website frontend
 app.add_middleware(

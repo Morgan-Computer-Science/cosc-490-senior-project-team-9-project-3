@@ -1,3 +1,10 @@
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -33,3 +40,5 @@ async def health_check():
 app.include_router(auth_router)
 app.include_router(catalog_router)
 app.include_router(chat_router)
+
+print(os.getenv("GEMINI_API_KEY"))

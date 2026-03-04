@@ -146,3 +146,10 @@ class ChatMessageOut(ChatMessageBase):
 
     class Config:
         from_attributes = True
+
+
+# ---------- Chat Send Response ----------
+
+class ChatSendResponse(BaseModel):
+    user_message: ChatMessageOut
+    ai_message: ChatMessageOut

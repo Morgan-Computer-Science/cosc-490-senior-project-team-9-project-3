@@ -3,7 +3,7 @@ import os
 
 load_dotenv()
 
-
+print("Gemini Key:", os.getenv("GEMINI_API_KEY"))
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

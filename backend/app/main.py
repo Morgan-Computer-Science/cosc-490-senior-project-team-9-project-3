@@ -1,11 +1,19 @@
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+print("Gemini Key:", os.getenv("GEMINI_API_KEY"))
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .db import init_db
 from .auth import router as auth_router
 from .catalog import router as catalog_router
+from .chat import router as chat_router
 
-app = FastAPI(title="Morgan State CS AI Advisor Backend")
+app = FastAPI(title="Morgan State AI Advisor Backend")
 
 # CORS for website frontend
 app.add_middleware(
@@ -31,3 +39,6 @@ async def health_check():
 # Register auth routes under /auth
 app.include_router(auth_router)
 app.include_router(catalog_router)
+app.include_router(chat_router)
+
+print(os.getenv("GEMINI_API_KEY"))

@@ -1,6 +1,6 @@
 Website Plan Document
 
-CS AI Advisor
+AI Advisor
 1) Core Product Summary
 The AI Faculty is an innovative web application that provides personalized
 academic assistance to students at University. Powered by Gemini’s technology
@@ -78,7 +78,6 @@ o Emotional reading signal (if available)
 6. UI updates in real-time (Firestore listener)
 
 7) UI/UX Requirements
-- Responsive Design: Works on different phone sizes
 - Dark/Light Mode: Automatic theme switching
 - Typing Indicator: Visible during AI generation
 - Profile Management: Edit + save instantly

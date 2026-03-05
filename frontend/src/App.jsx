@@ -1,7 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import "./App.css";
+import {
+  createChatSession,
+  fetchCourses,
+  listChatMessages,
+  listChatSessions,
+  sendChatMessage,
+} from "./api";
 
-// --- LOGIN COMPONENT ---
 const Login = ({ setToken }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -11,7 +17,6 @@ const Login = ({ setToken }) => {
     e.preventDefault();
     setError("");
 
-    // FastAPI OAuth2 expects form data, not JSON
     const formData = new FormData();
     formData.append("username", username);
     formData.append("password", password);
@@ -24,12 +29,12 @@ const Login = ({ setToken }) => {
 
       if (response.ok) {
         const data = await response.json();
-        localStorage.setItem("token", data.access_token); // Save for refresh
+        localStorage.setItem("token", data.access_token);
         setToken(data.access_token);
       } else {
         setError("Invalid username or password. Please try again.");
       }
-    } catch (err) {
+    } catch {
       setError("Cannot connect to backend. Is Uvicorn running?");
     }
   };
@@ -61,46 +66,106 @@ const Login = ({ setToken }) => {
   );
 };
 
-// --- MAIN APP COMPONENT ---
 function App() {
   const [courses, setCourses] = useState([]);
   const [token, setToken] = useState(localStorage.getItem("token"));
   const [error, setError] = useState(null);
 
+  const [sessionId, setSessionId] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [messageInput, setMessageInput] = useState("");
+  const [chatError, setChatError] = useState(null);
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const messagesEndRef = useRef(null);
+
   const handleSignOut = () => {
     localStorage.removeItem("token");
     setToken(null);
     setCourses([]);
+    setSessionId(null);
+    setMessages([]);
+    setMessageInput("");
+    setChatError(null);
+    setError(null);
   };
 
   useEffect(() => {
     if (!token) return;
 
-    const fetchCourses = async () => {
-      try {
-        const response = await fetch("http://localhost:8000/catalog/courses", {
-          headers: {
-            Authorization: `Bearer ${token}`, //
-          },
-        });
+    const loadDashboardData = async () => {
+      setError(null);
+      setChatError(null);
 
-        if (response.status === 401) {
-          throw new Error("Session expired. Please log in again.");
+      try {
+        const [courseData, sessions] = await Promise.all([
+          fetchCourses(token),
+          listChatSessions(token),
+        ]);
+
+        setCourses(courseData);
+
+        let activeSession = sessions[0];
+        if (!activeSession) {
+          activeSession = await createChatSession(token, "Advising Chat");
         }
 
-        if (!response.ok) throw new Error("Failed to fetch courses.");
+        setSessionId(activeSession.id);
 
-        const data = await response.json();
-        setCourses(data); //
+        const messageData = await listChatMessages(token, activeSession.id);
+        setMessages(messageData);
       } catch (err) {
-        setError(err.message);
-        console.error("Fetch error:", err);
-        // handleSignOut(); // Commented out so token stays while debugging
+        const message = err instanceof Error ? err.message : "Failed to load dashboard data.";
+        setError(message);
       }
     };
 
-    fetchCourses();
+    loadDashboardData();
   }, [token]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const formatMessageContent = (content) => {
+    if (!content) return "";
+    return content
+      .replace(/\*\*(.*?)\*\*/g, "$1")
+      .replace(/^\s*[\*-]\s+/gm, "")
+      .replace(/`/g, "");
+  };
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!sessionId || !messageInput.trim() || sendingMessage) return;
+
+    const text = messageInput.trim();
+    setMessageInput("");
+    setSendingMessage(true);
+    setChatError(null);
+
+    try {
+      const payload = await sendChatMessage(token, sessionId, text);
+
+      setMessages((prev) => [
+        ...prev,
+        payload.user_message,
+        payload.ai_message,
+      ]);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to send message.";
+      setChatError(message);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `local-${Date.now()}`,
+          sender: "assistant",
+          content: "I could not process that right now. Please try again.",
+        },
+      ]);
+    } finally {
+      setSendingMessage(false);
+    }
+  };
 
   return (
     <div className="App">
@@ -118,18 +183,59 @@ function App() {
           <Login setToken={setToken} />
         ) : (
           <div className="dashboard">
-            <h2>Your Academic Progress</h2>
-            {error && <p className="error">{error}</p>}
-            <div className="course-grid">
-              {courses.map((course) => (
-                <div key={course.id} className="course-card">
-                  <h3>
-                    {course.code}: {course.title}
-                  </h3>
-                  <p>{course.description}</p>
-                  <span>Credits: {course.credits}</span>
+            <div className="dashboard-grid">
+              <section className="chat-panel">
+                <h2>Advisor Chat</h2>
+                {chatError && <p className="error">{chatError}</p>}
+
+                <div className="messages-panel">
+                  {messages.length === 0 && (
+                    <p className="empty-chat">Ask about courses, prerequisites, or schedule planning.</p>
+                  )}
+
+                  {messages.map((msg) => (
+                    <div
+                      key={msg.id}
+                      className={`message-bubble ${msg.sender === "assistant" ? "assistant" : "user"}`}
+                    >
+                      <span className="message-sender">{msg.sender === "assistant" ? "Advisor" : "You"}</span>
+                      <p>{formatMessageContent(msg.content)}</p>
+                    </div>
+                  ))}
+
+                  {sendingMessage && <p className="typing-indicator">Advisor is typing...</p>}
+                  <div ref={messagesEndRef} />
                 </div>
-              ))}
+
+                <form className="chat-input-row" onSubmit={handleSendMessage}>
+                  <input
+                    type="text"
+                    placeholder="Ask your advising question..."
+                    value={messageInput}
+                    onChange={(e) => setMessageInput(e.target.value)}
+                    disabled={!sessionId || sendingMessage}
+                  />
+                  <button type="submit" disabled={!messageInput.trim() || sendingMessage || !sessionId}>
+                    Send
+                  </button>
+                </form>
+              </section>
+
+              <section className="courses-panel">
+                <h2>Your Academic Progress</h2>
+                {error && <p className="error">{error}</p>}
+                <div className="course-grid">
+                  {courses.map((course) => (
+                    <div key={course.id} className="course-card">
+                      <h3>
+                        {course.code}: {course.title}
+                      </h3>
+                      <p>{course.description}</p>
+                      <span>Credits: {course.credits}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
             </div>
           </div>
         )}
@@ -139,3 +245,4 @@ function App() {
 }
 
 export default App;
+

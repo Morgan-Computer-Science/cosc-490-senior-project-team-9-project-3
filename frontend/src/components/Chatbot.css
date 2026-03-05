@@ -1,0 +1,89 @@
+/* frontend/src/components/Chatbot.css */
+
+.chatbot-container {
+  display: flex;
+  flex-direction: column;
+  height: 500px;
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.chatbot-container h3 {
+  background: #003057; /* Morgan State Blue */
+  color: white;
+  margin: 0;
+  padding: 15px;
+  font-size: 1.1rem;
+  text-align: center;
+}
+
+.chat-window {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background-color: #ffffff;
+}
+
+.message {
+  max-width: 80%;
+  padding: 10px 14px;
+  border-radius: 18px;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.message.user {
+  align-self: flex-end;
+  background-color: #007bff;
+  color: white;
+  border-bottom-right-radius: 2px;
+}
+
+.message.assistant {
+  align-self: flex-start;
+  background-color: #e9ecef;
+  color: #333;
+  border-bottom-left-radius: 2px;
+}
+
+.chat-input-area {
+  display: flex;
+  padding: 15px;
+  background: #f1f1f1;
+  border-top: 1px solid #ddd;
+  gap: 10px;
+}
+
+.chat-input-area input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 20px;
+  outline: none;
+}
+
+.chat-input-area button {
+  padding: 8px 16px;
+  background-color: #003057;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.chat-input-area button:hover {
+  background-color: #c24d2c; /* Morgan State Orange accent */
+}
+
+.mic-btn {
+  background-color: #6c757d !important;
+  font-size: 1.2rem;
+  padding: 5px 12px !important;
+}

@@ -105,3 +105,17 @@ body {
   align-items: center;
   background: radial-gradient(circle at center, #1a1f2e 0%, #0b0e14 100%);
 }
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 350px 1fr; /* Chat on left, Catalog on right */
+  gap: 20px;
+  padding: 20px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr; /* Stack them on small screens */
+  }
+}

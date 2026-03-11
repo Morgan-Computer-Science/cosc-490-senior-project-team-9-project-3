@@ -4,19 +4,22 @@ const API_BASE_URL = "http://127.0.0.1:8000";
 export const fetchCourses = async (token) => {
   const response = await fetch(`${API_BASE_URL}/catalog/courses`, {
     headers: {
-      'Authorization': `Bearer ${token}`
-    }
+      Authorization: `Bearer ${token}`,
+    },
   });
   if (!response.ok) throw new Error("Failed to fetch courses");
   return response.json();
 };
 
 // --- Chat Functions ---
-export const createChatSession = async (token, title = "New Advising Session") => {
+export const createChatSession = async (
+  token,
+  title = "New Advising Session",
+) => {
   const response = await fetch(`${API_BASE_URL}/chat/sessions`, {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ title }),
@@ -26,14 +29,17 @@ export const createChatSession = async (token, title = "New Advising Session") =
 };
 
 export const sendChatMessage = async (token, sessionId, content) => {
-  const response = await fetch(`${API_BASE_URL}/chat/sessions/${sessionId}/messages`, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${token}`,
-      "Content-Type": "application/json",
+  const response = await fetch(
+    `${API_BASE_URL}/chat/sessions/${sessionId}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ content }),
     },
-    body: JSON.stringify({ content }),
-  });
+  );
   if (!response.ok) throw new Error("Failed to send message");
   return response.json();
 };

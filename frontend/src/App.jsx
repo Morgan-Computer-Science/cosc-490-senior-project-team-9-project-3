@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import "./App.css";
 import Login from "./components/Login.jsx";
 import Signup from "./components/Signup.jsx";
@@ -9,6 +9,13 @@ function App() {
   const [view, setView] = useState("login");
   const [courses, setCourses] = useState([]);
   const [error, setError] = useState(null);
+
+  const [sessionId, setSessionId] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [messageInput, setMessageInput] = useState("");
+  const [chatError, setChatError] = useState(null);
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const messagesEndRef = useRef(null);
 
   const handleSignOut = () => {
     localStorage.removeItem("token");
@@ -36,6 +43,51 @@ function App() {
     };
     fetchCoursesData();
   }, [token]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const formatMessageContent = (content) => {
+    if (!content) return "";
+    return content
+      .replace(/\*\*(.*?)\*\*/g, "$1")
+      .replace(/^\s*[\*-]\s+/gm, "")
+      .replace(/`/g, "");
+  };
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!sessionId || !messageInput.trim() || sendingMessage) return;
+
+    const text = messageInput.trim();
+    setMessageInput("");
+    setSendingMessage(true);
+    setChatError(null);
+
+    try {
+      const payload = await sendChatMessage(token, sessionId, text);
+
+      setMessages((prev) => [
+        ...prev,
+        payload.user_message,
+        payload.ai_message,
+      ]);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to send message.";
+      setChatError(message);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `local-${Date.now()}`,
+          sender: "assistant",
+          content: "I could not process that right now. Please try again.",
+        },
+      ]);
+    } finally {
+      setSendingMessage(false);
+    }
+  };
 
   return (
     <div className="App">

@@ -1,11 +1,16 @@
 :root {
   --bg-dark: #0b0e14;
   --card-bg: #161b22;
-  --accent-primary: #7c4dff; /* Electric Purple */
-  --accent-secondary: #00e5ff; /* Cyan AI Glow */
+  --accent-primary: #7c4dff;
+  --accent-secondary: #00e5ff;
   --text-main: #e6edf3;
   --text-dim: #8b949e;
-  --glass: rgba(255, 255, 255, 0.03);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 html,
@@ -34,53 +39,144 @@ body {
 }
 
 .dashboard {
-  max-width: 1200px;
+  max-width: 1300px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1.5rem;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: 20px;
+}
+
+.chat-panel,
+.courses-panel {
+  background: var(--card-bg);
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.chat-panel h2,
+.courses-panel h2 {
+  margin-top: 0;
+}
+
+.messages-panel {
+  height: 460px;
+  overflow-y: auto;
+  border: 1px solid #2b3138;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 12px;
+  background: #0d1117;
+}
+
+.empty-chat {
+  color: var(--text-dim);
+}
+
+.message-bubble {
+  max-width: 85%;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  border: 1px solid #30363d;
+}
+
+.message-bubble p {
+  margin: 4px 0 0;
+  white-space: pre-wrap;
+}
+
+.message-bubble.user {
+  margin-left: auto;
+  background: #1f2937;
+  border-color: #334155;
+}
+
+.message-bubble.assistant {
+  margin-right: auto;
+  background: #11202a;
+  border-color: #1f4a5e;
+}
+
+.message-sender {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.typing-indicator {
+  color: var(--accent-secondary);
+  font-size: 0.9rem;
+}
+
+.chat-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-input-row input {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  color: var(--text-main);
+  padding: 12px;
+}
+
+.chat-input-row button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.chat-input-row button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .course-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
 }
 
 .course-card {
-  background: var(--card-bg);
+  background: #11161d;
   border: 1px solid #30363d;
-  padding: 1.5rem;
-  border-radius: 12px;
-  transition:
-    transform 0.2s,
-    border-color 0.2s;
-}
-
-.course-card:hover {
-  transform: translateY(-4px);
-  border-color: var(--accent-primary);
+  padding: 1rem;
+  border-radius: 10px;
 }
 
 .course-card h3 {
   margin: 0 0 10px 0;
-  font-size: 1.1rem;
+  font-size: 1rem;
   color: #fff;
 }
 
 .course-card p {
   color: var(--text-dim);
   font-size: 0.9rem;
-  line-height: 1.5;
+  line-height: 1.4;
 }
 
 .course-card span {
   display: inline-block;
-  margin-top: 15px;
+  margin-top: 10px;
   font-size: 0.75rem;
   text-transform: uppercase;
   color: var(--accent-secondary);
   border: 1px solid var(--accent-secondary);
   padding: 2px 8px;
   border-radius: 20px;
+}
+
+.error,
+.error-msg {
+  color: #ff7b72;
 }
 
 .logout-btn {

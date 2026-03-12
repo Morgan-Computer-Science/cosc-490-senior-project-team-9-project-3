@@ -9,7 +9,7 @@ from .db import get_db
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-# This tells FastAPI where clients will get tokens from 
+# tells FastAPI where clients will get tokens from
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
@@ -43,7 +43,6 @@ def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ):
-    # OAuth2PasswordRequestForm uses 'username' field; here it will be the email
     user = db.query(models.User).filter(models.User.email == form_data.username).first()
     if not user or not security.verify_password(form_data.password, user.hashed_password):
         raise HTTPException(

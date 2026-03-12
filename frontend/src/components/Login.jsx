@@ -51,7 +51,7 @@ const Login = ({ setToken, setView }) => {
           <button type="submit">Login</button>
         </form>
 
-        {/* Toggle to Signup View */}
+        {}
         <p style={{ marginTop: "15px", fontSize: "14px" }}>
           Don't have an account?{" "}
           <button

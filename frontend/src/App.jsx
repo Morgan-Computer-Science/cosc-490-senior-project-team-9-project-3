@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import "./App.css";
 import Login from "./components/Login.jsx";
 import Signup from "./components/Signup.jsx";
-import Chatbot from "./components/Chatbot.jsx"; // New Component
+import Chatbot from "./components/Chatbot.jsx";
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem("token"));

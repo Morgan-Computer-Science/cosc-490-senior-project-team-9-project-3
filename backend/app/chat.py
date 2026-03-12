@@ -1,5 +1,3 @@
-# app/chat.py
-
 from typing import List
 import re
 
@@ -26,7 +24,6 @@ def _build_course_context(db: Session, question: str, limit: int = 8) -> str:
     Very simple keyword search over courses to give Gemini real data.
     Looks in code, title, description, and department.
     """
-    # extract simple alphanumeric tokens from the question
     terms = re.findall(r"[A-Za-z0-9]+", question)
     if not terms:
         return ""
@@ -104,7 +101,6 @@ def create_chat_session(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    # basic default title if user doesn't pass one in
     title = data.title or "New advising session"
 
     session = models.ChatSession(
@@ -164,7 +160,7 @@ def send_message(
 ):
     session = _get_user_session(db, current_user.id, session_id)
 
-    # 1) Save the user's message
+    # Save the user's message
     user_msg = models.ChatMessage(
         session_id=session.id,
         sender="user",
@@ -173,7 +169,7 @@ def send_message(
     db.add(user_msg)
     db.flush()  # get user_msg.id without committing yet
 
-    # 2) Load conversation history (oldest → newest)
+    #Load conversation history (oldest → newest)
     history = (
         db.query(models.ChatMessage)
         .filter(models.ChatMessage.session_id == session.id)
@@ -191,31 +187,27 @@ def send_message(
             }
         )
 
-    # 3) Build catalog context from the user's latest question
+    #Build catalog context from the user's latest question
     course_context = _build_course_context(db, data.content)
 
-    # 4) Generate AI response using history + course catalog context
+    #Generate AI response using history + course catalog context
     try:
         ai_text = generate_ai_reply(
             history=history_payload,
             extra_context=course_context,
         )
     except Exception as e:
-        # log full error to the server log
         print("AI error in generate_ai_reply:", repr(e))
         raise HTTPException(
             status_code=500,
             detail=f"Error generating AI response: {e}",
         )
-
-    # 🔒 Extra safety: never store NULL in content
-    if not ai_text:
         ai_text = (
             "I'm sorry, I couldn't generate a response right now. "
             "Please contact your advisor or try again later."
         )
 
-    # 5) Save AI's message
+    # Save AI's message
     ai_msg = models.ChatMessage(
         session_id=session.id,
         sender="assistant",

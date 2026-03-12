@@ -18,11 +18,10 @@ const Signup = ({ setView }) => {
     setError("");
 
     try {
-      // Hits your FastAPI register endpoint
       await axios.post("http://localhost:8000/auth/register", formData);
 
       alert("Registration successful! Please log in.");
-      setView("login"); // Switches view back to login on success
+      setView("login");
     } catch (err) {
       const errorMsg =
         err.response?.data?.detail || "Signup failed. Please try again.";
@@ -33,10 +32,10 @@ const Signup = ({ setView }) => {
   return (
     <div className="login-page">
       {" "}
-      {/* Reusing centered container class */}
+      {}
       <div className="login-card">
         {" "}
-        {/* Reusing card styling */}
+        {}
         <form onSubmit={handleSignup}>
           <h2>Student Registration</h2>
 

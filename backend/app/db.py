@@ -2,10 +2,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.orm import Session
 
-# SQLite database URL. The file will be created in the backend/ folder.
 DATABASE_URL = "sqlite:///./morgan_ai.db"
 
-# connect_args is needed for SQLite when used in multi-threaded apps like FastAPI
 engine = create_engine(
     DATABASE_URL, connect_args={"check_same_thread": False}
 )
@@ -18,7 +16,6 @@ Base = declarative_base()
 
 
 def init_db():
-    # Import models so metadata knows about them
     from . import models
 
     # Create tables

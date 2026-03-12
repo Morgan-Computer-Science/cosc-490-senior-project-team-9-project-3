@@ -16,7 +16,6 @@ def load_courses_from_csv(csv_path: Path = DATA_PATH) -> None:
 
     db = SessionLocal()
     try:
-        # Optional: wipe existing courses so you can re-load cleanly
         db.query(models.Course).delete()
         db.commit()
 

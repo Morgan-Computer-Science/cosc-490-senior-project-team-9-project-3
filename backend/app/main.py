@@ -15,7 +15,6 @@ from .chat import router as chat_router
 
 app = FastAPI(title="Morgan State AI Advisor Backend")
 
-# CORS for website frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  

@@ -19,7 +19,7 @@ SECRET_KEY = os.getenv("JWT_SECRET_KEY", "morgan-state-bears-ai-advisor-2026-sec
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 1440
 
-# This tells FastAPI where to look for the token (the /auth/login route)
+# This tells FastAPI where to look for the token
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 def hash_password(password: str) -> str:
@@ -40,7 +40,6 @@ def decode_access_token(token: str) -> Optional[dict]:
     except jwt.PyJWTError:
         return None
 
-# ADD THIS FUNCTION - This is what your catalog.py is looking for
 def get_current_user(token: str = Depends(oauth2_scheme), s_db: Session = Depends(db.get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,

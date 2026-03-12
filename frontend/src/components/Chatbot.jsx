@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createChatSession, sendChatMessage } from "../api";
+import "./Chatbot.css";
 
 const Chatbot = ({ token }) => {
   const [messages, setMessages] = useState([]);

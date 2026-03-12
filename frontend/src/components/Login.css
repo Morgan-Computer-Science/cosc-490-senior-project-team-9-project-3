@@ -1,21 +1,19 @@
-/* Container that fills the whole screen and centers the content */
 .login-container {
   display: flex;
   justify-content: center;
   align-items: center;
   width: 100vw;
   height: 100vh;
-  background-color: #0d1117; /* Dark background matching your screenshot */
+  background-color: #0d1117;
   margin: 0;
   padding: 0;
-  position: fixed; /* Ensures it covers the whole screen */
+  position: fixed; 
   top: 0;
   left: 0;
 }
 
-/* The Card/Box holding the form */
 .login-card {
-  background-color: #161b22; /* Slightly lighter dark for the card */
+  background-color: #161b22; 
   padding: 40px;
   border-radius: 15px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
@@ -26,14 +24,13 @@
 }
 
 .login-card h2 {
-  color: #8b5cf6; /* Purple accent color */
+  color: #8b5cf6;
   margin-bottom: 30px;
   font-family: 'Segoe UI', sans-serif;
   font-weight: 300;
   letter-spacing: 1px;
 }
 
-/* Form styling */
 .login-card form {
   display: flex;
   flex-direction: column;
@@ -54,8 +51,6 @@
   border-color: #8b5cf6;
   box-shadow: 0 0 5px rgba(139, 92, 246, 0.3);
 }
-
-/* Gradient Button matching your screenshot */
 .login-card button[type="submit"] {
   padding: 12px;
   margin-top: 10px;
@@ -72,7 +67,6 @@
   opacity: 0.9;
 }
 
-/* Styling for the "Sign up here" toggle */
 .toggle-text {
   margin-top: 20px;
   color: #8b949e;

@@ -135,7 +135,7 @@ class ChatMessageBase(BaseModel):
 
 
 class ChatMessageCreate(ChatMessageBase):
-    pass  # user sends content; session_id comes from the URL
+    pass  # user sends content session_id comes from the URL
 
 
 class ChatMessageOut(ChatMessageBase):

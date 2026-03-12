@@ -1,4 +1,3 @@
-# app/ai_client.py
 import os
 from typing import List, Literal, Dict, Optional
 import google.generativeai as genai

@@ -26,16 +26,15 @@ Account &amp; UX
 - Secure Logout: Easy session management
 - Dark/Light Modes: Automatic theme switching
 - Responsive Design
-Frontend (Android)
-- Android Studio + Kotlin
-- Android Speech Recognizer: Voice input
+Frontend 
+- Speech Recognizer: Voice input
 Libraries &amp; Architecture (Android)
 - MVVM Pattern: Clean architecture
 - StateFlow: Reactive state management
 - Dependency Injection: Manual DI
 - Gson: JSON serialization
 
-3) Screens / Pages (Planned App/Website Views)
+3) Screens / Pages (Website Views)
 A) Authentication Screens
 1. Sign In
 o Email/password sign-in
@@ -59,7 +58,7 @@ o Dark/Light mode
 o Account options
 
 
-5) App Architecture Plan (Android/Kotlin)
+5) App Architecture Plan 
 Pattern: MVVM
 - View (UI): Activities/Fragments/Compose UI
 - ViewModel: State + event handling

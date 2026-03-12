@@ -1,0 +1,7 @@
+code,title,description,credits,department,level,semester_offered
+ENGL 101,Freshman Composition I,"Introductory writing course focusing on academic reading and writing.",3,English,Undergraduate,"Fall, Spring"
+MATH 241,Calculus I,"Limits, derivatives, and integrals of single-variable functions.",4,Mathematics,Undergraduate,"Fall, Spring"
+COSC 111,Computer Science I,"Intro to programming and problem solving using a high-level language.",4,Computer Science,Undergraduate,Fall
+COSC 241,Digital Logic Design,"Boolean algebra, combinational and sequential logic circuits.",3,Computer Science,Undergraduate,Spring
+BIOL 101,Introduction to Biology,"Foundations of cell biology, genetics, and evolution for science majors.",4,Biology,Undergraduate,"Fall, Spring"
+ORNS 106,Freshman Orientation,"Introductory course covering Morgan State resources and student success skills.",1,University Studies,Undergraduate,"Fall, Spring"

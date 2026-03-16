@@ -11,7 +11,6 @@ def load_courses_from_csv(csv_path: Path = DATA_PATH) -> None:
     if not csv_path.exists():
         raise FileNotFoundError(f"CSV not found: {csv_path}")
 
-    # Ensure tables exist
     init_db()
 
     db = SessionLocal()
@@ -22,15 +21,17 @@ def load_courses_from_csv(csv_path: Path = DATA_PATH) -> None:
         with csv_path.open(newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             count = 0
+
             for row in reader:
                 course = models.Course(
-                    code=row["code"].strip(),
-                    title=row["title"].strip(),
+                    code=(row.get("code") or "").strip(),
+                    title=(row.get("title") or "").strip(),
                     description=(row.get("description") or "").strip() or None,
                     credits=int(row["credits"]) if row.get("credits") else None,
                     department=(row.get("department") or "").strip() or None,
                     level=(row.get("level") or "").strip() or None,
                     semester_offered=(row.get("semester_offered") or "").strip() or None,
+                    instructor=(row.get("instructor") or "").strip() or None,
                 )
                 db.add(course)
                 count += 1

@@ -16,13 +16,10 @@ router = APIRouter(
 )
 
 
-# ---------- Helpers ----------
-
-
 def _build_course_context(db: Session, question: str, limit: int = 8) -> str:
     """
-    Very simple keyword search over courses to give Gemini real data.
-    Looks in code, title, description, and department.
+    Simple keyword search over courses to give Gemini grounded Morgan data.
+    Looks in code, title, description, department, and instructor.
     """
     terms = re.findall(r"[A-Za-z0-9]+", question)
     if not terms:
@@ -39,16 +36,17 @@ def _build_course_context(db: Session, question: str, limit: int = 8) -> str:
                 models.Course.title.ilike(like),
                 models.Course.description.ilike(like),
                 models.Course.department.ilike(like),
+                models.Course.instructor.ilike(like),
             ]
         )
 
-    query = query.filter(or_(*filters)).limit(limit)
-    courses = query.all()
+    courses = query.filter(or_(*filters)).limit(limit).all()
 
     if not courses:
         return ""
 
     lines = ["Morgan State course catalog entries that may be relevant:"]
+
     for c in courses:
         line = f"- {c.code}: {c.title}"
         details = []
@@ -57,8 +55,12 @@ def _build_course_context(db: Session, question: str, limit: int = 8) -> str:
             details.append(f"{c.credits} credits")
         if c.department:
             details.append(f"Dept: {c.department}")
+        if c.level:
+            details.append(f"Level: {c.level}")
         if c.semester_offered:
             details.append(f"Offered: {c.semester_offered}")
+        if c.instructor:
+            details.append(f"Instructor: {c.instructor}")
 
         if details:
             line += " (" + ", ".join(details) + ")"
@@ -92,9 +94,6 @@ def _get_user_session(
     return session
 
 
-# ---------- Sessions ----------
-
-
 @router.post("/sessions", response_model=schemas.ChatSessionOut)
 def create_chat_session(
     data: schemas.ChatSessionCreate,
@@ -126,9 +125,6 @@ def list_chat_sessions(
     )
 
 
-# ---------- Messages ----------
-
-
 @router.get(
     "/sessions/{session_id}/messages",
     response_model=List[schemas.ChatMessageOut],
@@ -139,11 +135,10 @@ def list_messages(
     current_user: models.User = Depends(get_current_user),
 ):
     session = _get_user_session(db, current_user.id, session_id)
-    # return messages sorted oldest → newest
     return (
         db.query(models.ChatMessage)
         .filter(models.ChatMessage.session_id == session.id)
-        .order_by(models.ChatMessage.created_at.asc())
+        .order_by(models.ChatMessage.created_at.asc(), models.ChatMessage.id.asc())
         .all()
     )
 
@@ -160,16 +155,14 @@ def send_message(
 ):
     session = _get_user_session(db, current_user.id, session_id)
 
-    # Save the user's message
     user_msg = models.ChatMessage(
         session_id=session.id,
         sender="user",
         content=data.content,
     )
     db.add(user_msg)
-    db.flush()  # get user_msg.id without committing yet
+    db.flush()
 
-    #Load conversation history (oldest → newest)
     history = (
         db.query(models.ChatMessage)
         .filter(models.ChatMessage.session_id == session.id)
@@ -187,10 +180,8 @@ def send_message(
             }
         )
 
-    #Build catalog context from the user's latest question
     course_context = _build_course_context(db, data.content)
 
-    #Generate AI response using history + course catalog context
     try:
         ai_text = generate_ai_reply(
             history=history_payload,
@@ -198,16 +189,11 @@ def send_message(
         )
     except Exception as e:
         print("AI error in generate_ai_reply:", repr(e))
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error generating AI response: {e}",
-        )
         ai_text = (
             "I'm sorry, I couldn't generate a response right now. "
-            "Please contact your advisor or try again later."
+            "Please try again later or contact the appropriate department office."
         )
 
-    # Save AI's message
     ai_msg = models.ChatMessage(
         session_id=session.id,
         sender="assistant",

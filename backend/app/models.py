@@ -1,12 +1,4 @@
-from datetime import datetime
-from sqlalchemy import (
-    Column,
-    Integer,
-    String,
-    Text,
-    DateTime,
-    ForeignKey,
-)
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, func
 from sqlalchemy.orm import relationship
 
 from .db import Base
@@ -18,10 +10,10 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
-    name = Column(String, nullable=False)
+    full_name = Column(String, nullable=True)
     major = Column(String, nullable=True)
     year = Column(String, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     chat_sessions = relationship("ChatSession", back_populates="user")
 
@@ -30,26 +22,14 @@ class Course(Base):
     __tablename__ = "courses"
 
     id = Column(Integer, primary_key=True, index=True)
-    code = Column(String, unique=True, index=True, nullable=False)
+    code = Column(String, index=True, nullable=False)
     title = Column(String, nullable=False)
-    description = Column(Text, nullable=True)
-    credits = Column(Integer, default=3)
+    description = Column(String, nullable=True)
+    credits = Column(Integer, nullable=True)
     department = Column(String, nullable=True)
     level = Column(String, nullable=True)
     semester_offered = Column(String, nullable=True)
-
-
-class Faculty(Base):
-    __tablename__ = "faculty"
-
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    email = Column(String, unique=True, index=True, nullable=False)
-    office = Column(String, nullable=True)
-    phone = Column(String, nullable=True)
-    department = Column(String, nullable=True)
-    office_hours = Column(String, nullable=True)
-    title = Column(String, nullable=True)
+    instructor = Column(String, nullable=True)
 
 
 class ChatSession(Base):
@@ -57,9 +37,15 @@ class ChatSession(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    title = Column(String, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    title = Column(String, nullable=False, default="New advising session")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
     user = relationship("User", back_populates="chat_sessions")
+    messages = relationship(
+        "ChatMessage",
+        back_populates="session",
+        cascade="all, delete-orphan",
+    )
 
 
 class ChatMessage(Base):
@@ -67,9 +53,8 @@ class ChatMessage(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     session_id = Column(Integer, ForeignKey("chat_sessions.id"), nullable=False)
-    sender = Column(String, nullable=False)
-    content = Column(Text, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    sender = Column(String, nullable=False)  # "user" or "assistant"
+    content = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    
-    session = relationship("ChatSession", backref="messages")
+    session = relationship("ChatSession", back_populates="messages")

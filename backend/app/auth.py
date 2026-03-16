@@ -9,13 +9,11 @@ from .db import get_db
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-# tells FastAPI where clients will get tokens from
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
 @router.post("/register", response_model=schemas.UserRead, status_code=status.HTTP_201_CREATED)
 def register_user(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
-    # Check if user already exists
     existing = db.query(models.User).filter(models.User.email == user_in.email).first()
     if existing:
         raise HTTPException(
@@ -28,7 +26,7 @@ def register_user(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
     new_user = models.User(
         email=user_in.email,
         hashed_password=hashed_pw,
-        name=user_in.name,
+        full_name=user_in.full_name,
         major=user_in.major,
         year=user_in.year,
     )
@@ -53,7 +51,8 @@ def login(
 
     access_token_expires = timedelta(minutes=security.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = security.create_access_token(
-        data={"sub": str(user.id)}, expires_delta=access_token_expires
+        data={"sub": str(user.id)},
+        expires_delta=access_token_expires,
     )
     return schemas.Token(access_token=access_token)
 
@@ -62,7 +61,6 @@ def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ) -> models.User:
-    """Dependency to get the currently authenticated user from JWT."""
     payload = security.decode_access_token(token)
     if payload is None:
         raise HTTPException(
@@ -88,6 +86,7 @@ def get_current_user(
         )
 
     return user
+
 
 @router.get("/me", response_model=schemas.UserRead)
 def read_current_user(current_user: models.User = Depends(get_current_user)):

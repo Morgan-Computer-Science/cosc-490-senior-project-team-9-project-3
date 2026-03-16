@@ -1,24 +1,22 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
-from pydantic import BaseModel, EmailStr, constr
+from pydantic import BaseModel, EmailStr, ConfigDict
 
 
-# ---------- User schemas ----------
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
 
 class UserBase(BaseModel):
     email: EmailStr
-    name: str
+    full_name: Optional[str] = None
     major: Optional[str] = None
     year: Optional[str] = None
 
 
 class UserCreate(UserBase):
-    password: constr(min_length=8)
-
-
-class UserLogin(BaseModel):
-    email: EmailStr
     password: str
 
 
@@ -26,129 +24,107 @@ class UserRead(UserBase):
     id: int
     created_at: datetime
 
-    class Config:
-        from_attributes = True  
+    model_config = ConfigDict(from_attributes=True)
 
-
-# ---------- Token schemas ----------
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-
-
-class TokenData(BaseModel):
-    user_id: Optional[int] = None
-
-
-# ---------- Course ----------
 
 class CourseBase(BaseModel):
     code: str
     title: str
     description: Optional[str] = None
-    credits: Optional[int] = 3
-    department: Optional[str] = "Computer Science"
-    level: Optional[str] = None          
-    semester_offered: Optional[str] = None  
-
-
-class CourseCreate(CourseBase):
-    """Fields required when creating a course."""
-    pass
-
-
-class CourseUpdate(BaseModel):
-    """Fields allowed when updating a course (all optional)."""
-    code: Optional[str] = None
-    title: Optional[str] = None
-    description: Optional[str] = None
     credits: Optional[int] = None
     department: Optional[str] = None
     level: Optional[str] = None
     semester_offered: Optional[str] = None
+    instructor: Optional[str] = None
+
+
+class CourseCreate(CourseBase):
+    pass
 
 
 class CourseOut(CourseBase):
     id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
-
-# ---------- Faculty ----------
 
 class FacultyBase(BaseModel):
     name: str
-    title: Optional[str] = None
-    email: EmailStr
+    department: Optional[str] = None
+    email: Optional[str] = None
     office: Optional[str] = None
-    phone: Optional[str] = None
-    department: Optional[str] = "Computer Science"
-    office_hours: Optional[str] = None
+    title: Optional[str] = None
 
 
 class FacultyCreate(FacultyBase):
-    """Fields required when creating a faculty member."""
     pass
-
-
-class FacultyUpdate(BaseModel):
-    """Fields allowed when updating a faculty member (all optional)."""
-    name: Optional[str] = None
-    title: Optional[str] = None
-    email: Optional[EmailStr] = None
-    office: Optional[str] = None
-    phone: Optional[str] = None
-    department: Optional[str] = None
-    office_hours: Optional[str] = None
 
 
 class FacultyOut(FacultyBase):
     id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
+class DepartmentBase(BaseModel):
+    name: str
+    office: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
 
-# ---------- Chat ----------
 
-class ChatSessionBase(BaseModel):
-    title: Optional[str] = None
-
-
-class ChatSessionCreate(ChatSessionBase):
+class DepartmentCreate(DepartmentBase):
     pass
 
 
-class ChatSessionOut(ChatSessionBase):
+class DepartmentOut(DepartmentBase):
     id: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class DegreeRequirementBase(BaseModel):
+    major: str
+    required_courses: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class DegreeRequirementCreate(DegreeRequirementBase):
+    pass
+
+
+class DegreeRequirementOut(DegreeRequirementBase):
+    id: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ChatSessionCreate(BaseModel):
+    title: Optional[str] = None
+
+
+class ChatSessionOut(BaseModel):
+    id: int
+    user_id: int
+    title: str
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
-class ChatMessageBase(BaseModel):
+class ChatMessageCreate(BaseModel):
     content: str
 
 
-class ChatMessageCreate(ChatMessageBase):
-    pass  # user sends content session_id comes from the URL
-
-
-class ChatMessageOut(ChatMessageBase):
+class ChatMessageOut(BaseModel):
     id: int
     session_id: int
     sender: str
+    content: str
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
-
-# ---------- Chat Send Response ----------
 
 class ChatSendResponse(BaseModel):
     user_message: ChatMessageOut

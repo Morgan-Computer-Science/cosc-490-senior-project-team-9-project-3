@@ -1,7 +1,61 @@
-code,title,description,credits,department,level,semester_offered
-ENGL 101,Freshman Composition I,"Introductory writing course focusing on academic reading and writing.",3,English,Undergraduate,"Fall, Spring"
-MATH 241,Calculus I,"Limits, derivatives, and integrals of single-variable functions.",4,Mathematics,Undergraduate,"Fall, Spring"
-COSC 111,Computer Science I,"Intro to programming and problem solving using a high-level language.",4,Computer Science,Undergraduate,Fall
-COSC 241,Digital Logic Design,"Boolean algebra, combinational and sequential logic circuits.",3,Computer Science,Undergraduate,Spring
-BIOL 101,Introduction to Biology,"Foundations of cell biology, genetics, and evolution for science majors.",4,Biology,Undergraduate,"Fall, Spring"
-ORNS 106,Freshman Orientation,"Introductory course covering Morgan State resources and student success skills.",1,University Studies,Undergraduate,"Fall, Spring"
+code,title,description,credits,department,level,semester_offered,instructor
+COSC111,Computer Science I,Introduction to programming and computational problem solving using a modern programming language.,3,Computer Science,100,Fall/Spring,Dr. Paul Wang
+COSC241,Computer Science II,Object-oriented programming and intermediate software development concepts.,3,Computer Science,200,Fall/Spring,Dr. Shuangbao Wang
+COSC242,Data Structures and Algorithms,Study of fundamental data structures and algorithm analysis.,3,Computer Science,200,Fall/Spring,Dr. Jun Zheng
+COSC331,Algorithms,Design and analysis of algorithms including sorting searching and graph algorithms.,3,Computer Science,300,Fall,Dr. Shuangbao Wang
+COSC332,Operating Systems,Concepts of operating systems including process management memory management and scheduling.,3,Computer Science,300,Fall/Spring,Dr. Jun Zheng
+COSC350,Software Engineering,Principles of software design development testing and maintenance.,3,Computer Science,300,Spring,Dr. Paul Wang
+COSC455,Artificial Intelligence,Introduction to artificial intelligence search algorithms machine learning and knowledge representation.,3,Computer Science,400,Fall,Dr. Shuangbao Wang
+COSC459,Computer Networks,Fundamentals of computer networking protocols architectures and distributed systems.,3,Computer Science,400,Spring,Dr. Paul Wang
+COSC490,Senior Project,Capstone course where students design and implement a major computing project.,3,Computer Science,400,Fall/Spring,Dr. Paul Wang
+MATH141,Calculus I,Differential calculus and its applications for science and engineering students.,4,Mathematics,100,Fall/Spring,Dr. Linda Williams
+MATH241,Calculus II,Integral calculus series and advanced applications.,4,Mathematics,200,Fall/Spring,Dr. Linda Williams
+MATH242,Linear Algebra,Vector spaces matrices eigenvalues and linear transformations.,3,Mathematics,200,Fall/Spring,Dr. Michael Green
+STAT302,Probability and Statistics,Probability models statistical inference and applications.,3,Mathematics,300,Fall/Spring,Dr. Michael Green
+ENGL101,English Composition I,Development of college-level writing analytical reading and argumentation.,3,English,100,Fall/Spring,Dr. Karen Smith
+ENGL102,English Composition II,Advanced writing research and rhetorical strategies.,3,English,100,Fall/Spring,Dr. Karen Smith
+BIOL101,General Biology I,Introduction to biological principles including cell structure genetics and evolution.,4,Biology,100,Fall/Spring,Dr. Lisa Johnson
+CHEM101,General Chemistry I,Fundamental chemical principles including atomic structure bonding and reactions.,4,Chemistry,100,Fall/Spring,Dr. Robert Brown
+PHYS101,Physics I,Mechanics motion and energy concepts with laboratory.,4,Physics,100,Fall/Spring,Dr. David Clark
+ORNS106,Introduction to University Orientation,Orientation course introducing academic resources and student success strategies.,1,Orientation,100,Fall/Spring,Dr. Angela Harris
+ECON201,Principles of Economics I,Introduction to microeconomic principles including supply demand and market systems.,3,Economics,200,Fall/Spring,Dr. Steven Lee
+HIST101,World History I,Survey of major global civilizations and historical developments.,3,History,100,Fall/Spring,Dr. Robert Allen
+PSYC101,Introduction to Psychology,Overview of psychological principles including cognition behavior and mental processes.,3,Psychology,100,Fall/Spring,Dr. Sarah Davis
+COSC310,Database Systems,Design and implementation of relational databases SQL and data modeling.,3,Computer Science,300,Fall/Spring,Dr. Jun Zheng
+COSC320,Computer Organization,Study of computer architecture machine language and processor design.,3,Computer Science,300,Fall,Dr. Paul Wang
+COSC340,Human Computer Interaction,Principles of user interface design usability and interaction design.,3,Computer Science,300,Spring,Dr. Shuangbao Wang
+COSC360,Cybersecurity Fundamentals,Introduction to computer security cryptography and network defense.,3,Computer Science,300,Fall,Dr. Jun Zheng
+COSC410,Machine Learning,Foundations of machine learning algorithms and data-driven modeling.,3,Computer Science,400,Spring,Dr. Shuangbao Wang
+COSC420,Distributed Systems,Concepts of distributed computing scalability and fault tolerance.,3,Computer Science,400,Fall,Dr. Jun Zheng
+COSC430,Mobile Application Development,Design and development of mobile applications for modern platforms.,3,Computer Science,400,Spring,Dr. Paul Wang
+COSC440,Cloud Computing,Architecture and deployment of scalable cloud systems and services.,3,Computer Science,400,Fall,Dr. Shuangbao Wang
+ACCT201,Principles of Accounting I,Introduction to financial accounting principles and business reporting.,3,Accounting,200,Fall/Spring,Dr. Michael Turner
+ACCT202,Principles of Accounting II,Continuation of financial accounting with emphasis on managerial accounting concepts.,3,Accounting,200,Spring,Dr. Michael Turner
+MGMT200,Principles of Management,Overview of organizational management leadership and decision making.,3,Management,200,Fall/Spring,Dr. Angela Brooks
+MGMT310,Organizational Behavior,Study of behavior within organizations including motivation teamwork and leadership.,3,Management,300,Fall,Dr. Angela Brooks
+MKTG210,Principles of Marketing,Introduction to marketing concepts consumer behavior and market analysis.,3,Marketing,200,Fall/Spring,Dr. Daniel Roberts
+FINA300,Corporate Finance,Fundamentals of financial management capital budgeting and investment decisions.,3,Finance,300,Spring,Dr. Daniel Roberts
+ECON202,Principles of Economics II,Macroeconomic analysis including national income unemployment inflation and fiscal policy.,3,Economics,200,Spring,Dr. Steven Lee
+SOCY101,Introduction to Sociology,Study of social behavior social institutions and societal structures.,3,Sociology,100,Fall/Spring,Dr. Patricia White
+SOCY305,Social Inequality,Analysis of inequality based on class race gender and global social structures.,3,Sociology,300,Spring,Dr. Patricia White
+PSYC210,Developmental Psychology,Study of human development across the lifespan including cognitive and social development.,3,Psychology,200,Fall,Dr. Sarah Davis
+PSYC320,Abnormal Psychology,Examination of psychological disorders diagnosis and treatment methods.,3,Psychology,300,Spring,Dr. Sarah Davis
+COMM200,Public Speaking,Development of effective public speaking and communication skills.,3,Communication Studies,200,Fall/Spring,Dr. Marcus Hall
+COMM310,Interpersonal Communication,Study of communication within personal and professional relationships.,3,Communication Studies,300,Spring,Dr. Marcus Hall
+HIST201,United States History I,Survey of early American history through the Civil War.,3,History,200,Fall/Spring,Dr. Robert Allen
+HIST202,United States History II,Survey of American history from Reconstruction to the present.,3,History,200,Spring,Dr. Robert Allen
+PHIL101,Introduction to Philosophy,Overview of philosophical thought including ethics logic and metaphysics.,3,Philosophy,100,Fall/Spring,Dr. James Carter
+PHIL220,Ethics,Study of moral philosophy ethical reasoning and contemporary ethical issues.,3,Philosophy,200,Spring,Dr. James Carter
+ARTS101,Introduction to Visual Arts,Survey of visual arts including drawing painting and art appreciation.,3,Art,100,Fall/Spring,Prof. Lisa Matthews
+MUSC101,Music Appreciation,Exploration of musical styles historical development and listening techniques.,3,Music,100,Fall/Spring,Prof. David Wilson
+SPAN101,Elementary Spanish I,Introduction to Spanish language grammar vocabulary and cultural context.,3,Modern Languages,100,Fall/Spring,Dr. Maria Gonzalez
+SPAN102,Elementary Spanish II,Continuation of Spanish language study focusing on conversation and comprehension.,3,Modern Languages,100,Spring,Dr. Maria Gonzalez
+ENGR101,Introduction to Engineering,Overview of engineering disciplines problem solving and design thinking.,3,Engineering,100,Fall,Dr. Kevin Harris
+ENGR220,Engineering Mechanics,Study of statics forces equilibrium and mechanical systems.,3,Engineering,200,Spring,Dr. Kevin Harris
+ITEC210,Information Technology Fundamentals,Introduction to IT systems networking fundamentals and information security.,3,Information Technology,200,Fall/Spring,Dr. Thomas Clark
+ITEC310,Network Administration,Configuration and management of network infrastructure and services.,3,Information Technology,300,Spring,Dr. Thomas Clark
+BUSN101,Introduction to Business,Basic principles of business organization entrepreneurship and management.,3,Business,100,Fall/Spring,Dr. Angela Brooks
+BUSN320,Business Law,Legal principles affecting business operations contracts and regulatory compliance.,3,Business,300,Fall,Dr. Angela Brooks
+EDUC200,Foundations of Education,Introduction to educational systems teaching practices and learning theories.,3,Education,200,Fall/Spring,Dr. Rebecca Moore
+EDUC310,Educational Psychology,Study of learning processes motivation and assessment in educational settings.,3,Education,300,Spring,Dr. Rebecca Moore
+HLTH101,Personal Health and Wellness,Study of health behaviors nutrition fitness and wellness strategies.,3,Health Sciences,100,Fall/Spring,Dr. Karen Lewis

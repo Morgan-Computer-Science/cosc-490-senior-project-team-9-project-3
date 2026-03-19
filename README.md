@@ -62,19 +62,15 @@ o Account options
 Pattern: MVVM
 - View (UI): Activities/Fragments/Compose UI
 - ViewModel: State + event handling
-- Repository: Firebase operations (Auth, Firestore, Storage)
 - Models: Gson-serializable data classes
 
 6) AI Chat Flow (Gemini + Context)
 1. User types or speaks → converted to text
-2. App writes user message to Firestore (messages)
 3. Show typing indicator
 4. Gemini generates response using:
-o Conversation context (multi-turn)
-o Morgan State curriculum data (from Firestore)
+o Conversation context (
 o Emotional reading signal (if available)
-5. App stores AI response to Firestore
-6. UI updates in real-time (Firestore listener)
+
 
 7) UI/UX Requirements
 - Dark/Light Mode: Automatic theme switching

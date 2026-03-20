@@ -76,4 +76,3 @@ o Emotional reading signal (if available)
 - Dark/Light Mode: Automatic theme switching
 - Typing Indicator: Visible during AI generation
 - Profile Management: Edit + save instantly
-- Smooth navigation between: Chat / Catalog / Department / Profile

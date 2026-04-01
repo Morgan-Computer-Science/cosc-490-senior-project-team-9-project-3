@@ -61,6 +61,27 @@ export async function updateCurrentUser(token, updates) {
   return parseResponse(response, "Failed to update profile.");
 }
 
+export async function updateCompletedCourses(token, courseCodes) {
+  const response = await fetch(`${API_BASE_URL}/auth/me/completed-courses`, {
+    method: "PUT",
+    headers: {
+      ...authHeaders(token),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ course_codes: courseCodes }),
+  });
+
+  return parseResponse(response, "Failed to update completed courses.");
+}
+
+export async function fetchDegreeProgress(token) {
+  const response = await fetch(`${API_BASE_URL}/auth/me/degree-progress`, {
+    headers: authHeaders(token),
+  });
+
+  return parseResponse(response, "Failed to load degree progress.");
+}
+
 export async function fetchCourses(token, filters = {}) {
   const params = new URLSearchParams();
 

@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from . import models, schemas, security
 from .db import get_db
+from .rag import get_degree_progress
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -89,9 +90,13 @@ def get_current_user(
     return user
 
 
+def _serialize_user(user: models.User) -> schemas.UserRead:
+    return schemas.UserRead.model_validate(user)
+
+
 @router.get("/me", response_model=schemas.UserRead)
 def read_current_user(current_user: models.User = Depends(get_current_user)):
-    return current_user
+    return _serialize_user(current_user)
 
 
 @router.put("/me", response_model=schemas.UserRead)
@@ -106,4 +111,45 @@ def update_current_user(
     db.add(current_user)
     db.commit()
     db.refresh(current_user)
-    return current_user
+    return _serialize_user(current_user)
+
+
+@router.put("/me/completed-courses", response_model=list[schemas.CompletedCourseOut])
+def update_completed_courses(
+    payload: schemas.CompletedCoursesUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    normalized_codes = sorted(
+        {
+            course_code.strip().upper()
+            for course_code in payload.course_codes
+            if course_code.strip()
+        }
+    )
+
+    db.query(models.UserCompletedCourse).filter(
+        models.UserCompletedCourse.user_id == current_user.id
+    ).delete()
+
+    for course_code in normalized_codes:
+        db.add(
+            models.UserCompletedCourse(
+                user_id=current_user.id,
+                course_code=course_code,
+            )
+        )
+
+    db.commit()
+    db.refresh(current_user)
+    return current_user.completed_courses
+
+
+@router.get("/me/degree-progress", response_model=schemas.DegreeProgressSummary)
+def get_current_user_degree_progress(
+    current_user: models.User = Depends(get_current_user),
+):
+    completed_codes = [course.course_code for course in current_user.completed_courses]
+    return schemas.DegreeProgressSummary(
+        **get_degree_progress(current_user.major, completed_codes)
+    )

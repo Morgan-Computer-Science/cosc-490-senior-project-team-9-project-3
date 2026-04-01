@@ -7,7 +7,12 @@ from . import models, schemas
 from .ai_client import generate_ai_reply
 from .auth import get_current_user
 from .db import get_db
-from .rag import RetrievedDocument, format_retrieved_context, retrieve_relevant_documents
+from .rag import (
+    RetrievedDocument,
+    format_retrieved_context,
+    get_degree_progress,
+    retrieve_relevant_documents,
+)
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -17,7 +22,31 @@ def _build_student_context(user: models.User) -> str:
     pieces.append(f"- Name: {user.full_name or 'Not provided'}")
     pieces.append(f"- Major: {user.major or 'Undeclared'}")
     pieces.append(f"- Year: {user.year or 'Not provided'}")
+    completed_codes = [course.course_code for course in user.completed_courses]
+    if completed_codes:
+        pieces.append(f"- Completed Courses: {', '.join(sorted(completed_codes))}")
     return "\n".join(pieces)
+
+
+def _build_degree_progress_context(user: models.User) -> str:
+    summary = get_degree_progress(
+        user.major,
+        [course.course_code for course in user.completed_courses],
+    )
+    if not summary["required_courses"]:
+        return ""
+
+    lines = ["Degree progress context:"]
+    lines.append(f"- Major: {summary['major']}")
+    lines.append(f"- Completion: {summary['completion_percent']}%")
+    lines.append(
+        f"- Remaining Required Courses: {', '.join(summary['remaining_courses']) or 'None listed'}"
+    )
+    if summary["notes"]:
+        lines.append(f"- Notes: {summary['notes']}")
+    if summary["advising_tips"]:
+        lines.append(f"- Advising Tips: {summary['advising_tips']}")
+    return "\n".join(lines)
 
 
 def _fallback_advising_reply(
@@ -179,7 +208,10 @@ def send_message(
     )
     retrieved_context = format_retrieved_context(retrieved_docs)
     student_context = _build_student_context(current_user)
-    extra_context = "\n\n".join(part for part in [student_context, retrieved_context] if part)
+    degree_progress_context = _build_degree_progress_context(current_user)
+    extra_context = "\n\n".join(
+        part for part in [student_context, degree_progress_context, retrieved_context] if part
+    )
 
     try:
         ai_text = generate_ai_reply(history=history_payload, extra_context=extra_context)

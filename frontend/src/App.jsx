@@ -3,7 +3,9 @@ import { startTransition, useDeferredValue, useEffect, useState } from "react";
 import "./App.css";
 import {
   fetchCourses,
+  fetchDegreeProgress,
   fetchCurrentUser,
+  updateCompletedCourses,
   updateCurrentUser,
 } from "./api";
 import Chatbot from "./components/Chatbot.jsx";
@@ -36,6 +38,7 @@ function App() {
   const [loadingCourses, setLoadingCourses] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
+  const [degreeProgress, setDegreeProgress] = useState(null);
   const [error, setError] = useState("");
   const deferredSearch = useDeferredValue(searchText);
 
@@ -62,6 +65,23 @@ function App() {
 
     loadProfile();
   }, [token]);
+
+  useEffect(() => {
+    if (!token) {
+      return;
+    }
+
+    const loadDegreeProgress = async () => {
+      try {
+        const summary = await fetchDegreeProgress(token);
+        startTransition(() => setDegreeProgress(summary));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load degree progress.");
+      }
+    };
+
+    loadDegreeProgress();
+  }, [token, user?.major, user?.completed_courses?.length]);
 
   useEffect(() => {
     if (!token) {
@@ -108,7 +128,26 @@ function App() {
     try {
       const nextUser = await updateCurrentUser(token, updates);
       setUser(nextUser);
+      const nextSummary = await fetchDegreeProgress(token);
+      setDegreeProgress(nextSummary);
       return nextUser;
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleSaveCompletedCourses = async (courseCodes) => {
+    if (!token || !user) {
+      throw new Error("You are signed out.");
+    }
+
+    setSavingProfile(true);
+    try {
+      const completedCourses = await updateCompletedCourses(token, courseCodes);
+      setUser((current) => (current ? { ...current, completed_courses: completedCourses } : current));
+      const nextSummary = await fetchDegreeProgress(token);
+      setDegreeProgress(nextSummary);
+      return completedCourses;
     } finally {
       setSavingProfile(false);
     }
@@ -234,7 +273,14 @@ function App() {
           ) : null}
 
           {activeTab === "profile" ? (
-            <ProfilePanel user={user} onSave={handleSaveProfile} saving={savingProfile} />
+            <ProfilePanel
+              user={user}
+              courses={courses}
+              degreeProgress={degreeProgress}
+              onSave={handleSaveProfile}
+              onSaveCompletedCourses={handleSaveCompletedCourses}
+              saving={savingProfile}
+            />
           ) : null}
         </section>
       </main>

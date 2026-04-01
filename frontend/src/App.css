@@ -484,6 +484,76 @@ textarea {
   max-width: 620px;
 }
 
+.profile-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.progress-card,
+.nested-panel {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.52);
+}
+
+.progress-card h3,
+.completed-courses-panel h3 {
+  margin: 0 0 10px;
+}
+
+.progress-percent {
+  margin: 0 0 10px;
+  font-size: 2rem;
+  color: var(--navy);
+}
+
+.remaining-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.remaining-chip {
+  background: rgba(20, 50, 74, 0.12);
+  color: var(--navy);
+}
+
+.completed-course-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.completed-course-card {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.52);
+  cursor: pointer;
+}
+
+.completed-course-card.checked {
+  border-color: rgba(31, 122, 122, 0.45);
+  background: rgba(31, 122, 122, 0.12);
+}
+
+.completed-course-card input {
+  margin-top: 4px;
+}
+
+.completed-course-card p {
+  margin: 4px 0 0;
+  color: var(--ink-soft);
+}
+
 .form-error {
   margin: 0;
   color: #a02f1f;
@@ -497,7 +567,8 @@ textarea {
 @media (max-width: 1100px) {
   .workspace,
   .chat-layout,
-  .auth-card {
+  .auth-card,
+  .profile-grid {
     grid-template-columns: 1fr;
   }
 

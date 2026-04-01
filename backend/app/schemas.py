@@ -26,9 +26,32 @@ class UserUpdate(BaseModel):
     year: Optional[str] = None
 
 
+class CompletedCourseOut(BaseModel):
+    id: int
+    course_code: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CompletedCoursesUpdate(BaseModel):
+    course_codes: list[str] = Field(default_factory=list)
+
+
+class DegreeProgressSummary(BaseModel):
+    major: Optional[str] = None
+    required_courses: list[str] = Field(default_factory=list)
+    completed_courses: list[str] = Field(default_factory=list)
+    remaining_courses: list[str] = Field(default_factory=list)
+    completion_percent: float = 0.0
+    notes: Optional[str] = None
+    advising_tips: Optional[str] = None
+
+
 class UserRead(UserBase):
     id: int
     created_at: datetime
+    completed_courses: list[CompletedCourseOut] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)
 

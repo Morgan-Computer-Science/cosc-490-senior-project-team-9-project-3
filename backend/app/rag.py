@@ -163,6 +163,16 @@ def _degree_documents() -> List[RetrievedDocument]:
     return docs
 
 
+@lru_cache(maxsize=1)
+def load_degree_requirement_rows() -> tuple[dict[str, str], ...]:
+    path = DATA_DIR / "degree_requirements.csv"
+    if not path.exists():
+        return tuple()
+
+    with path.open(newline="", encoding="utf-8") as file:
+        return tuple(csv.DictReader(file))
+
+
 def _support_documents() -> List[RetrievedDocument]:
     path = DATA_DIR / "support_resources.csv"
     if not path.exists():
@@ -282,3 +292,51 @@ def format_retrieved_context(documents: Iterable[RetrievedDocument]) -> str:
         lines.append(f"  {doc.content}")
 
     return "\n".join(lines)
+
+
+def get_degree_progress(major: Optional[str], completed_course_codes: Iterable[str]) -> dict[str, object]:
+    completed = sorted({code.strip().upper() for code in completed_course_codes if code.strip()})
+    if not major:
+        return {
+            "major": None,
+            "required_courses": [],
+            "completed_courses": completed,
+            "remaining_courses": [],
+            "completion_percent": 0.0,
+            "notes": None,
+            "advising_tips": None,
+        }
+
+    major_lower = major.lower()
+    matching_row = next(
+        (row for row in load_degree_requirement_rows() if _normalize(row.get("major")).lower() == major_lower),
+        None,
+    )
+    if not matching_row:
+        return {
+            "major": major,
+            "required_courses": [],
+            "completed_courses": completed,
+            "remaining_courses": [],
+            "completion_percent": 0.0,
+            "notes": None,
+            "advising_tips": None,
+        }
+
+    required = [
+        code.strip().upper()
+        for code in _normalize(matching_row.get("required_courses")).split(";")
+        if code.strip()
+    ]
+    remaining = [code for code in required if code not in completed]
+    completion_percent = round((len(required) - len(remaining)) / len(required) * 100, 1) if required else 0.0
+
+    return {
+        "major": _normalize(matching_row.get("major")) or major,
+        "required_courses": required,
+        "completed_courses": completed,
+        "remaining_courses": remaining,
+        "completion_percent": completion_percent,
+        "notes": _normalize(matching_row.get("notes")) or None,
+        "advising_tips": _normalize(matching_row.get("advising_tips")) or None,
+    }

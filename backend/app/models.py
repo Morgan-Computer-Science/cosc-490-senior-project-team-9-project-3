@@ -16,6 +16,11 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     chat_sessions = relationship("ChatSession", back_populates="user")
+    completed_courses = relationship(
+        "UserCompletedCourse",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
 
 class Course(Base):
@@ -58,3 +63,14 @@ class ChatMessage(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     session = relationship("ChatSession", back_populates="messages")
+
+
+class UserCompletedCourse(Base):
+    __tablename__ = "user_completed_courses"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    course_code = Column(String, nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", back_populates="completed_courses")

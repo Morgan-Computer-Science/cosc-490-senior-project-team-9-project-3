@@ -42,6 +42,10 @@ def _build_degree_progress_context(user: models.User) -> str:
     lines.append(
         f"- Remaining Required Courses: {', '.join(summary['remaining_courses']) or 'None listed'}"
     )
+    if summary["recommended_next_courses"]:
+        lines.append(
+            f"- Recommended Next Courses: {', '.join(summary['recommended_next_courses'])}"
+        )
     if summary["notes"]:
         lines.append(f"- Notes: {summary['notes']}")
     if summary["advising_tips"]:

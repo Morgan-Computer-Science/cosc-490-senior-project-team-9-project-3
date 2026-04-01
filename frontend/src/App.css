@@ -522,6 +522,11 @@ textarea {
   color: var(--navy);
 }
 
+.suggested-chip {
+  background: rgba(214, 139, 31, 0.18);
+  color: #8b5611;
+}
+
 .completed-course-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));

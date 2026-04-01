@@ -171,6 +171,11 @@ const ProfilePanel = ({
           </p>
 
           <div className="remaining-list">
+            {(degreeProgress?.recommended_next_courses ?? []).map((courseCode) => (
+              <span key={`recommended-${courseCode}`} className="course-chip suggested-chip">
+                Next: {courseCode}
+              </span>
+            ))}
             {(degreeProgress?.remaining_courses ?? []).slice(0, 8).map((courseCode) => (
               <span key={courseCode} className="course-chip remaining-chip">
                 {courseCode}

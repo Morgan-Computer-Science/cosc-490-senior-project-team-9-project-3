@@ -1,70 +1,76 @@
-import React, { useState } from "react";
-import "./Login.css";
+import { useState } from "react";
+
+import { loginUser } from "../api";
 
 const Login = ({ setToken, setView }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    const formData = new FormData();
-    formData.append("username", email);
-    formData.append("password", password);
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setSubmitting(true);
+    setError("");
 
     try {
-      const response = await fetch("http://localhost:8000/auth/login", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        localStorage.setItem("token", data.access_token);
-        setToken(data.access_token);
-      } else {
-        alert("Invalid credentials. Check your email and password.");
-      }
+      const data = await loginUser(email, password);
+      localStorage.setItem("token", data.access_token);
+      setToken(data.access_token);
     } catch (err) {
-      console.error("Login failed:", err);
-      alert("Cannot connect to server.");
+      setError(err instanceof Error ? err.message : "Login failed.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <div className="login-container">
-      <div className="login-card">
-        <h2>AI Faculty Advisor Login</h2>
-        <form onSubmit={handleSubmit}>
-          <input
-            type="text"
-            placeholder="Email"
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          <button type="submit">Login</button>
+    <div className="auth-shell">
+      <div className="auth-card">
+        <div className="auth-copy">
+          <p className="eyebrow">Morgan State</p>
+          <h1>Academic advising that already knows your catalog.</h1>
+          <p className="auth-subtext">
+            Sign in to chat with the advisor, browse COSC courses, and keep your
+            profile in sync.
+          </p>
+        </div>
+
+        <form className="auth-form" onSubmit={handleSubmit}>
+          <h2>Welcome back</h2>
+          {error ? <p className="form-error">{error}</p> : null}
+
+          <label>
+            Email
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="student@morgan.edu"
+              required
+            />
+          </label>
+
+          <label>
+            Password
+            <input
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="Your password"
+              required
+            />
+          </label>
+
+          <button type="submit" disabled={submitting}>
+            {submitting ? "Signing in..." : "Sign in"}
+          </button>
         </form>
 
-        {}
-        <p style={{ marginTop: "15px", fontSize: "14px" }}>
-          Don't have an account?{" "}
-          <button
-            onClick={() => setView("signup")}
-            style={{
-              background: "none",
-              border: "none",
-              color: "#002D72",
-              cursor: "pointer",
-              textDecoration: "underline",
-            }}
-          >
-            Sign Up here
+        <p className="auth-switch">
+          Need an account?
+          <button type="button" className="link-button" onClick={() => setView("signup")}>
+            Create one
           </button>
         </p>
       </div>

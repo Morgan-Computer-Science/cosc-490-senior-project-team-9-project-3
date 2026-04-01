@@ -1,124 +1,242 @@
-import React, { useEffect, useRef, useState } from "react";
+import { startTransition, useDeferredValue, useEffect, useState } from "react";
+
 import "./App.css";
-import Login from "./components/Login.jsx";
-import Signup from "./components/Signup.jsx";
+import {
+  fetchCourses,
+  fetchCurrentUser,
+  updateCurrentUser,
+} from "./api";
 import Chatbot from "./components/Chatbot.jsx";
+import Login from "./components/Login.jsx";
+import ProfilePanel from "./components/ProfilePanel.jsx";
+import Signup from "./components/Signup.jsx";
+
+const levels = [
+  { label: "All levels", value: "" },
+  { label: "100 level", value: "1" },
+  { label: "200 level", value: "2" },
+  { label: "300 level", value: "3" },
+  { label: "400 level", value: "4" },
+];
+
+const tabs = [
+  { id: "advisor", label: "Advisor" },
+  { id: "catalog", label: "Catalog" },
+  { id: "profile", label: "Profile" },
+];
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem("token"));
-  const [view, setView] = useState("login");
+  const [authView, setAuthView] = useState("login");
+  const [activeTab, setActiveTab] = useState("advisor");
+  const [user, setUser] = useState(null);
   const [courses, setCourses] = useState([]);
-  const [error, setError] = useState(null);
+  const [searchText, setSearchText] = useState("");
+  const [selectedLevel, setSelectedLevel] = useState("");
+  const [loadingCourses, setLoadingCourses] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [error, setError] = useState("");
+  const deferredSearch = useDeferredValue(searchText);
 
-  const [sessionId, setSessionId] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [messageInput, setMessageInput] = useState("");
-  const [chatError, setChatError] = useState(null);
-  const [sendingMessage, setSendingMessage] = useState(false);
-  const messagesEndRef = useRef(null);
+  useEffect(() => {
+    if (!token) {
+      return;
+    }
+
+    const loadProfile = async () => {
+      setLoadingProfile(true);
+      setError("");
+
+      try {
+        const profile = await fetchCurrentUser(token);
+        startTransition(() => setUser(profile));
+      } catch (err) {
+        localStorage.removeItem("token");
+        setToken(null);
+        setError(err instanceof Error ? err.message : "Session expired.");
+      } finally {
+        setLoadingProfile(false);
+      }
+    };
+
+    loadProfile();
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) {
+      return;
+    }
+
+    const loadCourses = async () => {
+      setLoadingCourses(true);
+
+      try {
+        const nextCourses = await fetchCourses(token, {
+          search: deferredSearch,
+          level: selectedLevel,
+        });
+        startTransition(() => setCourses(nextCourses));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load courses.");
+      } finally {
+        setLoadingCourses(false);
+      }
+    };
+
+    loadCourses();
+  }, [token, deferredSearch, selectedLevel]);
 
   const handleSignOut = () => {
     localStorage.removeItem("token");
     setToken(null);
+    setUser(null);
     setCourses([]);
-    setView("login");
+    setSearchText("");
+    setSelectedLevel("");
+    setActiveTab("advisor");
+    setAuthView("login");
+    setError("");
   };
 
-  useEffect(() => {
-    if (!token) return;
-    const fetchCoursesData = async () => {
-      try {
-        const response = await fetch("http://localhost:8000/catalog/courses", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setCourses(data);
-        } else if (response.status === 401) {
-          handleSignOut();
-        }
-      } catch (err) {
-        setError("Failed to fetch catalog. Is the backend running?");
-      }
-    };
-    fetchCoursesData();
-  }, [token]);
+  const handleSaveProfile = async (updates) => {
+    if (!token) {
+      throw new Error("You are signed out.");
+    }
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  const formatMessageContent = (content) => {
-    if (!content) return "";
-    return content
-      .replace(/\*\*(.*?)\*\*/g, "$1")
-      .replace(/^\s*[\*-]\s+/gm, "")
-      .replace(/`/g, "");
-  };
-
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-    if (!sessionId || !messageInput.trim() || sendingMessage) return;
-
-    const text = messageInput.trim();
-    setMessageInput("");
-    setSendingMessage(true);
-    setChatError(null);
-
+    setSavingProfile(true);
     try {
-      const payload = await sendChatMessage(token, sessionId, text);
-
-      setMessages((prev) => [
-        ...prev,
-        payload.user_message,
-        payload.ai_message,
-      ]);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to send message.";
-      setChatError(message);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `local-${Date.now()}`,
-          sender: "assistant",
-          content: "I could not process that right now. Please try again.",
-        },
-      ]);
+      const nextUser = await updateCurrentUser(token, updates);
+      setUser(nextUser);
+      return nextUser;
     } finally {
-      setSendingMessage(false);
+      setSavingProfile(false);
     }
   };
 
+  if (!token) {
+    return authView === "login" ? (
+      <Login setToken={setToken} setView={setAuthView} />
+    ) : (
+      <Signup setView={setAuthView} />
+    );
+  }
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>AI Faculty Advisor</h1>
-        {token && <button onClick={handleSignOut} className="logout-btn">Logout</button>}
-      </header>
-      <main>
-        {!token ? (
-          <div className="auth-container">
-            {view === "login" ? <Login setToken={setToken} setView={setView} /> : <Signup setView={setView} />}
+    <div className="app-shell">
+      <header className="topbar">
+        <div>
+          <p className="eyebrow">COSC 490 Senior Project</p>
+          <h1>Morgan State AI Faculty Advisor</h1>
+        </div>
+
+        <div className="topbar-actions">
+          <div className="student-chip">
+            <strong>{user?.full_name || "Student"}</strong>
+            <span>{user?.major || "Major not set"}</span>
           </div>
-        ) : (
-          <div className="dashboard-grid">
-            <div className="chat-section">
-               <Chatbot token={token} />
-            </div>
-            <div className="catalog-section">
-              <h3>COSC Course Catalog</h3>
-              <div className="course-grid">
+          <button type="button" className="secondary-button" onClick={handleSignOut}>
+            Logout
+          </button>
+        </div>
+      </header>
+
+      <main className="workspace">
+        <aside className="sidebar">
+          <div className="sidebar-card">
+            <p className="eyebrow">Navigation</p>
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                className={`nav-button ${activeTab === tab.id ? "active" : ""}`}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="sidebar-card">
+            <p className="eyebrow">Quick filters</p>
+            <label className="field-label">
+              Search catalog
+              <input
+                value={searchText}
+                onChange={(event) => setSearchText(event.target.value)}
+                placeholder="COSC 111, calculus, systems..."
+              />
+            </label>
+
+            <label className="field-label">
+              Course level
+              <select
+                value={selectedLevel}
+                onChange={(event) => setSelectedLevel(event.target.value)}
+              >
+                {levels.map((level) => (
+                  <option key={level.value || "all"} value={level.value}>
+                    {level.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div className="sidebar-card">
+            <p className="eyebrow">Status</p>
+            <p className="status-copy">
+              {loadingProfile ? "Loading profile..." : `${courses.length} courses ready`}
+            </p>
+            {error ? <p className="form-error">{error}</p> : null}
+          </div>
+        </aside>
+
+        <section className="content-area">
+          {activeTab === "advisor" ? <Chatbot token={token} user={user} /> : null}
+
+          {activeTab === "catalog" ? (
+            <section className="panel catalog-panel">
+              <div className="panel-header">
+                <div>
+                  <p className="eyebrow">Catalog Explorer</p>
+                  <h2>Course options you can actually browse</h2>
+                  <p className="panel-subtext">
+                    Search by code or title, or narrow by course level while you plan.
+                  </p>
+                </div>
+              </div>
+
+              {loadingCourses ? <p className="empty-state">Loading catalog...</p> : null}
+
+              <div className="catalog-grid">
                 {courses.map((course) => (
-                  <div key={course.id} className="course-card">
-                    <h4>{course.code}: {course.title}</h4>
-                    <p>{course.description}</p>
-                    <span>Credits: {course.credits}</span>
-                  </div>
+                  <article key={course.id} className="course-card">
+                    <div className="course-topline">
+                      <span className="course-code">{course.code}</span>
+                      <span className="course-chip">{course.credits || "TBD"} credits</span>
+                    </div>
+                    <h3>{course.title}</h3>
+                    <p>{course.description || "No description available yet."}</p>
+                    <div className="course-meta">
+                      <span>{course.department || "Department TBD"}</span>
+                      <span>{course.semester_offered || "Semester TBD"}</span>
+                      <span>{course.instructor || "Instructor TBD"}</span>
+                    </div>
+                  </article>
                 ))}
               </div>
-            </div>
-          </div>
-        )}
+
+              {!loadingCourses && courses.length === 0 ? (
+                <p className="empty-state">No courses matched the current filters.</p>
+              ) : null}
+            </section>
+          ) : null}
+
+          {activeTab === "profile" ? (
+            <ProfilePanel user={user} onSave={handleSaveProfile} saving={savingProfile} />
+          ) : null}
+        </section>
       </main>
     </div>
   );

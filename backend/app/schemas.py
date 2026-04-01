@@ -1,7 +1,7 @@
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional
 
-from pydantic import BaseModel, EmailStr, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class Token(BaseModel):
@@ -11,13 +11,19 @@ class Token(BaseModel):
 
 class UserBase(BaseModel):
     email: EmailStr
-    full_name: Optional[str] = None
+    full_name: Optional[str] = Field(default=None, min_length=2)
     major: Optional[str] = None
     year: Optional[str] = None
 
 
 class UserCreate(UserBase):
-    password: str
+    password: str = Field(min_length=8)
+
+
+class UserUpdate(BaseModel):
+    full_name: Optional[str] = Field(default=None, min_length=2)
+    major: Optional[str] = None
+    year: Optional[str] = None
 
 
 class UserRead(UserBase):
@@ -48,57 +54,6 @@ class CourseOut(CourseBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-class FacultyBase(BaseModel):
-    name: str
-    department: Optional[str] = None
-    email: Optional[str] = None
-    office: Optional[str] = None
-    title: Optional[str] = None
-
-
-class FacultyCreate(FacultyBase):
-    pass
-
-
-class FacultyOut(FacultyBase):
-    id: int
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class DepartmentBase(BaseModel):
-    name: str
-    office: Optional[str] = None
-    email: Optional[str] = None
-    phone: Optional[str] = None
-
-
-class DepartmentCreate(DepartmentBase):
-    pass
-
-
-class DepartmentOut(DepartmentBase):
-    id: int
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class DegreeRequirementBase(BaseModel):
-    major: str
-    required_courses: Optional[str] = None
-    notes: Optional[str] = None
-
-
-class DegreeRequirementCreate(DegreeRequirementBase):
-    pass
-
-
-class DegreeRequirementOut(DegreeRequirementBase):
-    id: int
-
-    model_config = ConfigDict(from_attributes=True)
-
-
 class ChatSessionCreate(BaseModel):
     title: Optional[str] = None
 
@@ -113,7 +68,7 @@ class ChatSessionOut(BaseModel):
 
 
 class ChatMessageCreate(BaseModel):
-    content: str
+    content: str = Field(min_length=1, max_length=4000)
 
 
 class ChatMessageOut(BaseModel):

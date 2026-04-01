@@ -1,131 +1,125 @@
-import React, { useState } from "react";
-import axios from "axios";
-import "./Signup.css";
+import { useState } from "react";
+
+import { registerUser } from "../api";
 
 const Signup = ({ setView }) => {
   const [formData, setFormData] = useState({
+    full_name: "",
     email: "",
     password: "",
-    name: "",
     major: "Computer Science",
     year: "Freshman",
   });
-
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSignup = async (e) => {
-    e.preventDefault();
+  const updateField = (field, value) => {
+    setFormData((current) => ({ ...current, [field]: value }));
+  };
+
+  const handleSignup = async (event) => {
+    event.preventDefault();
+    setSubmitting(true);
     setError("");
+    setSuccess("");
 
     try {
-      await axios.post("http://localhost:8000/auth/register", formData);
-
-      alert("Registration successful! Please log in.");
+      await registerUser(formData);
+      setSuccess("Registration complete. You can sign in now.");
       setView("login");
     } catch (err) {
-      const errorMsg =
-        err.response?.data?.detail || "Signup failed. Please try again.";
-      setError(errorMsg);
+      setError(err instanceof Error ? err.message : "Signup failed.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <div className="login-page">
-      {" "}
-      {}
-      <div className="login-card">
-        {" "}
-        {}
-        <form onSubmit={handleSignup}>
-          <h2>Student Registration</h2>
-
-          {error && (
-            <p style={{ color: "#ff4d4d", fontSize: "14px" }}>{error}</p>
-          )}
-
-          <input
-            type="text"
-            placeholder="Full Name"
-            required
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          />
-
-          <input
-            type="email"
-            placeholder="Email"
-            required
-            onChange={(e) =>
-              setFormData({ ...formData, email: e.target.value })
-            }
-          />
-
-          <input
-            type="password"
-            placeholder="Create Password"
-            required
-            onChange={(e) =>
-              setFormData({ ...formData, password: e.target.value })
-            }
-          />
-
-          <select
-            value={formData.major}
-            onChange={(e) =>
-              setFormData({ ...formData, major: e.target.value })
-            }
-            style={{
-              width: "100%",
-              padding: "14px",
-              marginBottom: "1rem",
-              background: "#0d1117",
-              color: "white",
-              border: "1px solid #30363d",
-              borderRadius: "6px",
-            }}
-          >
-            <option value="Computer Science">Computer Science</option>
-            <option value="Information Systems">Information Systems</option>
-            <option value="Cloud Computing">Cloud Computing</option>
-          </select>
-
-          <select
-            value={formData.year}
-            onChange={(e) => setFormData({ ...formData, year: e.target.value })}
-            style={{
-              width: "100%",
-              padding: "14px",
-              marginBottom: "1rem",
-              background: "#0d1117",
-              color: "white",
-              border: "1px solid #30363d",
-              borderRadius: "6px",
-            }}
-          >
-            <option value="Freshman">Freshman</option>
-            <option value="Sophomore">Sophomore</option>
-            <option value="Junior">Junior</option>
-            <option value="Senior">Senior</option>
-          </select>
-
-          <button type="submit">Register Account</button>
-
-          <p style={{ marginTop: "20px", color: "#8b949e", fontSize: "14px" }}>
-            Already registered?{" "}
-            <button
-              type="button"
-              onClick={() => setView("login")}
-              style={{
-                background: "none",
-                border: "none",
-                color: "#00e5ff",
-                cursor: "pointer",
-                textDecoration: "underline",
-              }}
-            >
-              Log in here
-            </button>
+    <div className="auth-shell">
+      <div className="auth-card">
+        <div className="auth-copy">
+          <p className="eyebrow">Student Onboarding</p>
+          <h1>Build a profile the advisor can actually use.</h1>
+          <p className="auth-subtext">
+            Your major and class year help the chat give more grounded guidance.
           </p>
+        </div>
+
+        <form className="auth-form" onSubmit={handleSignup}>
+          <h2>Create account</h2>
+          {error ? <p className="form-error">{error}</p> : null}
+          {success ? <p className="form-success">{success}</p> : null}
+
+          <label>
+            Full name
+            <input
+              type="text"
+              value={formData.full_name}
+              onChange={(event) => updateField("full_name", event.target.value)}
+              placeholder="Jordan Smith"
+              required
+            />
+          </label>
+
+          <label>
+            Email
+            <input
+              type="email"
+              value={formData.email}
+              onChange={(event) => updateField("email", event.target.value)}
+              placeholder="student@morgan.edu"
+              required
+            />
+          </label>
+
+          <label>
+            Password
+            <input
+              type="password"
+              value={formData.password}
+              onChange={(event) => updateField("password", event.target.value)}
+              placeholder="At least 8 characters"
+              required
+            />
+          </label>
+
+          <label>
+            Major
+            <select
+              value={formData.major}
+              onChange={(event) => updateField("major", event.target.value)}
+            >
+              <option value="Computer Science">Computer Science</option>
+              <option value="Information Systems">Information Systems</option>
+              <option value="Cloud Computing">Cloud Computing</option>
+            </select>
+          </label>
+
+          <label>
+            Class year
+            <select
+              value={formData.year}
+              onChange={(event) => updateField("year", event.target.value)}
+            >
+              <option value="Freshman">Freshman</option>
+              <option value="Sophomore">Sophomore</option>
+              <option value="Junior">Junior</option>
+              <option value="Senior">Senior</option>
+            </select>
+          </label>
+
+          <button type="submit" disabled={submitting}>
+            {submitting ? "Creating..." : "Create account"}
+          </button>
         </form>
+
+        <p className="auth-switch">
+          Already registered?
+          <button type="button" className="link-button" onClick={() => setView("login")}>
+            Sign in
+          </button>
+        </p>
       </div>
     </div>
   );

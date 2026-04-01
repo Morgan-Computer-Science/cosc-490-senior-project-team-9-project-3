@@ -436,6 +436,16 @@ textarea {
   line-height: 1.5;
 }
 
+.listen-button {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border: 1px solid rgba(20, 50, 74, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--navy);
+  font-size: 0.85rem;
+}
+
 .chat-input-row {
   display: flex;
   gap: 10px;
@@ -527,11 +537,27 @@ textarea {
   color: #8b5611;
 }
 
+.blocked-chip {
+  background: rgba(160, 47, 31, 0.12);
+  color: #8d3528;
+}
+
 .completed-course-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
   gap: 12px;
   margin-top: 16px;
+}
+
+.bulk-entry-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.bulk-entry-row input {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .completed-course-card {

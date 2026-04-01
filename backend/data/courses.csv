@@ -59,3 +59,22 @@ BUSN320,Business Law,Legal principles affecting business operations contracts an
 EDUC200,Foundations of Education,Introduction to educational systems teaching practices and learning theories.,3,Education,200,Fall/Spring,Dr. Rebecca Moore
 EDUC310,Educational Psychology,Study of learning processes motivation and assessment in educational settings.,3,Education,300,Spring,Dr. Rebecca Moore
 HLTH101,Personal Health and Wellness,Study of health behaviors nutrition fitness and wellness strategies.,3,Health Sciences,100,Fall/Spring,Dr. Karen Lewis
+ISYS201,Introduction to Information Systems,Overview of information systems business processes and digital transformation in organizations.,3,Information Science and Systems,200,Fall/Spring,Dr. Alicia Bennett
+ISYS220,Business Data Communications,Study of enterprise data communications networking concepts and business information flow.,3,Information Science and Systems,200,Spring,Dr. Alicia Bennett
+ISYS310,Systems Analysis and Design,Methods for analyzing business requirements and designing information systems solutions.,3,Information Science and Systems,300,Fall,Dr. Raymond Cole
+ISYS340,Business Analytics and Decision Support,Application of analytics reporting and decision support tools in organizational settings.,3,Information Science and Systems,300,Spring,Dr. Raymond Cole
+BIOL102,General Biology II,Continuation of biological principles with emphasis on organismal biology ecology and laboratory analysis.,4,Biology,100,Spring,Dr. Lisa Johnson
+BIOL320,Genetics,Study of heredity molecular genetics and genomic analysis in modern biology.,3,Biology,300,Fall,Dr. Lisa Johnson
+BIOL410,Cell Biology,Advanced study of cellular structure signaling metabolism and laboratory methods.,3,Biology,400,Spring,Dr. Harold Evans
+CHEM102,General Chemistry II,Continuation of general chemistry including equilibrium kinetics thermodynamics and laboratory applications.,4,Chemistry,100,Spring,Dr. Robert Brown
+PHYS102,Physics II,Continuation of introductory physics with electricity magnetism waves and optics.,4,Physics,100,Spring,Dr. David Clark
+PSYC301,Research Methods in Psychology,Introduction to psychological research design methods ethics and scientific writing.,3,Psychology,300,Fall,Dr. Sarah Davis
+PSYC302,Experimental Psychology,Applied laboratory-based research in psychology with data collection analysis and reporting.,3,Psychology,300,Spring,Dr. Brian Foster
+MGMT220,Business Statistics and Decision Making,Quantitative analysis decision making and management applications for business students.,3,Business Administration,200,Fall/Spring,Dr. Angela Brooks
+MKTG331,Marketing Management,Strategic marketing planning consumer insights and brand management in competitive markets.,3,Business Administration,300,Spring,Dr. Daniel Roberts
+ENGE101,Engineering Foundations I,Introduction to engineering problem solving design process and technical communication.,3,Electrical and Computer Engineering,100,Fall,Dr. Kevin Harris
+ENGE102,Engineering Foundations II,Continuation of engineering design teamwork prototyping and analytical problem solving.,3,Electrical and Computer Engineering,100,Spring,Dr. Kevin Harris
+EEGR203,Circuit Analysis I,Fundamentals of electric circuits including Ohms law network theorems and lab practice.,3,Electrical and Computer Engineering,200,Fall,Dr. Nina Walters
+EEGR205,Digital Logic Design,Design of combinational and sequential digital systems with hardware implementation.,3,Electrical and Computer Engineering,200,Spring,Dr. Nina Walters
+EEGR301,Signals and Systems,Analysis of continuous and discrete-time signals linear systems and transforms.,3,Electrical and Computer Engineering,300,Fall,Dr. Samuel Reed
+EEGR317,Electronics I,Study of semiconductor devices amplifiers biasing and introductory electronic circuit design.,3,Electrical and Computer Engineering,300,Spring,Dr. Samuel Reed

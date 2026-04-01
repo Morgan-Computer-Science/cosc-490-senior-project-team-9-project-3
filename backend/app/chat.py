@@ -13,6 +13,7 @@ from .rag import (
     get_degree_progress,
     retrieve_relevant_documents,
 )
+from .student_state import analyze_student_state
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -46,6 +47,10 @@ def _build_degree_progress_context(user: models.User) -> str:
         lines.append(
             f"- Recommended Next Courses: {', '.join(summary['recommended_next_courses'])}"
         )
+    if summary["blocked_courses"]:
+        lines.append(
+            f"- Courses Still Blocked By Prerequisites: {', '.join(summary['blocked_courses'][:6])}"
+        )
     if summary["notes"]:
         lines.append(f"- Notes: {summary['notes']}")
     if summary["advising_tips"]:
@@ -53,15 +58,33 @@ def _build_degree_progress_context(user: models.User) -> str:
     return "\n".join(lines)
 
 
+def _build_student_state_context(question: str, user: models.User) -> tuple[str, dict[str, object]]:
+    state = analyze_student_state(question, major=user.major)
+    lines = ["Student state analysis:"]
+    lines.append(f"- Intent: {state['intent']}")
+    lines.append(f"- Emotional Tone: {state['emotional_tone']}")
+    lines.append(f"- Needs Support Escalation: {'yes' if state['needs_support'] else 'no'}")
+    if state["matched_signals"]:
+        lines.append(f"- Matched Signals: {', '.join(state['matched_signals'])}")
+    return "\n".join(lines), state
+
+
 def _fallback_advising_reply(
     user: models.User,
     question: str,
     documents: List[RetrievedDocument],
+    student_state: dict[str, object],
 ) -> str:
     relevant = documents[:3]
-    lines = [
-        f"I could not reach the live AI service, but I can still help with grounded Morgan State info for a {user.year or 'current'} {user.major or 'student'}.",
-    ]
+    opening = (
+        f"I could not reach the live AI service, but I can still help with grounded Morgan State info for a {user.year or 'current'} {user.major or 'student'}."
+    )
+    if student_state["needs_support"]:
+        opening = (
+            "I could not reach the live AI service, but I do want to respond carefully. "
+            "It sounds like this may involve stress or personal support as well as academics."
+        )
+    lines = [opening]
 
     if relevant:
         lines.append("Most relevant retrieved information:")
@@ -82,7 +105,7 @@ def _fallback_advising_reply(
             "For planning questions, compare required courses, course levels, semester offerings, and department guidance before locking a schedule."
         )
 
-    if any(token in lowered for token in ["stress", "anxious", "overwhelmed", "mental", "counseling"]):
+    if student_state["needs_support"] or any(token in lowered for token in ["stress", "anxious", "overwhelmed", "mental", "counseling"]):
         lines.append(
             "If the concern is also personal or wellness-related, the Counseling Center or University Advising may be a better immediate support contact."
         )
@@ -213,15 +236,18 @@ def send_message(
     retrieved_context = format_retrieved_context(retrieved_docs)
     student_context = _build_student_context(current_user)
     degree_progress_context = _build_degree_progress_context(current_user)
+    student_state_context, student_state = _build_student_state_context(clean_content, current_user)
     extra_context = "\n\n".join(
-        part for part in [student_context, degree_progress_context, retrieved_context] if part
+        part
+        for part in [student_context, degree_progress_context, student_state_context, retrieved_context]
+        if part
     )
 
     try:
         ai_text = generate_ai_reply(history=history_payload, extra_context=extra_context)
     except Exception as exc:
         print("AI error in generate_ai_reply:", repr(exc))
-        ai_text = _fallback_advising_reply(current_user, clean_content, retrieved_docs)
+        ai_text = _fallback_advising_reply(current_user, clean_content, retrieved_docs, student_state)
 
     ai_msg = models.ChatMessage(
         session_id=session.id,

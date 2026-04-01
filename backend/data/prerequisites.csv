@@ -1,0 +1,30 @@
+course_code,prerequisites,notes
+COSC241,COSC111,Builds on introductory programming.
+COSC242,COSC241,Data structures should follow Computer Science II.
+COSC310,COSC242,Database work is stronger after data structures.
+COSC331,COSC242,Algorithm analysis assumes data structures fluency.
+COSC332,COSC242,Operating systems should follow programming foundations.
+COSC350,COSC242,Software engineering is best after the core programming sequence.
+COSC490,COSC350; COSC331,Capstone should come after core upper-level preparation.
+MATH241,MATH141,Calculus II follows Calculus I.
+MATH242,MATH141,Linear algebra is typically taken after initial college math preparation.
+ISYS220,ISYS201,Business data communications builds on introductory IS concepts.
+ISYS310,ISYS220,Systems analysis should follow early IS and communications coursework.
+ISYS340,ISYS220; STAT302,Analytics is stronger after business data communications and statistics.
+BIOL102,BIOL101,General Biology II follows General Biology I.
+CHEM102,CHEM101,General Chemistry II follows General Chemistry I.
+PHYS102,PHYS101; MATH141,Physics II assumes Physics I and calculus readiness.
+BIOL320,BIOL102,Genetics should follow the introductory biology sequence.
+BIOL410,BIOL320; CHEM102,Cell biology is stronger after genetics and chemistry.
+PSYC210,PSYC101,Developmental psychology follows introductory psychology.
+PSYC301,PSYC101; STAT302,Research methods should follow intro psychology and statistics.
+PSYC302,PSYC301,Experimental psychology should follow research methods.
+ACCT202,ACCT201,Accounting II follows Accounting I.
+ECON202,ECON201,Macroeconomics follows introductory economics.
+MKTG331,MKTG210,Marketing management should follow principles of marketing.
+FINA300,ACCT201; ECON201,Finance is stronger after accounting and economics.
+ENGE102,ENGE101,Engineering Foundations II follows the first foundations course.
+EEGR203,ENGE102; MATH141,Circuit analysis depends on engineering foundations and calculus.
+EEGR205,ENGE102,Digital logic usually follows early engineering foundations.
+EEGR301,EEGR203; MATH241,Signals and systems should follow circuits and calculus.
+EEGR317,EEGR203; PHYS102,Electronics is stronger after circuits and the physics sequence.

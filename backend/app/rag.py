@@ -183,6 +183,16 @@ def load_degree_requirement_rows() -> tuple[dict[str, str], ...]:
         return tuple(csv.DictReader(file))
 
 
+@lru_cache(maxsize=1)
+def load_prerequisite_rows() -> tuple[dict[str, str], ...]:
+    path = DATA_DIR / "prerequisites.csv"
+    if not path.exists():
+        return tuple()
+
+    with path.open(newline="", encoding="utf-8") as file:
+        return tuple(csv.DictReader(file))
+
+
 def _support_documents() -> List[RetrievedDocument]:
     path = DATA_DIR / "support_resources.csv"
     if not path.exists():
@@ -304,24 +314,50 @@ def format_retrieved_context(documents: Iterable[RetrievedDocument]) -> str:
     return "\n".join(lines)
 
 
-def _recommend_next_courses(required: list[str], completed: list[str]) -> list[str]:
+def _course_sort_key(code: str, course_map: dict[str, dict[str, str]]) -> tuple[int, int, str]:
+    row = course_map.get(code, {})
+    level = _normalize(row.get("level")) or "999"
+    semester = _normalize(row.get("semester_offered"))
+    semester_bonus = 0 if "Fall/Spring" in semester else 1
+    return (int(level), semester_bonus, code)
+
+
+def _prerequisite_map() -> dict[str, list[str]]:
+    prereq_map: dict[str, list[str]] = {}
+    for row in load_prerequisite_rows():
+        course_code = _normalize(row.get("course_code")).upper()
+        prerequisites = [
+            code.strip().upper()
+            for code in _normalize(row.get("prerequisites")).split(";")
+            if code.strip()
+        ]
+        if course_code:
+            prereq_map[course_code] = prerequisites
+    return prereq_map
+
+
+def _recommend_next_courses(required: list[str], completed: list[str]) -> tuple[list[str], list[str]]:
     completed_set = set(completed)
     course_map = {
         _normalize(row.get("code")).upper(): row
         for row in load_course_rows()
     }
+    prereq_map = _prerequisite_map()
 
     remaining = [code for code in required if code not in completed_set]
-    sortable = []
+    ready: list[str] = []
+    blocked: list[str] = []
     for code in remaining:
-        row = course_map.get(code, {})
-        level = _normalize(row.get("level")) or "999"
-        semester = _normalize(row.get("semester_offered"))
-        semester_bonus = 0 if "Fall/Spring" in semester else 1
-        sortable.append((int(level), semester_bonus, code))
+        prerequisites = prereq_map.get(code, [])
+        if all(prereq in completed_set for prereq in prerequisites):
+            ready.append(code)
+        else:
+            blocked.append(code)
 
-    sortable.sort()
-    return [code for _, _, code in sortable[:3]]
+    ready.sort(key=lambda code: _course_sort_key(code, course_map))
+    blocked.sort(key=lambda code: _course_sort_key(code, course_map))
+    recommendations = ready[:3] if ready else blocked[:3]
+    return recommendations, blocked
 
 
 def get_degree_progress(major: Optional[str], completed_course_codes: Iterable[str]) -> dict[str, object]:
@@ -333,6 +369,7 @@ def get_degree_progress(major: Optional[str], completed_course_codes: Iterable[s
             "completed_courses": completed,
             "remaining_courses": [],
             "recommended_next_courses": [],
+            "blocked_courses": [],
             "completion_percent": 0.0,
             "notes": None,
             "advising_tips": None,
@@ -350,6 +387,7 @@ def get_degree_progress(major: Optional[str], completed_course_codes: Iterable[s
             "completed_courses": completed,
             "remaining_courses": [],
             "recommended_next_courses": [],
+            "blocked_courses": [],
             "completion_percent": 0.0,
             "notes": None,
             "advising_tips": None,
@@ -361,7 +399,7 @@ def get_degree_progress(major: Optional[str], completed_course_codes: Iterable[s
         if code.strip()
     ]
     remaining = [code for code in required if code not in completed]
-    recommended_next_courses = _recommend_next_courses(required, completed)
+    recommended_next_courses, blocked_courses = _recommend_next_courses(required, completed)
     completion_percent = round((len(required) - len(remaining)) / len(required) * 100, 1) if required else 0.0
 
     return {
@@ -370,6 +408,7 @@ def get_degree_progress(major: Optional[str], completed_course_codes: Iterable[s
         "completed_courses": completed,
         "remaining_courses": remaining,
         "recommended_next_courses": recommended_next_courses,
+        "blocked_courses": blocked_courses,
         "completion_percent": completion_percent,
         "notes": _normalize(matching_row.get("notes")) or None,
         "advising_tips": _normalize(matching_row.get("advising_tips")) or None,

@@ -44,6 +44,7 @@ class DegreeProgressSummary(BaseModel):
     completed_courses: list[str] = Field(default_factory=list)
     remaining_courses: list[str] = Field(default_factory=list)
     recommended_next_courses: list[str] = Field(default_factory=list)
+    blocked_courses: list[str] = Field(default_factory=list)
     completion_percent: float = 0.0
     notes: Optional[str] = None
     advising_tips: Optional[str] = None

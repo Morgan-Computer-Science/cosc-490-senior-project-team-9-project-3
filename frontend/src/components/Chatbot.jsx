@@ -33,6 +33,8 @@ const Chatbot = ({ token, user }) => {
   const [voiceSupported, setVoiceSupported] = useState(false);
   const [listening, setListening] = useState(false);
   const [voiceStatus, setVoiceStatus] = useState("");
+  const [speechSupported, setSpeechSupported] = useState(false);
+  const [speakingMessageId, setSpeakingMessageId] = useState(null);
   const bottomRef = useRef(null);
   const recognitionRef = useRef(null);
 
@@ -81,6 +83,19 @@ const Chatbot = ({ token, user }) => {
 
     return () => {
       recognition.stop();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.speechSynthesis) {
+      setSpeechSupported(false);
+      return undefined;
+    }
+
+    setSpeechSupported(true);
+
+    return () => {
+      window.speechSynthesis.cancel();
     };
   }, []);
 
@@ -223,6 +238,40 @@ const Chatbot = ({ token, user }) => {
     recognitionRef.current.start();
   };
 
+  const handleSpeakMessage = (message) => {
+    if (!speechSupported || typeof window === "undefined") {
+      setVoiceStatus("Spoken replies are not supported in this browser.");
+      return;
+    }
+
+    const synth = window.speechSynthesis;
+    if (speakingMessageId === message.id) {
+      synth.cancel();
+      setSpeakingMessageId(null);
+      setVoiceStatus("Stopped reading aloud.");
+      return;
+    }
+
+    synth.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(formatMessageContent(message.content));
+    utterance.lang = "en-US";
+    utterance.rate = 1;
+    utterance.onstart = () => {
+      setSpeakingMessageId(message.id);
+      setVoiceStatus("Reading advisor response aloud...");
+    };
+    utterance.onend = () => {
+      setSpeakingMessageId(null);
+      setVoiceStatus("Finished reading response.");
+    };
+    utterance.onerror = () => {
+      setSpeakingMessageId(null);
+      setVoiceStatus("Spoken playback was unavailable for that reply.");
+    };
+    synth.speak(utterance);
+  };
+
   const activeTitle = sessions.find((session) => session.id === activeSessionId)?.title;
 
   return (
@@ -289,6 +338,15 @@ const Chatbot = ({ token, user }) => {
                   {message.sender === "assistant" ? "Advisor" : "You"}
                 </span>
                 <p>{formatMessageContent(message.content)}</p>
+                {message.sender === "assistant" && speechSupported ? (
+                  <button
+                    type="button"
+                    className="listen-button"
+                    onClick={() => handleSpeakMessage(message)}
+                  >
+                    {speakingMessageId === message.id ? "Stop audio" : "Read aloud"}
+                  </button>
+                ) : null}
               </div>
             ))}
 

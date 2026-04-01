@@ -17,6 +17,7 @@ const ProfilePanel = ({
   });
   const [completedCourseCodes, setCompletedCourseCodes] = useState([]);
   const [courseSearch, setCourseSearch] = useState("");
+  const [bulkCourseInput, setBulkCourseInput] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
@@ -46,12 +47,39 @@ const ProfilePanel = ({
     );
   }, [courseSearch, courses]);
 
+  const visibleRemainingCourses = useMemo(() => {
+    const highlighted = new Set([
+      ...(degreeProgress?.recommended_next_courses ?? []),
+      ...(degreeProgress?.blocked_courses ?? []),
+    ]);
+
+    return (degreeProgress?.remaining_courses ?? []).filter(
+      (courseCode) => !highlighted.has(courseCode),
+    );
+  }, [degreeProgress]);
+
   const toggleCourse = (courseCode) => {
     setCompletedCourseCodes((current) =>
       current.includes(courseCode)
         ? current.filter((code) => code !== courseCode)
         : [...current, courseCode].sort(),
     );
+  };
+
+  const handleBulkAdd = () => {
+    const parsedCodes = bulkCourseInput
+      .split(/[\s,;]+/)
+      .map((code) => code.trim().toUpperCase())
+      .filter(Boolean);
+
+    if (!parsedCodes.length) {
+      return;
+    }
+
+    setCompletedCourseCodes((current) =>
+      Array.from(new Set([...current, ...parsedCodes])).sort(),
+    );
+    setBulkCourseInput("");
   };
 
   const handleSubmit = async (event) => {
@@ -176,12 +204,19 @@ const ProfilePanel = ({
                 Next: {courseCode}
               </span>
             ))}
-            {(degreeProgress?.remaining_courses ?? []).slice(0, 8).map((courseCode) => (
+            {(degreeProgress?.blocked_courses ?? []).slice(0, 6).map((courseCode) => (
+              <span key={`blocked-${courseCode}`} className="course-chip blocked-chip">
+                Blocked: {courseCode}
+              </span>
+            ))}
+            {visibleRemainingCourses.slice(0, 8).map((courseCode) => (
               <span key={courseCode} className="course-chip remaining-chip">
                 {courseCode}
               </span>
             ))}
-            {!(degreeProgress?.remaining_courses ?? []).length ? (
+            {!visibleRemainingCourses.length &&
+            !(degreeProgress?.recommended_next_courses ?? []).length &&
+            !(degreeProgress?.blocked_courses ?? []).length ? (
               <span className="panel-subtext">No remaining required courses listed yet.</span>
             ) : null}
           </div>
@@ -198,6 +233,20 @@ const ProfilePanel = ({
             Save completed courses
           </button>
         </div>
+
+        <label className="field-label">
+          Bulk add course codes
+          <div className="bulk-entry-row">
+            <input
+              value={bulkCourseInput}
+              onChange={(event) => setBulkCourseInput(event.target.value)}
+              placeholder="Example: COSC111 MATH141 ENGL101"
+            />
+            <button type="button" className="secondary-button" onClick={handleBulkAdd}>
+              Add codes
+            </button>
+          </div>
+        </label>
 
         <label className="field-label">
           Search available courses

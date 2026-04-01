@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 
+import { majorOptions } from "../majors";
+
 const ProfilePanel = ({ user, onSave, saving }) => {
   const [formData, setFormData] = useState({
     full_name: "",
@@ -78,9 +80,11 @@ const ProfilePanel = ({ user, onSave, saving }) => {
             }
           >
             <option value="">Select major</option>
-            <option value="Computer Science">Computer Science</option>
-            <option value="Information Systems">Information Systems</option>
-            <option value="Cloud Computing">Cloud Computing</option>
+            {majorOptions.map((major) => (
+              <option key={major} value={major}>
+                {major}
+              </option>
+            ))}
           </select>
         </label>
 

@@ -1,0 +1,18 @@
+export const majorOptions = [
+  "Undeclared",
+  "Computer Science",
+  "Information Systems",
+  "Cloud Computing",
+  "Biology",
+  "Psychology",
+  "Business Administration",
+  "Accounting",
+  "Electrical Engineering",
+  "Civil Engineering",
+  "Mathematics",
+  "English",
+  "History",
+  "Sociology",
+  "Architecture",
+  "Nursing",
+];

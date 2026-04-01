@@ -448,6 +448,10 @@ textarea {
   min-width: 0;
 }
 
+.voice-button {
+  background: linear-gradient(135deg, rgba(214, 139, 31, 0.95), rgba(176, 102, 24, 0.95));
+}
+
 .typing-indicator,
 .empty-state {
   color: var(--ink-soft);

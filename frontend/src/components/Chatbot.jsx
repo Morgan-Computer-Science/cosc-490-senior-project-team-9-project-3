@@ -10,8 +10,9 @@ import {
 
 const starterPrompts = [
   "Help me plan a strong sophomore schedule.",
-  "What COSC classes should I take after COSC 111?",
-  "Summarize the difference between COSC and Information Systems.",
+  "What classes should I take after COSC 111?",
+  "Who should I contact for Information Systems advising?",
+  "What are the degree requirements for Business Administration?",
 ];
 
 const formatMessageContent = (content) =>
@@ -29,7 +30,59 @@ const Chatbot = ({ token, user }) => {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
+  const [voiceSupported, setVoiceSupported] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [voiceStatus, setVoiceStatus] = useState("");
   const bottomRef = useRef(null);
+  const recognitionRef = useRef(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      setVoiceSupported(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = "en-US";
+
+    recognition.onstart = () => {
+      setListening(true);
+      setVoiceStatus("Listening...");
+    };
+
+    recognition.onresult = (event) => {
+      const transcript = event.results?.[0]?.[0]?.transcript?.trim();
+      if (transcript) {
+        setInput((current) => (current ? `${current} ${transcript}` : transcript));
+        setVoiceStatus("Voice captured.");
+      }
+    };
+
+    recognition.onerror = () => {
+      setVoiceStatus("Voice input was unavailable for that attempt.");
+      setListening(false);
+    };
+
+    recognition.onend = () => {
+      setListening(false);
+    };
+
+    recognitionRef.current = recognition;
+    setVoiceSupported(true);
+
+    return () => {
+      recognition.stop();
+    };
+  }, []);
 
   useEffect(() => {
     if (!token) {
@@ -154,6 +207,22 @@ const Chatbot = ({ token, user }) => {
     }
   };
 
+  const handleVoiceInput = () => {
+    if (!recognitionRef.current) {
+      setVoiceStatus("Voice input is not supported in this browser.");
+      return;
+    }
+
+    if (listening) {
+      recognitionRef.current.stop();
+      return;
+    }
+
+    setError("");
+    setVoiceStatus("");
+    recognitionRef.current.start();
+  };
+
   const activeTitle = sessions.find((session) => session.id === activeSessionId)?.title;
 
   return (
@@ -163,7 +232,7 @@ const Chatbot = ({ token, user }) => {
           <p className="eyebrow">Advisor Workspace</p>
           <h2>{activeTitle || "Academic advisor chat"}</h2>
           <p className="panel-subtext">
-            Built for {user?.major || "Morgan State students"} and aware of the course catalog.
+            Built for {user?.major || "Morgan State students"} and grounded in Morgan State advising data.
           </p>
         </div>
         <button type="button" className="secondary-button" onClick={handleCreateSession}>
@@ -207,7 +276,7 @@ const Chatbot = ({ token, user }) => {
             {loading ? <p className="empty-state">Loading your advisor workspace...</p> : null}
             {!loading && messages.length === 0 ? (
               <p className="empty-state">
-                Ask about schedules, course sequencing, or what fits your major next.
+                Ask about schedules, faculty, department contacts, requirements, or what fits your major next.
               </p>
             ) : null}
 
@@ -224,6 +293,7 @@ const Chatbot = ({ token, user }) => {
             ))}
 
             {sending ? <p className="typing-indicator">Advisor is thinking...</p> : null}
+            {voiceStatus ? <p className="typing-indicator">{voiceStatus}</p> : null}
             {error ? <p className="form-error">{error}</p> : null}
             <div ref={bottomRef} />
           </div>
@@ -232,11 +302,19 @@ const Chatbot = ({ token, user }) => {
             <input
               value={input}
               onChange={(event) => setInput(event.target.value)}
-              placeholder="Ask about prerequisites, planning, or course options..."
+              placeholder="Ask about requirements, advising offices, professors, or course planning..."
               disabled={!activeSessionId || sending}
             />
             <button type="submit" disabled={!input.trim() || sending || !activeSessionId}>
               {sending ? "Sending..." : "Send"}
+            </button>
+            <button
+              type="button"
+              className="voice-button"
+              onClick={handleVoiceInput}
+              disabled={!voiceSupported}
+            >
+              {listening ? "Stop mic" : "Use mic"}
             </button>
           </form>
         </div>

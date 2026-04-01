@@ -1,0 +1,9 @@
+name,title,department,email,office,office_hours,specialties
+Dr. Paul Wang,Professor,Computer Science,paul.wang@morgan.edu,Calloway Hall 318,Mon/Wed 2:00 PM - 4:00 PM,intro programming software engineering capstone advising
+Dr. Shuangbao Wang,Professor,Computer Science,shuangbao.wang@morgan.edu,Calloway Hall 320,Tue/Thu 1:00 PM - 3:00 PM,algorithms artificial intelligence machine learning
+Dr. Jun Zheng,Professor,Computer Science,jun.zheng@morgan.edu,Calloway Hall 314,Tue 10:00 AM - 12:00 PM,data structures databases cybersecurity distributed systems
+Dr. Alicia Greene,Associate Professor,Information Science and Systems,alicia.greene@morgan.edu,McKeldin Center 214,Wed 1:00 PM - 3:00 PM,business analysis enterprise systems data analytics
+Dr. Tasha Freeman,Associate Professor,Biology,tasha.freeman@morgan.edu,Key Hall 204,Mon 11:00 AM - 1:00 PM,cell biology genetics research advising pre-health mentoring
+Dr. Marcus Hill,Associate Professor,Psychology,marcus.hill@morgan.edu,Rawlings Hall 118,Fri 10:00 AM - 12:00 PM,counseling psychology student wellness research methods
+Dr. Nia Roberts,Assistant Professor,Business Administration,nia.roberts@morgan.edu,Earl G Graves School 309,Thu 2:00 PM - 4:00 PM,marketing management entrepreneurship internships
+Dr. Samuel Carter,Professor,Electrical and Computer Engineering,samuel.carter@morgan.edu,Cumming Hall 229,Wed 9:00 AM - 11:00 AM,embedded systems circuits communications senior design

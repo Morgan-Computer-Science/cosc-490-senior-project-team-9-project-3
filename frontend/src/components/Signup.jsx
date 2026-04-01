@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { registerUser } from "../api";
+import { majorOptions } from "../majors";
 
 const Signup = ({ setView }) => {
   const [formData, setFormData] = useState({
@@ -42,7 +43,7 @@ const Signup = ({ setView }) => {
           <p className="eyebrow">Student Onboarding</p>
           <h1>Build a profile the advisor can actually use.</h1>
           <p className="auth-subtext">
-            Your major and class year help the chat give more grounded guidance.
+            Your major and class year help the advisor retrieve the right Morgan State guidance.
           </p>
         </div>
 
@@ -90,9 +91,11 @@ const Signup = ({ setView }) => {
               value={formData.major}
               onChange={(event) => updateField("major", event.target.value)}
             >
-              <option value="Computer Science">Computer Science</option>
-              <option value="Information Systems">Information Systems</option>
-              <option value="Cloud Computing">Cloud Computing</option>
+              {majorOptions.map((major) => (
+                <option key={major} value={major}>
+                  {major}
+                </option>
+              ))}
             </select>
           </label>
 

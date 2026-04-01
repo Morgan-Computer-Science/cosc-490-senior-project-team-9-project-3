@@ -1,63 +1,15 @@
-import re
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from . import models, schemas
 from .ai_client import generate_ai_reply
 from .auth import get_current_user
 from .db import get_db
+from .rag import RetrievedDocument, format_retrieved_context, retrieve_relevant_documents
 
 router = APIRouter(prefix="/chat", tags=["chat"])
-
-
-def _build_course_context(db: Session, question: str, limit: int = 8) -> str:
-    terms = re.findall(r"[A-Za-z0-9]+", question)
-    if not terms:
-        return ""
-
-    filters = []
-    for term in terms:
-        like = f"%{term}%"
-        filters.extend(
-            [
-                models.Course.code.ilike(like),
-                models.Course.title.ilike(like),
-                models.Course.description.ilike(like),
-                models.Course.department.ilike(like),
-                models.Course.instructor.ilike(like),
-            ]
-        )
-
-    courses = db.query(models.Course).filter(or_(*filters)).limit(limit).all()
-    if not courses:
-        return ""
-
-    lines = ["Relevant Morgan State course context:"]
-    for course in courses:
-        details = []
-        if course.credits is not None:
-            details.append(f"{course.credits} credits")
-        if course.department:
-            details.append(f"Department: {course.department}")
-        if course.level:
-            details.append(f"Level: {course.level}")
-        if course.semester_offered:
-            details.append(f"Offered: {course.semester_offered}")
-        if course.instructor:
-            details.append(f"Instructor: {course.instructor}")
-
-        header = f"- {course.code}: {course.title}"
-        if details:
-            header += f" ({', '.join(details)})"
-
-        lines.append(header)
-        if course.description:
-            lines.append(f"  Description: {course.description}")
-
-    return "\n".join(lines)
 
 
 def _build_student_context(user: models.User) -> str:
@@ -68,27 +20,47 @@ def _build_student_context(user: models.User) -> str:
     return "\n".join(pieces)
 
 
-def _fallback_advising_reply(user: models.User, question: str, course_context: str) -> str:
+def _fallback_advising_reply(
+    user: models.User,
+    question: str,
+    documents: List[RetrievedDocument],
+) -> str:
+    relevant = documents[:3]
     lines = [
         f"I could not reach the live AI service, but I can still help with grounded Morgan State info for a {user.year or 'current'} {user.major or 'student'}.",
     ]
 
-    if course_context:
-        context_lines = [line.strip() for line in course_context.splitlines() if line.strip()]
-        relevant = [line for line in context_lines if line.startswith("- ")][:3]
-        if relevant:
-            lines.append("Relevant catalog matches:")
-            lines.extend(line.replace("- ", "- ", 1) for line in relevant)
+    if relevant:
+        lines.append("Most relevant retrieved information:")
+        for doc in relevant:
+            lines.append(f"- {doc.title}")
+            lines.append(f"  {doc.content}")
+            if doc.contact:
+                lines.append(f"  Contact: {doc.contact}")
 
     lowered = question.lower()
-    if "after" in lowered or "next" in lowered or "plan" in lowered:
+    if not documents:
         lines.append(
-            "For planning questions, compare the matched course levels, semester offerings, and any known prerequisites before locking a schedule."
+            "I do not yet have enough Morgan State source material for that question, so I would not want to guess."
         )
 
-    lines.append(
-        "If you want a final degree-plan decision, check with the Computer Science department or your assigned advisor."
-    )
+    if "after" in lowered or "next" in lowered or "plan" in lowered:
+        lines.append(
+            "For planning questions, compare required courses, course levels, semester offerings, and department guidance before locking a schedule."
+        )
+
+    if any(token in lowered for token in ["stress", "anxious", "overwhelmed", "mental", "counseling"]):
+        lines.append(
+            "If the concern is also personal or wellness-related, the Counseling Center or University Advising may be a better immediate support contact."
+        )
+
+    contacts = [doc.contact for doc in documents if doc.contact]
+    if contacts:
+        lines.append(f"Best next contact from the retrieved context: {contacts[0]}")
+    else:
+        lines.append(
+            "If you need a final policy or degree decision, check with University Advising or the department that owns your major."
+        )
     return "\n".join(lines)
 
 
@@ -200,15 +172,20 @@ def send_message(
         for message in history[-12:]
     ]
 
-    course_context = _build_course_context(db, clean_content)
+    retrieved_docs = retrieve_relevant_documents(
+        clean_content,
+        user_major=current_user.major,
+        top_k=6,
+    )
+    retrieved_context = format_retrieved_context(retrieved_docs)
     student_context = _build_student_context(current_user)
-    extra_context = "\n\n".join(part for part in [student_context, course_context] if part)
+    extra_context = "\n\n".join(part for part in [student_context, retrieved_context] if part)
 
     try:
         ai_text = generate_ai_reply(history=history_payload, extra_context=extra_context)
     except Exception as exc:
         print("AI error in generate_ai_reply:", repr(exc))
-        ai_text = _fallback_advising_reply(current_user, clean_content, course_context)
+        ai_text = _fallback_advising_reply(current_user, clean_content, retrieved_docs)
 
     ai_msg = models.ChatMessage(
         session_id=session.id,

@@ -45,6 +45,20 @@ const Signup = ({ setView }) => {
           <p className="auth-subtext">
             Your major and class year help the advisor retrieve the right Morgan State guidance.
           </p>
+          <div className="auth-feature-stack">
+            <div className="auth-feature-card">
+              <span>Profile grounding</span>
+              <strong>Major and year shape advising context from the first conversation.</strong>
+            </div>
+            <div className="auth-feature-card">
+              <span>Progress engine</span>
+              <strong>Prerequisite-aware recommendations are based on what you have already completed.</strong>
+            </div>
+            <div className="auth-feature-card">
+              <span>Connector ready</span>
+              <strong>Transcript, Canvas-style, and WebSIS-style imports already fit the workflow.</strong>
+            </div>
+          </div>
         </div>
 
         <form className="auth-form" onSubmit={handleSignup}>

@@ -23,9 +23,24 @@ const levels = [
 ];
 
 const tabs = [
-  { id: "advisor", label: "Advisor" },
-  { id: "catalog", label: "Catalog" },
-  { id: "profile", label: "Profile" },
+  {
+    id: "advisor",
+    label: "Advisor",
+    icon: "AI",
+    description: "Multimodal planning and support guidance",
+  },
+  {
+    id: "catalog",
+    label: "Catalog",
+    icon: "CT",
+    description: "Explore courses with live filters",
+  },
+  {
+    id: "profile",
+    label: "Profile",
+    icon: "PF",
+    description: "Ground the advisor in your academic path",
+  },
 ];
 
 function App() {
@@ -42,6 +57,9 @@ function App() {
   const [degreeProgress, setDegreeProgress] = useState(null);
   const [error, setError] = useState("");
   const deferredSearch = useDeferredValue(searchText);
+  const nextCoursePreview = degreeProgress?.recommended_next_courses?.slice(0, 3) ?? [];
+  const blockedPreview = degreeProgress?.blocked_courses?.slice(0, 3) ?? [];
+  const activeTabMeta = tabs.find((tab) => tab.id === activeTab);
 
   useEffect(() => {
     if (!token) {
@@ -173,12 +191,23 @@ function App() {
   return (
     <div className="app-shell">
       <header className="topbar">
-        <div>
+        <div className="brand-block">
           <p className="eyebrow">COSC 490 Senior Project</p>
           <h1>Morgan State AI Faculty Advisor</h1>
+          <p className="topbar-subtext">
+            A university-wide advising workspace shaped around planning, retrieval, and multimodal support.
+          </p>
         </div>
 
         <div className="topbar-actions">
+          <div className="metric-chip">
+            <span className="metric-label">Progress</span>
+            <strong>{degreeProgress?.completion_percent ?? 0}%</strong>
+          </div>
+          <div className="metric-chip">
+            <span className="metric-label">Ready next</span>
+            <strong>{nextCoursePreview.length || 0}</strong>
+          </div>
           <div className="student-chip">
             <strong>{user?.full_name || "Student"}</strong>
             <span>{user?.major || "Major not set"}</span>
@@ -191,8 +220,12 @@ function App() {
 
       <main className="workspace">
         <aside className="sidebar">
-          <div className="sidebar-card">
-            <p className="eyebrow">Navigation</p>
+          <div className="sidebar-card nav-card">
+            <p className="eyebrow">Workspace</p>
+            <div className="sidebar-title-row">
+              <h3>Navigate the advisor</h3>
+              <span className="sidebar-badge">{activeTabMeta?.icon}</span>
+            </div>
             {tabs.map((tab) => (
               <button
                 key={tab.id}
@@ -200,13 +233,20 @@ function App() {
                 className={`nav-button ${activeTab === tab.id ? "active" : ""}`}
                 onClick={() => setActiveTab(tab.id)}
               >
-                {tab.label}
+                <span className="nav-icon">{tab.icon}</span>
+                <span className="nav-copy">
+                  <strong>{tab.label}</strong>
+                  <small>{tab.description}</small>
+                </span>
               </button>
             ))}
           </div>
 
           <div className="sidebar-card">
-            <p className="eyebrow">Quick filters</p>
+            <p className="eyebrow">Catalog Lens</p>
+            <div className="sidebar-title-row">
+              <h3>Focus the data</h3>
+            </div>
             <label className="field-label">
               Search catalog
               <input
@@ -232,15 +272,31 @@ function App() {
           </div>
 
           <div className="sidebar-card">
-            <p className="eyebrow">Status</p>
+            <p className="eyebrow">System State</p>
+            <div className="sidebar-title-row">
+              <h3>Current workspace</h3>
+            </div>
             <p className="status-copy">
-              {loadingProfile ? "Loading profile..." : `${courses.length} courses ready`}
+              {loadingProfile ? "Loading profile..." : `${courses.length} courses ready for retrieval and planning`}
             </p>
             {error ? <p className="form-error">{error}</p> : null}
           </div>
         </aside>
 
         <section className="content-area">
+          <div className="content-hero">
+            <div>
+              <p className="eyebrow">Active Surface</p>
+              <h2>{activeTabMeta?.label || "Advisor"}</h2>
+              <p className="panel-subtext">{activeTabMeta?.description}</p>
+            </div>
+            <div className="hero-badges">
+              <span className="hero-chip">Morgan grounded</span>
+              <span className="hero-chip">RAG-enabled</span>
+              <span className="hero-chip">Multimodal</span>
+            </div>
+          </div>
+
           {activeTab === "advisor" ? <Chatbot token={token} user={user} /> : null}
 
           {activeTab === "catalog" ? (
@@ -293,6 +349,46 @@ function App() {
             />
           ) : null}
         </section>
+
+        <aside className="context-rail">
+          <div className="sidebar-card rail-card">
+            <p className="eyebrow">Advisor Snapshot</p>
+            <h3>{user?.major || "Set your major"}</h3>
+            <p className="panel-subtext">
+              {degreeProgress?.notes || "Your degree notes and major-specific guidance will appear here."}
+            </p>
+          </div>
+
+          <div className="sidebar-card rail-card">
+            <p className="eyebrow">Ready Next</p>
+            {nextCoursePreview.length ? (
+              <div className="rail-chip-list">
+                {nextCoursePreview.map((courseCode) => (
+                  <span key={`rail-next-${courseCode}`} className="course-chip suggested-chip">
+                    {courseCode}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="panel-subtext">No next-course recommendations yet.</p>
+            )}
+          </div>
+
+          <div className="sidebar-card rail-card">
+            <p className="eyebrow">Watchouts</p>
+            {blockedPreview.length ? (
+              <div className="rail-chip-list">
+                {blockedPreview.map((courseCode) => (
+                  <span key={`rail-blocked-${courseCode}`} className="course-chip blocked-chip">
+                    {courseCode}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="panel-subtext">No blocked prerequisite chain is currently highlighted.</p>
+            )}
+          </div>
+        </aside>
       </main>
     </div>
   );

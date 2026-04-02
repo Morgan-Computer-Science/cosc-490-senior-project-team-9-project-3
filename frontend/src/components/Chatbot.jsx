@@ -32,6 +32,21 @@ const formatInsightLabel = (value) =>
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 
+const formatMessageTime = (value) => {
+  if (!value) {
+    return "Just now";
+  }
+
+  try {
+    return new Date(value).toLocaleTimeString([], {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  } catch {
+    return "Just now";
+  }
+};
+
 const Chatbot = ({ token, user }) => {
   const [sessions, setSessions] = useState([]);
   const [activeSessionId, setActiveSessionId] = useState(null);
@@ -310,13 +325,23 @@ const Chatbot = ({ token, user }) => {
             You can also upload screenshots, PDFs, or text files for multimodal advising.
           </p>
         </div>
-        <button type="button" className="secondary-button" onClick={handleCreateSession}>
-          New chat
-        </button>
+        <div className="chat-header-actions">
+          <div className="chat-status-pill">
+            <span>Mode</span>
+            <strong>{selectedAttachment ? "Multimodal" : "Advising chat"}</strong>
+          </div>
+          <button type="button" className="secondary-button" onClick={handleCreateSession}>
+            New chat
+          </button>
+        </div>
       </div>
 
       <div className="chat-layout">
         <aside className="session-list">
+          <div className="session-list-header">
+            <p className="eyebrow">Sessions</p>
+            <span>{sessions.length} active</span>
+          </div>
           {sessions.map((session) => (
             <div
               key={session.id}
@@ -339,6 +364,13 @@ const Chatbot = ({ token, user }) => {
         </aside>
 
         <div className="chat-column">
+          <div className="chat-surface-intro">
+            <div className="hero-badges">
+              <span className="hero-chip">Context aware</span>
+              <span className="hero-chip">Support aware</span>
+              <span className="hero-chip">Voice + file input</span>
+            </div>
+          </div>
           <div className="starter-row">
             {starterPrompts.map((prompt) => (
               <button key={prompt} type="button" className="starter-pill" onClick={() => setInput(prompt)}>
@@ -360,9 +392,12 @@ const Chatbot = ({ token, user }) => {
                 key={message.id}
                 className={`message-bubble ${message.sender === "assistant" ? "assistant" : "user"}`}
               >
-                <span className="message-sender">
-                  {message.sender === "assistant" ? "Advisor" : "You"}
-                </span>
+                <div className="message-meta">
+                  <span className="message-sender">
+                    {message.sender === "assistant" ? "Advisor" : "You"}
+                  </span>
+                  <span className="message-time">{formatMessageTime(message.created_at)}</span>
+                </div>
                 <p>{formatMessageContent(message.content)}</p>
                 {message.sender === "assistant" && message.advisor_insights ? (
                   <div className="advisor-insights">
@@ -455,6 +490,10 @@ const Chatbot = ({ token, user }) => {
               {listening ? "Stop mic" : "Use mic"}
             </button>
           </form>
+          <div className="composer-footnote">
+            <span>Tip</span>
+            <p>Use screenshots for schedule reviews, PDFs for audits, or voice input for quick advising questions.</p>
+          </div>
           {selectedAttachment ? (
             <p className="attachment-pill">
               Ready to send: {selectedAttachment.name}. Images and PDFs now go through multimodal analysis.

@@ -31,9 +31,23 @@ const Login = ({ setToken, setView }) => {
           <p className="eyebrow">Morgan State</p>
           <h1>Academic advising that already knows your catalog.</h1>
           <p className="auth-subtext">
-            Sign in to chat with the advisor, browse COSC courses, and keep your
-            profile in sync.
+            Sign in to enter a planning workspace shaped around Morgan State data,
+            multimodal chat, and degree progress guidance.
           </p>
+          <div className="auth-feature-stack">
+            <div className="auth-feature-card">
+              <span>Advisor</span>
+              <strong>Grounded replies across courses, departments, and support resources.</strong>
+            </div>
+            <div className="auth-feature-card">
+              <span>Planning</span>
+              <strong>Track completed courses, import records, and see what is ready next.</strong>
+            </div>
+            <div className="auth-feature-card">
+              <span>Multimodal</span>
+              <strong>Use voice, screenshots, PDFs, and text files inside the same advising flow.</strong>
+            </div>
+          </div>
         </div>
 
         <form className="auth-form" onSubmit={handleSubmit}>

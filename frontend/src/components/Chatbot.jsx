@@ -25,13 +25,6 @@ const formatMessageContent = (content) =>
     .replace(/`/g, "")
     .trim();
 
-const formatInsightLabel = (value) =>
-  (value || "")
-    .split("_")
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-
 const formatMessageTime = (value) => {
   if (!value) {
     return "Just now";
@@ -319,7 +312,6 @@ const Chatbot = ({ token, user }) => {
           <h2>{activeTitle || "Academic advisor chat"}</h2>
           <p className="panel-subtext">
             Built for {user?.major || "Morgan State students"} and grounded in Morgan State advising data.
-            New advisor replies also show planning and support insights.
           </p>
           <p className="panel-subtext">
             You can also upload screenshots, PDFs, or text files for multimodal advising.
@@ -399,47 +391,6 @@ const Chatbot = ({ token, user }) => {
                   <span className="message-time">{formatMessageTime(message.created_at)}</span>
                 </div>
                 <p>{formatMessageContent(message.content)}</p>
-                {message.sender === "assistant" && message.advisor_insights ? (
-                  <div className="advisor-insights">
-                    <div className="insight-row">
-                      <span className="insight-chip">
-                        Intent: {formatInsightLabel(message.advisor_insights.intent)}
-                      </span>
-                      <span className="insight-chip">
-                        Tone: {formatInsightLabel(message.advisor_insights.emotional_tone)}
-                      </span>
-                      {message.advisor_insights.needs_support ? (
-                        <span className="insight-chip support-chip">Support follow-up suggested</span>
-                      ) : null}
-                    </div>
-                    {message.advisor_insights.recommended_next_courses?.length ? (
-                      <div className="insight-row">
-                        {message.advisor_insights.recommended_next_courses.map((courseCode) => (
-                          <span key={`next-${message.id}-${courseCode}`} className="insight-chip next-chip">
-                            Next: {courseCode}
-                          </span>
-                        ))}
-                      </div>
-                    ) : null}
-                    {message.advisor_insights.blocked_courses?.length ? (
-                      <div className="insight-row">
-                        {message.advisor_insights.blocked_courses.map((courseCode) => (
-                          <span key={`blocked-${message.id}-${courseCode}`} className="insight-chip blocked-chip">
-                            Blocked: {courseCode}
-                          </span>
-                        ))}
-                      </div>
-                    ) : null}
-                    {message.advisor_insights.suggested_contacts?.length ? (
-                      <p className="insight-text">
-                        Best contacts: {message.advisor_insights.suggested_contacts.join(", ")}
-                      </p>
-                    ) : null}
-                    {message.advisor_insights.attachment_summary ? (
-                      <p className="insight-text">{message.advisor_insights.attachment_summary}</p>
-                    ) : null}
-                  </div>
-                ) : null}
                 {message.sender === "assistant" && speechSupported ? (
                   <button
                     type="button"

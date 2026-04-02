@@ -643,8 +643,7 @@ textarea:focus {
   color: var(--text-soft);
 }
 
-.blocked-chip,
-.support-chip {
+.blocked-chip {
   background: rgba(255, 139, 127, 0.12);
   color: #ffb2a7;
 }
@@ -833,34 +832,6 @@ textarea:focus {
 .message-time {
   color: var(--text-muted);
   font-size: 0.8rem;
-}
-
-.advisor-insights {
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.insight-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.insight-chip {
-  padding: 7px 11px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-soft);
-  font-size: 0.8rem;
-}
-
-.insight-text {
-  margin: 10px 0 0;
-  color: var(--text-soft);
-  font-size: 0.92rem;
-  line-height: 1.55;
 }
 
 .listen-button {

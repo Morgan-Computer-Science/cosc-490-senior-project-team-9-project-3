@@ -8,6 +8,7 @@ const ProfilePanel = ({
   degreeProgress,
   onSave,
   onSaveCompletedCourses,
+  onImportCompletedCourses,
   saving,
 }) => {
   const [formData, setFormData] = useState({
@@ -18,6 +19,11 @@ const ProfilePanel = ({
   const [completedCourseCodes, setCompletedCourseCodes] = useState([]);
   const [courseSearch, setCourseSearch] = useState("");
   const [bulkCourseInput, setBulkCourseInput] = useState("");
+  const [importText, setImportText] = useState("");
+  const [importFile, setImportFile] = useState(null);
+  const [importSource, setImportSource] = useState("transcript_text");
+  const [importPreview, setImportPreview] = useState(null);
+  const [stagedImportCodes, setStagedImportCodes] = useState([]);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
@@ -34,6 +40,8 @@ const ProfilePanel = ({
     setCompletedCourseCodes(
       (user.completed_courses ?? []).map((course) => course.course_code),
     );
+    setImportPreview(null);
+    setStagedImportCodes([]);
   }, [user]);
 
   const filteredCourses = useMemo(() => {
@@ -105,6 +113,45 @@ const ProfilePanel = ({
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to update completed courses.");
     }
+  };
+
+  const handleImportPreview = async () => {
+    setMessage("");
+    setError("");
+
+    try {
+      const preview = await onImportCompletedCourses(importText, importFile, importSource);
+      setImportPreview(preview);
+      setStagedImportCodes(preview.matched_course_codes);
+      if (preview.matched_course_codes.length) {
+        setMessage(`Preview ready: ${preview.matched_count} recognized course code(s) can be applied.`);
+      } else {
+        setMessage("No recognized Morgan course codes were found in that import.");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to import completed courses.");
+    }
+  };
+
+  const handleApplyImport = () => {
+    if (!stagedImportCodes.length) {
+      return;
+    }
+
+    setCompletedCourseCodes((current) =>
+      Array.from(new Set([...current, ...stagedImportCodes])).sort(),
+    );
+    setStagedImportCodes([]);
+    setMessage(`Applied ${importPreview?.matched_count ?? 0} recognized course code(s) to your draft list.`);
+  };
+
+  const handleClearImport = () => {
+    setImportPreview(null);
+    setStagedImportCodes([]);
+    setImportText("");
+    setImportFile(null);
+    setMessage("Import preview cleared.");
+    setError("");
   };
 
   return (
@@ -246,6 +293,84 @@ const ProfilePanel = ({
               Add codes
             </button>
           </div>
+        </label>
+
+        <label className="field-label">
+          Import from transcript text or file
+          <div className="wizard-steps">
+            <span className="wizard-step active">1. Choose source</span>
+            <span className={`wizard-step ${importPreview ? "active" : ""}`}>2. Preview matches</span>
+            <span className={`wizard-step ${stagedImportCodes.length ? "active" : ""}`}>3. Apply to draft</span>
+            <span className="wizard-step">4. Save completed courses</span>
+          </div>
+          <select
+            value={importSource}
+            onChange={(event) => setImportSource(event.target.value)}
+          >
+            <option value="transcript_text">Transcript text</option>
+            <option value="manual">Manual course list</option>
+            <option value="canvas_export">Canvas-style export</option>
+            <option value="websis_export">WebSIS-style export</option>
+          </select>
+          <textarea
+            value={importText}
+            onChange={(event) => setImportText(event.target.value)}
+            placeholder="Paste transcript text, exported course history, or degree audit notes here..."
+            rows={4}
+          />
+          <p className="panel-subtext">
+            This import preview supports manual text today and leaves a clean lane for future Canvas or WebSIS connectors.
+          </p>
+          <div className="bulk-entry-row import-row">
+            <label className="upload-button inline-upload-button">
+              Choose file
+              <input
+                type="file"
+                accept=".pdf,.txt,.md,.csv,.json"
+                onChange={(event) => setImportFile(event.target.files?.[0] || null)}
+              />
+            </label>
+            <button type="button" className="secondary-button" onClick={handleImportPreview}>
+              Preview import
+            </button>
+          </div>
+          {importFile ? (
+            <p className="panel-subtext">Selected file: {importFile.name}</p>
+          ) : null}
+          {importPreview ? (
+            <div className="import-preview">
+              <p className="panel-subtext">
+                {importPreview.source_summary} | {importPreview.matched_count} matched
+              </p>
+              {importPreview.matched_course_codes.length ? (
+                <div className="remaining-list">
+                  {importPreview.matched_course_codes.map((courseCode) => (
+                    <span key={`import-${courseCode}`} className="course-chip suggested-chip">
+                      Match: {courseCode}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+              {importPreview.unknown_course_codes.length ? (
+                <p className="panel-subtext">
+                  Unmatched codes: {importPreview.unknown_course_codes.join(", ")}
+                </p>
+              ) : null}
+              <div className="bulk-entry-row import-actions">
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={handleApplyImport}
+                  disabled={!stagedImportCodes.length}
+                >
+                  Apply matches
+                </button>
+                <button type="button" className="secondary-button" onClick={handleClearImport}>
+                  Clear preview
+                </button>
+              </div>
+            </div>
+          ) : null}
         </label>
 
         <label className="field-label">

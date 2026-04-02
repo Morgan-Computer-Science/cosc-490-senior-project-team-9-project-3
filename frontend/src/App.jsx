@@ -5,6 +5,7 @@ import {
   fetchCourses,
   fetchDegreeProgress,
   fetchCurrentUser,
+  importCompletedCourses,
   updateCompletedCourses,
   updateCurrentUser,
 } from "./api";
@@ -153,6 +154,14 @@ function App() {
     }
   };
 
+  const handleImportCompletedCourses = async (sourceText, attachment, importSource) => {
+    if (!token) {
+      throw new Error("You are signed out.");
+    }
+
+    return importCompletedCourses(token, sourceText, attachment, importSource);
+  };
+
   if (!token) {
     return authView === "login" ? (
       <Login setToken={setToken} setView={setAuthView} />
@@ -279,6 +288,7 @@ function App() {
               degreeProgress={degreeProgress}
               onSave={handleSaveProfile}
               onSaveCompletedCourses={handleSaveCompletedCourses}
+              onImportCompletedCourses={handleImportCompletedCourses}
               saving={savingProfile}
             />
           ) : null}

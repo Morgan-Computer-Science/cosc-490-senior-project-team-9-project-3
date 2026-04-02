@@ -42,6 +42,11 @@ The project uses a multi-stage advising pipeline instead of a single raw chatbot
 - Voice input through browser speech recognition
 - Spoken replies through browser text-to-speech
 
+7. Student data ingestion layer
+- Manual transcript-text import
+- File-assisted import preview
+- Future-ready connector path for Canvas and WebSIS
+
 ## Knowledge sources
 
 The retrieval layer currently uses CSV-backed data in `backend/data/`:
@@ -95,6 +100,7 @@ Even though not every stage is a separate hosted ML service, the system clearly 
 - Stronger degree-planning support than a generic chatbot
 - Better assignment alignment through audio input/output and support-aware behavior
 - University-wide direction rather than Computer Science-only scope
+- Clear connector path for future Canvas or SIS integrations
 
 ## Current limitations
 

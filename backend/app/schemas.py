@@ -38,6 +38,14 @@ class CompletedCoursesUpdate(BaseModel):
     course_codes: list[str] = Field(default_factory=list)
 
 
+class CompletedCoursesImportPreview(BaseModel):
+    import_source: str = "manual"
+    matched_course_codes: list[str] = Field(default_factory=list)
+    unknown_course_codes: list[str] = Field(default_factory=list)
+    matched_count: int = 0
+    source_summary: Optional[str] = None
+
+
 class DegreeProgressSummary(BaseModel):
     major: Optional[str] = None
     required_courses: list[str] = Field(default_factory=list)

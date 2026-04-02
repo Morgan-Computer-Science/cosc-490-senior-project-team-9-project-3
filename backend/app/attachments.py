@@ -23,6 +23,7 @@ class AttachmentContext:
     content_type: str
     context_text: str
     summary: str
+    extracted_text: Optional[str] = None
 
 
 def _normalize_text(text: str) -> str:
@@ -74,6 +75,7 @@ async def extract_attachment_context(attachment: Optional[UploadFile]) -> Option
                     f"Student uploaded a PDF named {filename}. "
                     f"Extracted document text excerpt: {excerpt}"
                 ),
+                extracted_text=extracted_text,
             )
         return AttachmentContext(
             filename=filename,
@@ -97,6 +99,7 @@ async def extract_attachment_context(attachment: Optional[UploadFile]) -> Option
                 f"Student uploaded a text-based document named {filename}. "
                 f"Extracted content excerpt: {excerpt or 'No readable text found.'}"
             ),
+            extracted_text=decoded_text,
         )
 
     if content_type.startswith(IMAGE_MIME_PREFIXES):

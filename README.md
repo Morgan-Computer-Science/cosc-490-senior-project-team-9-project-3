@@ -50,6 +50,7 @@ Frontend runs at `http://127.0.0.1:5173` and backend runs at `http://127.0.0.1:8
 
 - [System Architecture](docs/SYSTEM_ARCHITECTURE.md)
 - [Demo Walkthrough](docs/DEMO_WALKTHROUGH.md)
+- [Data Connectors Plan](docs/DATA_CONNECTORS.md)
 
 ## Current focus
 

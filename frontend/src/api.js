@@ -74,6 +74,28 @@ export async function updateCompletedCourses(token, courseCodes) {
   return parseResponse(response, "Failed to update completed courses.");
 }
 
+export async function importCompletedCourses(
+  token,
+  sourceText = "",
+  attachment = null,
+  importSource = "manual",
+) {
+  const formData = new FormData();
+  formData.append("import_source", importSource);
+  formData.append("source_text", sourceText);
+  if (attachment) {
+    formData.append("attachment", attachment);
+  }
+
+  const response = await fetch(`${API_BASE_URL}/auth/me/completed-courses/import`, {
+    method: "POST",
+    headers: authHeaders(token),
+    body: formData,
+  });
+
+  return parseResponse(response, "Failed to import completed courses.");
+}
+
 export async function fetchDegreeProgress(token) {
   const response = await fetch(`${API_BASE_URL}/auth/me/degree-progress`, {
     headers: authHeaders(token),

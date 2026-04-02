@@ -1,12 +1,14 @@
 from datetime import timedelta
+import re
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from . import models, schemas, security
+from .attachments import extract_attachment_context
 from .db import get_db
-from .rag import get_degree_progress
+from .rag import get_degree_progress, load_course_rows
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -94,6 +96,22 @@ def _serialize_user(user: models.User) -> schemas.UserRead:
     return schemas.UserRead.model_validate(user)
 
 
+def _extract_course_code_candidates(text: str) -> list[str]:
+    candidates = re.findall(r"\b[A-Z]{2,5}[-\s]?\d{3}\b", text.upper())
+    normalized = []
+    for candidate in candidates:
+        code = re.sub(r"[^A-Z0-9]", "", candidate)
+        if code and code not in normalized:
+            normalized.append(code)
+    return normalized
+
+
+def _normalize_import_source(import_source: str) -> str:
+    allowed = {"manual", "transcript_text", "canvas_export", "websis_export"}
+    normalized = (import_source or "manual").strip().lower()
+    return normalized if normalized in allowed else "manual"
+
+
 @router.get("/me", response_model=schemas.UserRead)
 def read_current_user(current_user: models.User = Depends(get_current_user)):
     return _serialize_user(current_user)
@@ -143,6 +161,60 @@ def update_completed_courses(
     db.commit()
     db.refresh(current_user)
     return current_user.completed_courses
+
+
+@router.post("/me/completed-courses/import", response_model=schemas.CompletedCoursesImportPreview)
+async def import_completed_courses_preview(
+    import_source: str = Form(default="manual"),
+    source_text: str = Form(default=""),
+    attachment: UploadFile | None = File(default=None),
+    current_user: models.User = Depends(get_current_user),
+):
+    normalized_import_source = _normalize_import_source(import_source)
+    attachment_context = await extract_attachment_context(attachment) if attachment else None
+    import_text = "\n".join(
+        part
+        for part in [
+            source_text.strip(),
+            (attachment_context.extracted_text or "").strip() if attachment_context else "",
+        ]
+        if part
+    ).strip()
+
+    if not import_text:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Provide pasted text or upload a file to import completed courses.",
+        )
+
+    known_codes = {
+        row.get("code", "").strip().upper()
+        for row in load_course_rows()
+        if row.get("code")
+    }
+    candidates = _extract_course_code_candidates(import_text)
+    matched = sorted(code for code in candidates if code in known_codes)
+    unknown = sorted(code for code in candidates if code not in known_codes)
+
+    source_labels = {
+        "manual": "Manual course import",
+        "transcript_text": "Transcript text import",
+        "canvas_export": "Canvas-style export import",
+        "websis_export": "WebSIS-style export import",
+    }
+    source_summary = source_labels[normalized_import_source]
+    if attachment_context:
+        source_summary = f"{source_labels[normalized_import_source]} from {attachment_context.filename}"
+    elif current_user.email:
+        source_summary = f"{source_labels[normalized_import_source]} for {current_user.email}"
+
+    return schemas.CompletedCoursesImportPreview(
+        import_source=normalized_import_source,
+        matched_course_codes=matched,
+        unknown_course_codes=unknown,
+        matched_count=len(matched),
+        source_summary=source_summary,
+    )
 
 
 @router.get("/me/degree-progress", response_model=schemas.DegreeProgressSummary)

@@ -106,6 +106,19 @@ class ChatMessageOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class AdvisorInsights(BaseModel):
+    intent: str
+    emotional_tone: str
+    needs_support: bool = False
+    matched_signals: list[str] = Field(default_factory=list)
+    recommended_next_courses: list[str] = Field(default_factory=list)
+    blocked_courses: list[str] = Field(default_factory=list)
+    suggested_contacts: list[str] = Field(default_factory=list)
+    retrieved_sources: list[str] = Field(default_factory=list)
+    attachment_summary: Optional[str] = None
+
+
 class ChatSendResponse(BaseModel):
     user_message: ChatMessageOut
     ai_message: ChatMessageOut
+    advisor_insights: AdvisorInsights

@@ -15,6 +15,7 @@ idna==3.11
 joblib==1.5.3
 nltk==3.9.3
 passlib==1.7.4
+pypdf==6.9.2
 pydantic==2.12.5
 pydantic_core==2.41.5
 PyJWT==2.11.0

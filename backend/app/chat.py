@@ -1,9 +1,10 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
 from . import models, schemas
+from .attachments import extract_attachment_context
 from .ai_client import generate_ai_reply
 from .auth import get_current_user
 from .db import get_db
@@ -56,6 +57,38 @@ def _build_degree_progress_context(user: models.User) -> str:
     if summary["advising_tips"]:
         lines.append(f"- Advising Tips: {summary['advising_tips']}")
     return "\n".join(lines)
+
+
+def _build_advisor_insights(
+    user: models.User,
+    student_state: dict[str, object],
+    retrieved_docs: List[RetrievedDocument],
+    attachment_summary: str | None = None,
+) -> schemas.AdvisorInsights:
+    degree_progress = get_degree_progress(
+        user.major,
+        [course.course_code for course in user.completed_courses],
+    )
+    contact_candidates: list[str] = []
+    source_titles: list[str] = []
+    for doc in retrieved_docs[:4]:
+        source_titles.append(doc.title)
+        if doc.contact and doc.contact not in contact_candidates:
+            contact_candidates.append(doc.contact)
+
+    return schemas.AdvisorInsights(
+        intent=str(student_state["intent"]),
+        emotional_tone=str(student_state["emotional_tone"]),
+        needs_support=bool(student_state["needs_support"]),
+        matched_signals=[str(signal) for signal in student_state.get("matched_signals", [])],
+        recommended_next_courses=[
+            str(code) for code in degree_progress.get("recommended_next_courses", [])[:4]
+        ],
+        blocked_courses=[str(code) for code in degree_progress.get("blocked_courses", [])[:4]],
+        suggested_contacts=contact_candidates[:3],
+        retrieved_sources=source_titles,
+        attachment_summary=attachment_summary,
+    )
 
 
 def _build_student_state_context(question: str, user: models.User) -> tuple[str, dict[str, object]]:
@@ -193,19 +226,23 @@ def list_messages(
 
 
 @router.post("/sessions/{session_id}/messages", response_model=schemas.ChatSendResponse)
-def send_message(
+async def send_message(
     session_id: int,
-    data: schemas.ChatMessageCreate,
+    content: str = Form(...),
+    attachment: UploadFile | None = File(default=None),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
     session = _get_user_session(db, current_user.id, session_id)
-    clean_content = data.content.strip()
+    clean_content = content.strip()
+    attachment_context = None
+    if attachment:
+        attachment_context = await extract_attachment_context(attachment)
 
     user_msg = models.ChatMessage(
         session_id=session.id,
         sender="user",
-        content=clean_content,
+        content=clean_content if not attachment_context else f"{clean_content}\n\nAttachment: {attachment_context.filename}",
     )
     db.add(user_msg)
     db.flush()
@@ -237,9 +274,21 @@ def send_message(
     student_context = _build_student_context(current_user)
     degree_progress_context = _build_degree_progress_context(current_user)
     student_state_context, student_state = _build_student_state_context(clean_content, current_user)
+    advisor_insights = _build_advisor_insights(
+        current_user,
+        student_state,
+        retrieved_docs,
+        attachment_context.summary if attachment_context else None,
+    )
     extra_context = "\n\n".join(
         part
-        for part in [student_context, degree_progress_context, student_state_context, retrieved_context]
+        for part in [
+            student_context,
+            degree_progress_context,
+            student_state_context,
+            attachment_context.context_text if attachment_context else "",
+            retrieved_context,
+        ]
         if part
     )
 
@@ -259,4 +308,8 @@ def send_message(
     db.refresh(user_msg)
     db.refresh(ai_msg)
 
-    return schemas.ChatSendResponse(user_message=user_msg, ai_message=ai_msg)
+    return schemas.ChatSendResponse(
+        user_message=user_msg,
+        ai_message=ai_msg,
+        advisor_insights=advisor_insights,
+    )

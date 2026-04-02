@@ -1,78 +1,56 @@
-Website Plan Document
+# Morgan State AI Faculty Advisor
 
-AI Advisor
-1) Core Product Summary
-The AI Faculty is an innovative web application that provides personalized
-academic assistance to students at University. Powered by Gemini’s technology
-and integrated with university-specific data, this chat agent helps students navigate their
-academic journey with ease.
+Morgan State AI Faculty Advisor is a full-stack student advising system built for a university-wide advising experience. It combines authentication, degree-progress tracking, retrieval-augmented advising, student-state analysis, and multimodal chat features into one demo-ready application.
 
-2) Feature List
-AI Agent
-- Intelligent Responses: Leverages Gemini for natural, context-aware conversations
-- University-Specific Knowledge: Trained on Morgan State University curriculum
-data
-- Multi-turn Conversations: Maintains context throughout the chat session
-- Real-time Typing Indicators: Visual feedback during AI response generation
-- Emotional reading
-Course &amp; Department Information
-- Course Catalog: Browse Morgan State’s complete Computer Science course offerings
-- Department Information: Access faculty details and contact info
+## Current capabilities
 
+- Secure student signup and login
+- Profile editing with major and class year
+- Completed-course tracking and degree-progress summaries
+- Recommended next courses based on remaining requirements and prerequisite checks
+- University-wide advising retrieval across courses, departments, faculty, degree requirements, and support resources
+- Advisor chat with session history
+- Voice input through browser speech recognition
+- Spoken advisor replies through browser text-to-speech
+- Student-state analysis for planning, career, and wellness-support signals
 
-Account &amp; UX
-- Profile Management: View and edit user information
-- Morgan State University Pattern Colors
-- Secure Logout: Easy session management
-- Dark/Light Modes: Automatic theme switching
-- Responsive Design
-Frontend 
-- Speech Recognizer: Voice input
-Libraries &amp; Architecture (Android)
-- MVVM Pattern: Clean architecture
-- StateFlow: Reactive state management
-- Dependency Injection: Manual DI
-- Gson: JSON serialization
+## Tech stack
 
-3) Screens / Pages (Website Views)
-A) Authentication Screens
-1. Sign In
-o Email/password sign-in
-o Google sign-in
-2. Sign Up
-3. Secure Logout
-B) Main Navigation Screens
-1. Chat (AI Agent)
-o Multi-turn conversation
-o Real-time typing indicator
-o Emotional reading
-o Voice input (Speech Recognizer)
-2. Course Catalog
-o Browse CS course offerings
-3. Department Info
-o Faculty details + contact info
-4. Profile
-o View/edit user information
-5. Settings
-o Dark/Light mode
-o Account options
+- Frontend: React + Vite
+- Backend: FastAPI + SQLAlchemy
+- AI model: Gemini
+- Grounding: CSV-backed retrieval layer for Morgan State advising data
 
+## Project structure
 
-5) App Architecture Plan 
-Pattern: MVVM
-- View (UI): Activities/Fragments/Compose UI
-- ViewModel: State + event handling
-- Models: Gson-serializable data classes
+- `frontend/`: React client
+- `backend/`: FastAPI API, retrieval logic, models, and data
+- `docs/`: architecture and project documentation
 
-6) AI Chat Flow (Gemini + Context)
-1. User types or speaks → converted to text
-3. Show typing indicator
-4. Gemini generates response using:
-o Conversation context (
-o Emotional reading signal (if available)
+## Run locally
 
+### Backend
 
-7) UI/UX Requirements
-- Dark/Light Mode: Automatic theme switching
-- Typing Indicator: Visible during AI generation
-- Profile Management: Edit + save instantly
+```bash
+cd backend
+source .venv312/Scripts/activate
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+### Frontend
+
+```bash
+cd frontend
+npm run dev
+```
+
+Frontend runs at `http://127.0.0.1:5173` and backend runs at `http://127.0.0.1:8000`.
+
+## Key documentation
+
+- [System Architecture](docs/SYSTEM_ARCHITECTURE.md)
+- [Demo Walkthrough](docs/DEMO_WALKTHROUGH.md)
+
+## Current focus
+
+The project has moved beyond a Computer Science-only chatbot. The system now aims to support students across multiple Morgan State majors while remaining grounded in university-specific source material.

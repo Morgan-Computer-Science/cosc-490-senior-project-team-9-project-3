@@ -13,6 +13,8 @@ const starterPrompts = [
   "What classes should I take after COSC 111?",
   "Who should I contact for Information Systems advising?",
   "What are the degree requirements for Business Administration?",
+  "I feel overwhelmed and need help finding the right campus support.",
+  "How should I prepare for internships in my major?",
 ];
 
 const formatMessageContent = (content) =>
@@ -21,6 +23,13 @@ const formatMessageContent = (content) =>
     .replace(/^\s*[\*-]\s+/gm, "")
     .replace(/`/g, "")
     .trim();
+
+const formatInsightLabel = (value) =>
+  (value || "")
+    .split("_")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 
 const Chatbot = ({ token, user }) => {
   const [sessions, setSessions] = useState([]);
@@ -35,8 +44,10 @@ const Chatbot = ({ token, user }) => {
   const [voiceStatus, setVoiceStatus] = useState("");
   const [speechSupported, setSpeechSupported] = useState(false);
   const [speakingMessageId, setSpeakingMessageId] = useState(null);
+  const [selectedAttachment, setSelectedAttachment] = useState(null);
   const bottomRef = useRef(null);
   const recognitionRef = useRef(null);
+  const attachmentInputRef = useRef(null);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -183,7 +194,7 @@ const Chatbot = ({ token, user }) => {
 
   const handleSend = async (event) => {
     event?.preventDefault();
-    if (!input.trim() || !activeSessionId || sending) {
+    if ((!input.trim() && !selectedAttachment) || !activeSessionId || sending) {
       return;
     }
 
@@ -191,7 +202,7 @@ const Chatbot = ({ token, user }) => {
     const optimisticMessage = {
       id: `local-user-${Date.now()}`,
       sender: "user",
-      content: text,
+      content: selectedAttachment ? `${text}\n\nAttachment: ${selectedAttachment.name}`.trim() : text,
     };
 
     setMessages((current) => [...current, optimisticMessage]);
@@ -200,12 +211,16 @@ const Chatbot = ({ token, user }) => {
     setError("");
 
     try {
-      const payload = await sendChatMessage(token, activeSessionId, text);
+      const payload = await sendChatMessage(token, activeSessionId, text || "Please review the attached file.", selectedAttachment);
       setMessages((current) => [
         ...current.filter((message) => message.id !== optimisticMessage.id),
         payload.user_message,
-        payload.ai_message,
+        { ...payload.ai_message, advisor_insights: payload.advisor_insights },
       ]);
+      setSelectedAttachment(null);
+      if (attachmentInputRef.current) {
+        attachmentInputRef.current.value = "";
+      }
 
       setSessions((current) =>
         current.map((session) =>
@@ -236,6 +251,12 @@ const Chatbot = ({ token, user }) => {
     setError("");
     setVoiceStatus("");
     recognitionRef.current.start();
+  };
+
+  const handleAttachmentPick = (event) => {
+    const nextFile = event.target.files?.[0] || null;
+    setSelectedAttachment(nextFile);
+    setError("");
   };
 
   const handleSpeakMessage = (message) => {
@@ -282,6 +303,7 @@ const Chatbot = ({ token, user }) => {
           <h2>{activeTitle || "Academic advisor chat"}</h2>
           <p className="panel-subtext">
             Built for {user?.major || "Morgan State students"} and grounded in Morgan State advising data.
+            New advisor replies also show planning and support insights.
           </p>
         </div>
         <button type="button" className="secondary-button" onClick={handleCreateSession}>
@@ -325,7 +347,7 @@ const Chatbot = ({ token, user }) => {
             {loading ? <p className="empty-state">Loading your advisor workspace...</p> : null}
             {!loading && messages.length === 0 ? (
               <p className="empty-state">
-                Ask about schedules, faculty, department contacts, requirements, or what fits your major next.
+                Ask about schedules, faculty, department contacts, requirements, internships, or support resources.
               </p>
             ) : null}
 
@@ -338,6 +360,47 @@ const Chatbot = ({ token, user }) => {
                   {message.sender === "assistant" ? "Advisor" : "You"}
                 </span>
                 <p>{formatMessageContent(message.content)}</p>
+                {message.sender === "assistant" && message.advisor_insights ? (
+                  <div className="advisor-insights">
+                    <div className="insight-row">
+                      <span className="insight-chip">
+                        Intent: {formatInsightLabel(message.advisor_insights.intent)}
+                      </span>
+                      <span className="insight-chip">
+                        Tone: {formatInsightLabel(message.advisor_insights.emotional_tone)}
+                      </span>
+                      {message.advisor_insights.needs_support ? (
+                        <span className="insight-chip support-chip">Support follow-up suggested</span>
+                      ) : null}
+                    </div>
+                    {message.advisor_insights.recommended_next_courses?.length ? (
+                      <div className="insight-row">
+                        {message.advisor_insights.recommended_next_courses.map((courseCode) => (
+                          <span key={`next-${message.id}-${courseCode}`} className="insight-chip next-chip">
+                            Next: {courseCode}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
+                    {message.advisor_insights.blocked_courses?.length ? (
+                      <div className="insight-row">
+                        {message.advisor_insights.blocked_courses.map((courseCode) => (
+                          <span key={`blocked-${message.id}-${courseCode}`} className="insight-chip blocked-chip">
+                            Blocked: {courseCode}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
+                    {message.advisor_insights.suggested_contacts?.length ? (
+                      <p className="insight-text">
+                        Best contacts: {message.advisor_insights.suggested_contacts.join(", ")}
+                      </p>
+                    ) : null}
+                    {message.advisor_insights.attachment_summary ? (
+                      <p className="insight-text">{message.advisor_insights.attachment_summary}</p>
+                    ) : null}
+                  </div>
+                ) : null}
                 {message.sender === "assistant" && speechSupported ? (
                   <button
                     type="button"
@@ -360,10 +423,23 @@ const Chatbot = ({ token, user }) => {
             <input
               value={input}
               onChange={(event) => setInput(event.target.value)}
-              placeholder="Ask about requirements, advising offices, professors, or course planning..."
+              placeholder="Ask about requirements, advising offices, professors, course planning, or an attached file..."
               disabled={!activeSessionId || sending}
             />
-            <button type="submit" disabled={!input.trim() || sending || !activeSessionId}>
+            <label className="upload-button">
+              Add file
+              <input
+                ref={attachmentInputRef}
+                type="file"
+                accept=".pdf,.txt,.md,.csv,.json,image/*"
+                onChange={handleAttachmentPick}
+                disabled={sending}
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={(!input.trim() && !selectedAttachment) || sending || !activeSessionId}
+            >
               {sending ? "Sending..." : "Send"}
             </button>
             <button
@@ -375,6 +451,11 @@ const Chatbot = ({ token, user }) => {
               {listening ? "Stop mic" : "Use mic"}
             </button>
           </form>
+          {selectedAttachment ? (
+            <p className="attachment-pill">
+              Ready to send: {selectedAttachment.name}
+            </p>
+          ) : null}
         </div>
       </div>
     </section>

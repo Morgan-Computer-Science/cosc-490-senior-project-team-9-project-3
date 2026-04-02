@@ -436,6 +436,43 @@ textarea {
   line-height: 1.5;
 }
 
+.advisor-insights {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(20, 50, 74, 0.12);
+}
+
+.insight-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.insight-chip {
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: rgba(20, 50, 74, 0.08);
+  color: var(--navy);
+  font-size: 0.82rem;
+}
+
+.next-chip {
+  background: rgba(214, 139, 31, 0.16);
+  color: #8b5611;
+}
+
+.support-chip {
+  background: rgba(160, 47, 31, 0.14);
+  color: #8d3528;
+}
+
+.insight-text {
+  margin: 10px 0 0;
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+}
+
 .listen-button {
   margin-top: 12px;
   padding: 8px 12px;
@@ -456,6 +493,29 @@ textarea {
 .chat-input-row input {
   flex: 1 1 auto;
   min-width: 0;
+}
+
+.upload-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid rgba(20, 50, 74, 0.16);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--navy);
+  cursor: pointer;
+}
+
+.upload-button input {
+  display: none;
+}
+
+.attachment-pill {
+  margin: 10px 0 0;
+  color: var(--ink-soft);
+  font-size: 0.92rem;
 }
 
 .voice-button {

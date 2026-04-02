@@ -143,14 +143,19 @@ export async function listChatMessages(token, sessionId) {
   return parseResponse(response, "Failed to fetch chat messages.");
 }
 
-export async function sendChatMessage(token, sessionId, content) {
+export async function sendChatMessage(token, sessionId, content, attachment = null) {
+  const formData = new FormData();
+  formData.append("content", content);
+  if (attachment) {
+    formData.append("attachment", attachment);
+  }
+
   const response = await fetch(`${API_BASE_URL}/chat/sessions/${sessionId}/messages`, {
     method: "POST",
     headers: {
       ...authHeaders(token),
-      "Content-Type": "application/json",
     },
-    body: JSON.stringify({ content }),
+    body: formData,
   });
 
   return parseResponse(response, "Failed to send message.");

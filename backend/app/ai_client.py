@@ -24,6 +24,9 @@ def _system_prompt() -> str:
 def generate_ai_reply(
     history: List[Dict[str, str]],
     extra_context: Optional[str] = None,
+    attachment_path: Optional[str] = None,
+    attachment_mime_type: Optional[str] = None,
+    attachment_summary: Optional[str] = None,
 ) -> str:
     contents = [{"role": "user", "parts": [_system_prompt()]}]
 
@@ -40,7 +43,34 @@ def generate_ai_reply(
         contents.append({"role": role, "parts": [msg["content"]]})
 
     model = genai.GenerativeModel(_MODEL_NAME)
-    response = model.generate_content(contents)
+    uploaded_file = None
+    if attachment_path:
+        uploaded_file = genai.upload_file(
+            attachment_path,
+            mime_type=attachment_mime_type,
+            display_name=attachment_summary,
+        )
+        contents.append(
+            {
+                "role": "user",
+                "parts": [
+                    (
+                        "Analyze the attached file together with the Morgan State advising context. "
+                        "If the file is an image or screenshot, describe only what is relevant to the student's advising question."
+                    ),
+                    uploaded_file,
+                ],
+            }
+        )
+
+    try:
+        response = model.generate_content(contents)
+    finally:
+        if uploaded_file is not None:
+            try:
+                genai.delete_file(uploaded_file.name)
+            except Exception:
+                pass
     text = getattr(response, "text", None)
 
     if not text:

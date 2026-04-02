@@ -41,6 +41,7 @@ The project uses a multi-stage advising pipeline instead of a single raw chatbot
 - Text input
 - Voice input through browser speech recognition
 - Spoken replies through browser text-to-speech
+- Screenshot, image, PDF, and text-file upload support
 
 7. Student data ingestion layer
 - Manual transcript-text import
@@ -90,6 +91,7 @@ The assignment asks for more than a plain chatbot. This system now demonstrates 
   - final natural-language advising response
 - Multimodal I/O:
   - speech input and speech output in the browser
+  - file-assisted image and document input through Gemini-backed chat
 
 Even though not every stage is a separate hosted ML service, the system clearly uses multiple reasoning layers instead of relying on one model call alone.
 
@@ -106,7 +108,6 @@ Even though not every stage is a separate hosted ML service, the system clearly 
 
 - Coverage still depends on the local advising datasets we provide
 - Some majors have lighter source depth than others
-- No image understanding pipeline yet
 - Degree progress is requirement-based, not transcript-verified
 - Student-state analysis is rule-based, not a full emotion model
 
@@ -114,6 +115,6 @@ Even though not every stage is a separate hosted ML service, the system clearly 
 
 1. Add richer major coverage and source materials
 2. Add transcript or degree-audit document ingestion
-3. Add image or PDF-based advising input
-4. Add stronger semantic retrieval embeddings
-5. Add presentation/demo views for explaining the system to reviewers
+3. Add stronger semantic retrieval embeddings
+4. Add presentation/demo views for explaining the system to reviewers
+5. Add transcript and screenshot-specific extraction quality improvements

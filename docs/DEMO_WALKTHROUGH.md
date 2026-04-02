@@ -74,14 +74,15 @@ What to say:
 
 ### 6. File-assisted advising
 
-- Upload a text file, CSV, or PDF with a question
+- Upload a screenshot, image, text file, CSV, or PDF with a question
 - Example prompt:
   - `Can you summarize the important points from this document for my advising plan?`
+  - `Can you review this schedule screenshot and tell me what matters for advising?`
 
 What to say:
 - The project now supports attachment-assisted advising
 - PDFs and text-based files can be brought into the chat context
-- Image uploads are now accepted as a first-step input path, with deeper visual reasoning still listed as a next upgrade
+- Images and screenshots can now go through Gemini-backed multimodal analysis in the advisor chat
 
 ## Good demo questions
 
@@ -97,7 +98,7 @@ What to say:
 - Multimodal:
   - speech input
   - spoken output
-  - attachment-assisted input
+  - attachment-assisted input for screenshots, images, PDFs, and text files
 - Multi-stage / multi-model style system:
   - retrieval
   - degree-planning logic

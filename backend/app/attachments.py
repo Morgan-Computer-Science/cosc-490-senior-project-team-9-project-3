@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from io import BytesIO
+from pathlib import Path
 import re
+import tempfile
 from typing import Optional
 
 from fastapi import HTTPException, UploadFile, status
@@ -24,6 +26,14 @@ class AttachmentContext:
     context_text: str
     summary: str
     extracted_text: Optional[str] = None
+    temp_path: Optional[str] = None
+
+
+def _write_temp_attachment(filename: str, file_bytes: bytes) -> str:
+    suffix = Path(filename).suffix or ".bin"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
+        temp_file.write(file_bytes)
+        return temp_file.name
 
 
 def _normalize_text(text: str) -> str:
@@ -64,6 +74,7 @@ async def extract_attachment_context(attachment: Optional[UploadFile]) -> Option
         )
 
     if content_type == PDF_MIME_TYPE or filename.lower().endswith(".pdf"):
+        temp_path = _write_temp_attachment(filename, file_bytes)
         extracted_text = _extract_pdf_text(file_bytes)
         if extracted_text:
             excerpt = extracted_text[:4000]
@@ -76,6 +87,7 @@ async def extract_attachment_context(attachment: Optional[UploadFile]) -> Option
                     f"Extracted document text excerpt: {excerpt}"
                 ),
                 extracted_text=extracted_text,
+                temp_path=temp_path,
             )
         return AttachmentContext(
             filename=filename,
@@ -86,6 +98,7 @@ async def extract_attachment_context(attachment: Optional[UploadFile]) -> Option
                 "The local parser could not extract readable text from this file. "
                 "Use the student's question, filename, and any available advising context carefully."
             ),
+            temp_path=temp_path,
         )
 
     if content_type.startswith(TEXT_MIME_PREFIXES) or content_type in TEXT_MIME_TYPES:
@@ -103,14 +116,16 @@ async def extract_attachment_context(attachment: Optional[UploadFile]) -> Option
         )
 
     if content_type.startswith(IMAGE_MIME_PREFIXES):
+        temp_path = _write_temp_attachment(filename, file_bytes)
         return AttachmentContext(
             filename=filename,
             content_type=content_type,
             summary=f"Image uploaded: {filename}",
             context_text=(
                 f"Student uploaded an image named {filename} with content type {content_type}. "
-                "This first version stores the image metadata and file context, but it does not yet perform full visual OCR or screenshot understanding."
+                "Use the image itself along with the advising context to answer questions about schedules, screenshots, forms, or planning materials."
             ),
+            temp_path=temp_path,
         )
 
     return AttachmentContext(

@@ -1,4 +1,5 @@
 from typing import List
+import os
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
@@ -293,10 +294,22 @@ async def send_message(
     )
 
     try:
-        ai_text = generate_ai_reply(history=history_payload, extra_context=extra_context)
+        ai_text = generate_ai_reply(
+            history=history_payload,
+            extra_context=extra_context,
+            attachment_path=attachment_context.temp_path if attachment_context else None,
+            attachment_mime_type=attachment_context.content_type if attachment_context else None,
+            attachment_summary=attachment_context.summary if attachment_context else None,
+        )
     except Exception as exc:
         print("AI error in generate_ai_reply:", repr(exc))
         ai_text = _fallback_advising_reply(current_user, clean_content, retrieved_docs, student_state)
+    finally:
+        if attachment_context and attachment_context.temp_path:
+            try:
+                os.remove(attachment_context.temp_path)
+            except OSError:
+                pass
 
     ai_msg = models.ChatMessage(
         session_id=session.id,

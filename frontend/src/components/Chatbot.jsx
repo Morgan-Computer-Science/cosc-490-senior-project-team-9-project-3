@@ -15,6 +15,7 @@ const starterPrompts = [
   "What are the degree requirements for Business Administration?",
   "I feel overwhelmed and need help finding the right campus support.",
   "How should I prepare for internships in my major?",
+  "Can you review this screenshot or schedule image and tell me what matters for advising?",
 ];
 
 const formatMessageContent = (content) =>
@@ -305,6 +306,9 @@ const Chatbot = ({ token, user }) => {
             Built for {user?.major || "Morgan State students"} and grounded in Morgan State advising data.
             New advisor replies also show planning and support insights.
           </p>
+          <p className="panel-subtext">
+            You can also upload screenshots, PDFs, or text files for multimodal advising.
+          </p>
         </div>
         <button type="button" className="secondary-button" onClick={handleCreateSession}>
           New chat
@@ -453,7 +457,7 @@ const Chatbot = ({ token, user }) => {
           </form>
           {selectedAttachment ? (
             <p className="attachment-pill">
-              Ready to send: {selectedAttachment.name}
+              Ready to send: {selectedAttachment.name}. Images and PDFs now go through multimodal analysis.
             </p>
           ) : null}
         </div>

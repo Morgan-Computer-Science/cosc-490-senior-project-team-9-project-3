@@ -78,11 +78,14 @@ What to say:
 - Example prompt:
   - `Can you summarize the important points from this document for my advising plan?`
   - `Can you review this schedule screenshot and tell me what matters for advising?`
+  - `Can you look at this degree audit PDF and tell me what seems incomplete?`
+  - `Can you use this transcript-style file to help me think about what comes next?`
 
 What to say:
 - The project now supports attachment-assisted advising
 - PDFs and text-based files can be brought into the chat context
 - Images and screenshots can now go through Gemini-backed multimodal analysis in the advisor chat
+- The backend now distinguishes likely document types such as schedules, transcripts, degree audits, and forms so the advisor can reason more appropriately about the uploaded material
 
 ## Good demo questions
 

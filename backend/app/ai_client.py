@@ -27,6 +27,7 @@ def generate_ai_reply(
     attachment_path: Optional[str] = None,
     attachment_mime_type: Optional[str] = None,
     attachment_summary: Optional[str] = None,
+    attachment_document_type: Optional[str] = None,
 ) -> str:
     contents = [{"role": "user", "parts": [_system_prompt()]}]
 
@@ -56,6 +57,8 @@ def generate_ai_reply(
                 "parts": [
                     (
                         "Analyze the attached file together with the Morgan State advising context. "
+                        f"The attachment should be treated as: {attachment_document_type or 'supporting document'}. "
+                        "If the file is a schedule, degree audit, transcript, or form, extract only the details that matter for advising. "
                         "If the file is an image or screenshot, describe only what is relevant to the student's advising question."
                     ),
                     uploaded_file,

@@ -880,10 +880,61 @@ textarea:focus {
   display: none;
 }
 
-.attachment-pill {
-  margin: 10px 0 0;
+.attachment-review-card {
+  margin-top: 14px;
+  padding: 16px 18px;
+  border: 1px solid rgba(87, 179, 180, 0.18);
+  border-radius: 22px;
+  background:
+    linear-gradient(135deg, rgba(87, 179, 180, 0.12), rgba(255, 255, 255, 0.03));
+  box-shadow: var(--shadow-md);
+}
+
+.attachment-review-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.attachment-review-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 11px;
+  border-radius: 999px;
+  background: rgba(240, 179, 95, 0.14);
+  color: var(--primary-strong);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.attachment-review-card h3 {
+  margin: 12px 0 8px;
+  font-size: 1.1rem;
+}
+
+.attachment-review-card p {
+  margin: 0;
   color: var(--text-soft);
-  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.attachment-file-name {
+  display: inline-block;
+  margin-top: 12px;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+}
+
+.clear-attachment-button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--text-soft);
+  cursor: pointer;
+  font-size: 0.88rem;
 }
 
 .composer-footnote {

@@ -300,6 +300,7 @@ async def send_message(
             attachment_path=attachment_context.temp_path if attachment_context else None,
             attachment_mime_type=attachment_context.content_type if attachment_context else None,
             attachment_summary=attachment_context.summary if attachment_context else None,
+            attachment_document_type=attachment_context.document_type if attachment_context else None,
         )
     except Exception as exc:
         print("AI error in generate_ai_reply:", repr(exc))

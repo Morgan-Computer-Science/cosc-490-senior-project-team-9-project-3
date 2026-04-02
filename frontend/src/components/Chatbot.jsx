@@ -25,6 +25,77 @@ const formatMessageContent = (content) =>
     .replace(/`/g, "")
     .trim();
 
+const inferAttachmentPreview = (file) => {
+  if (!file) {
+    return null;
+  }
+
+  const loweredName = file.name.toLowerCase();
+  const contentType = (file.type || "").toLowerCase();
+  const combined = `${loweredName} ${contentType}`;
+
+  if (combined.includes("audit") || combined.includes("degreeworks") || combined.includes("requirement")) {
+    return {
+      label: "Degree audit",
+      title: "Audit review ready",
+      tip: "Ask what still looks incomplete, what is ready next, or where the audit seems unclear.",
+      placeholder: "Ask what this degree audit suggests about what you should do next...",
+    };
+  }
+
+  if (combined.includes("transcript") || combined.includes("history") || combined.includes("grade")) {
+    return {
+      label: "Transcript",
+      title: "Transcript review ready",
+      tip: "Ask which completed courses matter most or what the transcript suggests you should take next.",
+      placeholder: "Ask what this transcript suggests about your next courses...",
+    };
+  }
+
+  if (combined.includes("schedule") || combined.includes("calendar") || combined.includes("timetable")) {
+    return {
+      label: "Schedule",
+      title: "Schedule review ready",
+      tip: "Ask about workload balance, missing requirements, or whether the schedule looks realistic.",
+      placeholder: "Ask what stands out in this schedule or what you should change...",
+    };
+  }
+
+  if (combined.includes("form") || combined.includes("approval") || combined.includes("registration")) {
+    return {
+      label: "Academic form",
+      title: "Form review ready",
+      tip: "Ask what the form appears to require or which advising office should handle it.",
+      placeholder: "Ask what this form means or what action you should take...",
+    };
+  }
+
+  if (contentType.startsWith("image/")) {
+    return {
+      label: "Screenshot",
+      title: "Image review ready",
+      tip: "Ask what matters in the screenshot for advising, planning, or next steps.",
+      placeholder: "Ask what matters in this screenshot for your advising question...",
+    };
+  }
+
+  if (loweredName.endsWith(".pdf")) {
+    return {
+      label: "PDF",
+      title: "PDF review ready",
+      tip: "Ask for a summary, key requirements, or anything that needs follow-up.",
+      placeholder: "Ask what matters in this PDF for your advising plan...",
+    };
+  }
+
+  return {
+    label: "Attachment",
+    title: "File ready",
+    tip: "Ask what matters in this file for advising, planning, or student support.",
+    placeholder: "Ask what matters in this file for your advising question...",
+  };
+};
+
 const formatMessageTime = (value) => {
   if (!value) {
     return "Just now";
@@ -268,6 +339,13 @@ const Chatbot = ({ token, user }) => {
     setError("");
   };
 
+  const handleClearAttachment = () => {
+    setSelectedAttachment(null);
+    if (attachmentInputRef.current) {
+      attachmentInputRef.current.value = "";
+    }
+  };
+
   const handleSpeakMessage = (message) => {
     if (!speechSupported || typeof window === "undefined") {
       setVoiceStatus("Spoken replies are not supported in this browser.");
@@ -303,6 +381,7 @@ const Chatbot = ({ token, user }) => {
   };
 
   const activeTitle = sessions.find((session) => session.id === activeSessionId)?.title;
+  const attachmentPreview = inferAttachmentPreview(selectedAttachment);
 
   return (
     <section className="panel advisor-panel">
@@ -409,11 +488,28 @@ const Chatbot = ({ token, user }) => {
             <div ref={bottomRef} />
           </div>
 
+          {attachmentPreview ? (
+            <div className="attachment-review-card">
+              <div className="attachment-review-header">
+                <span className="attachment-review-label">{attachmentPreview.label}</span>
+                <button type="button" className="clear-attachment-button" onClick={handleClearAttachment}>
+                  Remove
+                </button>
+              </div>
+              <h3>{attachmentPreview.title}</h3>
+              <p>{attachmentPreview.tip}</p>
+              <span className="attachment-file-name">{selectedAttachment?.name}</span>
+            </div>
+          ) : null}
+
           <form className="chat-input-row" onSubmit={handleSend}>
             <input
               value={input}
               onChange={(event) => setInput(event.target.value)}
-              placeholder="Ask about requirements, advising offices, professors, course planning, or an attached file..."
+              placeholder={
+                attachmentPreview?.placeholder ||
+                "Ask about requirements, advising offices, professors, course planning, or an attached file..."
+              }
               disabled={!activeSessionId || sending}
             />
             <label className="upload-button">
@@ -445,11 +541,6 @@ const Chatbot = ({ token, user }) => {
             <span>Tip</span>
             <p>Use screenshots for schedule reviews, PDFs for audits, or voice input for quick advising questions.</p>
           </div>
-          {selectedAttachment ? (
-            <p className="attachment-pill">
-              Ready to send: {selectedAttachment.name}. Images and PDFs now go through multimodal analysis.
-            </p>
-          ) : null}
         </div>
       </div>
     </section>

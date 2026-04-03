@@ -11,7 +11,9 @@ from .auth import get_current_user
 from .db import get_db
 from .rag import (
     RetrievedDocument,
+    extract_known_course_codes,
     format_retrieved_context,
+    get_course_documents_by_code,
     get_degree_progress,
     retrieve_relevant_documents,
 )
@@ -20,21 +22,24 @@ from .student_state import analyze_student_state
 router = APIRouter(prefix="/chat", tags=["chat"])
 
 
-def _build_student_context(user: models.User) -> str:
+def _build_student_context(user: models.User, effective_completed_codes: list[str] | None = None) -> str:
     pieces = ["Student profile context:"]
     pieces.append(f"- Name: {user.full_name or 'Not provided'}")
     pieces.append(f"- Major: {user.major or 'Undeclared'}")
     pieces.append(f"- Year: {user.year or 'Not provided'}")
-    completed_codes = [course.course_code for course in user.completed_courses]
+    completed_codes = effective_completed_codes or [course.course_code for course in user.completed_courses]
     if completed_codes:
         pieces.append(f"- Completed Courses: {', '.join(sorted(completed_codes))}")
     return "\n".join(pieces)
 
 
-def _build_degree_progress_context(user: models.User) -> str:
+def _build_degree_progress_context(
+    user: models.User,
+    effective_completed_codes: list[str] | None = None,
+) -> str:
     summary = get_degree_progress(
         user.major,
-        [course.course_code for course in user.completed_courses],
+        effective_completed_codes or [course.course_code for course in user.completed_courses],
     )
     if not summary["required_courses"]:
         return ""
@@ -65,10 +70,11 @@ def _build_advisor_insights(
     student_state: dict[str, object],
     retrieved_docs: List[RetrievedDocument],
     attachment_summary: str | None = None,
+    effective_completed_codes: list[str] | None = None,
 ) -> schemas.AdvisorInsights:
     degree_progress = get_degree_progress(
         user.major,
-        [course.course_code for course in user.completed_courses],
+        effective_completed_codes or [course.course_code for course in user.completed_courses],
     )
     contact_candidates: list[str] = []
     source_titles: list[str] = []
@@ -103,12 +109,46 @@ def _build_student_state_context(question: str, user: models.User) -> tuple[str,
     return "\n".join(lines), state
 
 
+def _merge_retrieved_documents(*groups: List[RetrievedDocument]) -> list[RetrievedDocument]:
+    merged: list[RetrievedDocument] = []
+    seen: set[tuple[str, str]] = set()
+    for group in groups:
+        for doc in group:
+            key = (doc.source_type, doc.title)
+            if key in seen:
+                continue
+            seen.add(key)
+            merged.append(doc)
+    return merged
+
+
+def _build_attachment_course_context(attachment_context) -> tuple[str, list[RetrievedDocument]]:
+    if not attachment_context or not attachment_context.extracted_text:
+        return "", []
+
+    matched_codes = extract_known_course_codes(attachment_context.extracted_text)
+    if not matched_codes:
+        return "", []
+
+    matched_docs = get_course_documents_by_code(matched_codes, limit=6)
+    lines = [
+        "Attachment-derived advising evidence:",
+        (
+            f"- Possible Morgan course codes recognized in the uploaded "
+            f"{attachment_context.document_type.replace('_', ' ')}: {', '.join(matched_codes)}"
+        ),
+    ]
+    if matched_docs:
+        lines.append(format_retrieved_context(matched_docs))
+    return "\n".join(lines), matched_docs
+
+
 def _fallback_advising_reply(
     user: models.User,
     question: str,
     documents: List[RetrievedDocument],
     student_state: dict[str, object],
-) -> str:
+    ) -> str:
     relevant = documents[:3]
     opening = (
         f"I could not reach the live AI service, but I can still help with grounded Morgan State info for a {user.year or 'current'} {user.major or 'student'}."
@@ -152,6 +192,14 @@ def _fallback_advising_reply(
             "If you need a final policy or degree decision, check with University Advising or the department that owns your major."
         )
     return "\n".join(lines)
+
+
+def _infer_completed_courses_from_attachment(attachment_context) -> list[str]:
+    if not attachment_context or not attachment_context.extracted_text:
+        return []
+    if attachment_context.document_type != "transcript":
+        return []
+    return extract_known_course_codes(attachment_context.extracted_text, limit=20)
 
 
 def _get_user_session(db: Session, user_id: int, session_id: int) -> models.ChatSession:
@@ -271,15 +319,27 @@ async def send_message(
         user_major=current_user.major,
         top_k=6,
     )
-    retrieved_context = format_retrieved_context(retrieved_docs)
-    student_context = _build_student_context(current_user)
-    degree_progress_context = _build_degree_progress_context(current_user)
+    attachment_course_context, attachment_course_docs = _build_attachment_course_context(
+        attachment_context
+    )
+    inferred_completed_codes = _infer_completed_courses_from_attachment(attachment_context)
+    effective_completed_codes = sorted(
+        {
+            *[course.course_code for course in current_user.completed_courses],
+            *inferred_completed_codes,
+        }
+    )
+    combined_docs = _merge_retrieved_documents(retrieved_docs, attachment_course_docs)
+    retrieved_context = format_retrieved_context(combined_docs)
+    student_context = _build_student_context(current_user, effective_completed_codes)
+    degree_progress_context = _build_degree_progress_context(current_user, effective_completed_codes)
     student_state_context, student_state = _build_student_state_context(clean_content, current_user)
     advisor_insights = _build_advisor_insights(
         current_user,
         student_state,
-        retrieved_docs,
+        combined_docs,
         attachment_context.summary if attachment_context else None,
+        effective_completed_codes,
     )
     extra_context = "\n\n".join(
         part
@@ -288,6 +348,7 @@ async def send_message(
             degree_progress_context,
             student_state_context,
             attachment_context.context_text if attachment_context else "",
+            attachment_course_context,
             retrieved_context,
         ]
         if part
@@ -304,7 +365,7 @@ async def send_message(
         )
     except Exception as exc:
         print("AI error in generate_ai_reply:", repr(exc))
-        ai_text = _fallback_advising_reply(current_user, clean_content, retrieved_docs, student_state)
+        ai_text = _fallback_advising_reply(current_user, clean_content, combined_docs, student_state)
     finally:
         if attachment_context and attachment_context.temp_path:
             try:

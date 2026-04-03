@@ -24,6 +24,7 @@ STOPWORDS = {
     "who",
 }
 SUPPORT_TOKENS = {"stress", "anxiety", "help", "support", "counseling", "mental", "overwhelmed"}
+COURSE_CODE_PATTERN = re.compile(r"\b([A-Za-z]{2,5})[\s-]?(\d{3}[A-Za-z]?)\b")
 
 
 @dataclass(frozen=True)
@@ -87,6 +88,71 @@ def load_course_rows() -> tuple[dict[str, str], ...]:
 
     with path.open(newline="", encoding="utf-8") as file:
         return tuple(csv.DictReader(file))
+
+
+def extract_known_course_codes(text: Optional[str], limit: int = 12) -> list[str]:
+    if not text:
+        return []
+
+    known_codes = {
+        _normalize(row.get("code")).upper()
+        for row in load_course_rows()
+        if _normalize(row.get("code"))
+    }
+    matched_codes: list[str] = []
+    seen: set[str] = set()
+
+    for prefix, number in COURSE_CODE_PATTERN.findall(text):
+        normalized = f"{prefix.upper()}{number.upper()}"
+        if normalized in known_codes and normalized not in seen:
+            seen.add(normalized)
+            matched_codes.append(normalized)
+            if len(matched_codes) >= limit:
+                break
+
+    return matched_codes
+
+
+def get_course_documents_by_code(course_codes: Iterable[str], limit: int = 6) -> list[RetrievedDocument]:
+    target_codes = [code.strip().upper() for code in course_codes if code.strip()]
+    if not target_codes:
+        return []
+
+    row_map = {
+        _normalize(row.get("code")).upper(): row
+        for row in load_course_rows()
+        if _normalize(row.get("code"))
+    }
+    docs: list[RetrievedDocument] = []
+    seen: set[str] = set()
+
+    for code in target_codes:
+        if code in seen:
+            continue
+        row = row_map.get(code)
+        if not row:
+            continue
+        seen.add(code)
+        docs.append(
+            RetrievedDocument(
+                source_type="course",
+                title=f"{code}: {_normalize(row.get('title'))}",
+                content=(
+                    f"Description: {_normalize(row.get('description'))}. "
+                    f"Credits: {_normalize(row.get('credits'))}. "
+                    f"Department: {_normalize(row.get('department'))}. "
+                    f"Level: {_normalize(row.get('level'))}. "
+                    f"Semester Offered: {_normalize(row.get('semester_offered'))}. "
+                    f"Instructor: {_normalize(row.get('instructor'))}."
+                ),
+                department=_normalize(row.get("department")) or None,
+                major=_normalize(row.get("department")) or None,
+            )
+        )
+        if len(docs) >= limit:
+            break
+
+    return docs
 
 
 def _department_documents() -> List[RetrievedDocument]:

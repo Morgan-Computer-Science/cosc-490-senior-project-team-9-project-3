@@ -21,6 +21,45 @@ def _system_prompt() -> str:
     )
 
 
+def _attachment_prompt(document_type: Optional[str]) -> str:
+    normalized_type = (document_type or "supporting document").replace("_", " ")
+    guidance_map = {
+        "schedule": (
+            "Focus on listed courses, overall load balance, likely sequencing concerns, and anything the student "
+            "should double-check with advising before registration."
+        ),
+        "transcript": (
+            "Focus on courses that appear completed, what that suggests about likely next classes, and any limits "
+            "in the transcript evidence."
+        ),
+        "degree_audit": (
+            "Focus on remaining requirements, progress signals, requirement gaps, and any parts of the audit that "
+            "still need advisor confirmation."
+        ),
+        "academic_form": (
+            "Focus on what action the form appears to require, which office is most relevant, and any missing "
+            "details the student should confirm."
+        ),
+        "image_screenshot": (
+            "Describe only the parts of the screenshot that matter for advising, planning, deadlines, or next steps."
+        ),
+        "pdf_document": (
+            "Summarize the advising-relevant points from the PDF and avoid repeating administrative filler."
+        ),
+        "text_document": (
+            "Pull out the advising-relevant facts from the text and tie them back to the student's question."
+        ),
+    }
+    specific_guidance = guidance_map.get(document_type or "", guidance_map["text_document"])
+    return (
+        "Analyze the attached file together with the Morgan State advising context. "
+        f"The attachment should be treated as: {normalized_type}. "
+        "Use only information you can actually infer from the file and provided context. "
+        "If the file is ambiguous, say what is unclear instead of guessing. "
+        f"{specific_guidance}"
+    )
+
+
 def generate_ai_reply(
     history: List[Dict[str, str]],
     extra_context: Optional[str] = None,
@@ -55,12 +94,7 @@ def generate_ai_reply(
             {
                 "role": "user",
                 "parts": [
-                    (
-                        "Analyze the attached file together with the Morgan State advising context. "
-                        f"The attachment should be treated as: {attachment_document_type or 'supporting document'}. "
-                        "If the file is a schedule, degree audit, transcript, or form, extract only the details that matter for advising. "
-                        "If the file is an image or screenshot, describe only what is relevant to the student's advising question."
-                    ),
+                    _attachment_prompt(attachment_document_type),
                     uploaded_file,
                 ],
             }

@@ -10,7 +10,10 @@ from .ai_client import generate_ai_reply
 from .auth import get_current_user
 from .db import get_db
 from .rag import (
+    AttachmentCourseSignals,
     RetrievedDocument,
+    evaluate_course_plan,
+    extract_attachment_course_signals,
     extract_known_course_codes,
     format_retrieved_context,
     get_course_documents_by_code,
@@ -143,6 +146,56 @@ def _build_attachment_course_context(attachment_context) -> tuple[str, list[Retr
     return "\n".join(lines), matched_docs
 
 
+def _build_attachment_signal_context(
+    attachment_context,
+    attachment_signals: AttachmentCourseSignals,
+    effective_completed_codes: list[str],
+) -> str:
+    if not attachment_context:
+        return ""
+
+    lines: list[str] = []
+    if attachment_signals.completed_codes:
+        lines.append(
+            f"- Recognized completed courses from the uploaded {attachment_context.document_type.replace('_', ' ')}: "
+            f"{', '.join(attachment_signals.completed_codes)}"
+        )
+    if attachment_signals.remaining_codes:
+        lines.append(
+            f"- Recognized remaining or needed courses from the uploaded {attachment_context.document_type.replace('_', ' ')}: "
+            f"{', '.join(attachment_signals.remaining_codes)}"
+        )
+    if attachment_signals.planned_codes:
+        schedule_evaluation = evaluate_course_plan(
+            attachment_signals.planned_codes,
+            effective_completed_codes,
+        )
+        lines.append(
+            f"- Recognized planned or scheduled courses from the uploaded {attachment_context.document_type.replace('_', ' ')}: "
+            f"{', '.join(attachment_signals.planned_codes)}"
+        )
+        if schedule_evaluation["ready_courses"]:
+            lines.append(
+                f"- Planned courses that look ready based on known prerequisites: "
+                f"{', '.join(schedule_evaluation['ready_courses'])}"
+            )
+        if schedule_evaluation["blocked_courses"]:
+            lines.append(
+                f"- Planned courses that may be blocked by prerequisites: "
+                f"{'; '.join(schedule_evaluation['blocked_courses'])}"
+            )
+        if schedule_evaluation["already_completed_courses"]:
+            lines.append(
+                f"- Planned courses that already appear completed: "
+                f"{', '.join(schedule_evaluation['already_completed_courses'])}"
+            )
+
+    if not lines:
+        return ""
+
+    return "Attachment planning signals:\n" + "\n".join(lines)
+
+
 def _fallback_advising_reply(
     user: models.User,
     question: str,
@@ -197,9 +250,14 @@ def _fallback_advising_reply(
 def _infer_completed_courses_from_attachment(attachment_context) -> list[str]:
     if not attachment_context or not attachment_context.extracted_text:
         return []
-    if attachment_context.document_type != "transcript":
+    if attachment_context.document_type not in {"transcript", "degree_audit"}:
         return []
-    return extract_known_course_codes(attachment_context.extracted_text, limit=20)
+    attachment_signals = extract_attachment_course_signals(
+        attachment_context.extracted_text,
+        attachment_context.document_type,
+        limit=20,
+    )
+    return list(attachment_signals.completed_codes)
 
 
 def _get_user_session(db: Session, user_id: int, session_id: int) -> models.ChatSession:
@@ -322,12 +380,21 @@ async def send_message(
     attachment_course_context, attachment_course_docs = _build_attachment_course_context(
         attachment_context
     )
+    attachment_signals = extract_attachment_course_signals(
+        attachment_context.extracted_text if attachment_context else None,
+        attachment_context.document_type if attachment_context else None,
+    )
     inferred_completed_codes = _infer_completed_courses_from_attachment(attachment_context)
     effective_completed_codes = sorted(
         {
             *[course.course_code for course in current_user.completed_courses],
             *inferred_completed_codes,
         }
+    )
+    attachment_signal_context = _build_attachment_signal_context(
+        attachment_context,
+        attachment_signals,
+        effective_completed_codes,
     )
     combined_docs = _merge_retrieved_documents(retrieved_docs, attachment_course_docs)
     retrieved_context = format_retrieved_context(combined_docs)
@@ -349,6 +416,7 @@ async def send_message(
             student_state_context,
             attachment_context.context_text if attachment_context else "",
             attachment_course_context,
+            attachment_signal_context,
             retrieved_context,
         ]
         if part

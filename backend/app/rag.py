@@ -38,6 +38,14 @@ class RetrievedDocument:
     score: float = 0.0
 
 
+@dataclass(frozen=True)
+class AttachmentCourseSignals:
+    mentioned_codes: tuple[str, ...] = ()
+    completed_codes: tuple[str, ...] = ()
+    planned_codes: tuple[str, ...] = ()
+    remaining_codes: tuple[str, ...] = ()
+
+
 def _tokenize(text: str) -> set[str]:
     return {
         token
@@ -153,6 +161,140 @@ def get_course_documents_by_code(course_codes: Iterable[str], limit: int = 6) ->
             break
 
     return docs
+
+
+def extract_attachment_course_signals(
+    text: Optional[str],
+    document_type: Optional[str],
+    limit: int = 16,
+) -> AttachmentCourseSignals:
+    if not text:
+        return AttachmentCourseSignals()
+
+    known_codes = {
+        _normalize(row.get("code")).upper()
+        for row in load_course_rows()
+        if _normalize(row.get("code"))
+    }
+    completed_keywords = {
+        "completed",
+        "earned",
+        "passed",
+        "fulfilled",
+        "satisfied",
+        "taken",
+        "history",
+    }
+    planned_keywords = {
+        "schedule",
+        "planned",
+        "enrolled",
+        "registered",
+        "current",
+        "taking",
+        "semester",
+        "fall",
+        "spring",
+        "summer",
+    }
+    remaining_keywords = {
+        "remaining",
+        "needed",
+        "required",
+        "outstanding",
+        "incomplete",
+        "missing",
+        "still need",
+        "not completed",
+    }
+
+    mentioned: list[str] = []
+    completed: list[str] = []
+    planned: list[str] = []
+    remaining: list[str] = []
+    seen_mentioned: set[str] = set()
+    seen_completed: set[str] = set()
+    seen_planned: set[str] = set()
+    seen_remaining: set[str] = set()
+
+    for raw_line in text.splitlines() or [text]:
+        lowered_line = raw_line.lower()
+        line_codes: list[str] = []
+        for prefix, number in COURSE_CODE_PATTERN.findall(raw_line):
+            normalized = f"{prefix.upper()}{number.upper()}"
+            if normalized not in known_codes:
+                continue
+            line_codes.append(normalized)
+            if normalized not in seen_mentioned:
+                seen_mentioned.add(normalized)
+                mentioned.append(normalized)
+                if len(mentioned) >= limit:
+                    break
+        if not line_codes:
+            continue
+
+        has_completed_signal = any(keyword in lowered_line for keyword in completed_keywords)
+        has_planned_signal = any(keyword in lowered_line for keyword in planned_keywords)
+        has_remaining_signal = any(keyword in lowered_line for keyword in remaining_keywords)
+
+        for code in line_codes:
+            if has_completed_signal or document_type == "transcript":
+                if code not in seen_completed:
+                    seen_completed.add(code)
+                    completed.append(code)
+            if has_planned_signal or document_type == "schedule":
+                if code not in seen_planned:
+                    seen_planned.add(code)
+                    planned.append(code)
+            if has_remaining_signal:
+                if code not in seen_remaining:
+                    seen_remaining.add(code)
+                    remaining.append(code)
+
+    if document_type == "degree_audit" and not remaining:
+        for code in mentioned:
+            if code not in seen_completed and code not in seen_remaining:
+                seen_remaining.add(code)
+                remaining.append(code)
+
+    return AttachmentCourseSignals(
+        mentioned_codes=tuple(mentioned[:limit]),
+        completed_codes=tuple(completed[:limit]),
+        planned_codes=tuple(planned[:limit]),
+        remaining_codes=tuple(remaining[:limit]),
+    )
+
+
+def evaluate_course_plan(
+    planned_course_codes: Iterable[str],
+    completed_course_codes: Iterable[str],
+) -> dict[str, list[str]]:
+    planned = [code.strip().upper() for code in planned_course_codes if code.strip()]
+    completed_set = {code.strip().upper() for code in completed_course_codes if code.strip()}
+    prereq_map = _prerequisite_map()
+
+    ready: list[str] = []
+    blocked: list[str] = []
+    already_completed: list[str] = []
+
+    for code in planned:
+        if code in completed_set:
+            already_completed.append(code)
+            continue
+        missing_prereqs = [
+            prereq for prereq in prereq_map.get(code, [])
+            if prereq not in completed_set
+        ]
+        if missing_prereqs:
+            blocked.append(f"{code} (missing {', '.join(missing_prereqs)})")
+        else:
+            ready.append(code)
+
+    return {
+        "ready_courses": ready,
+        "blocked_courses": blocked,
+        "already_completed_courses": already_completed,
+    }
 
 
 def _department_documents() -> List[RetrievedDocument]:

@@ -1,5 +1,4 @@
 from datetime import timedelta
-import re
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -8,7 +7,12 @@ from sqlalchemy.orm import Session
 from . import models, schemas, security
 from .attachments import extract_attachment_context
 from .db import get_db
-from .rag import get_degree_progress, load_course_rows
+from .rag import (
+    extract_attachment_course_signals,
+    extract_known_course_codes,
+    get_degree_progress,
+    load_course_rows,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -96,20 +100,33 @@ def _serialize_user(user: models.User) -> schemas.UserRead:
     return schemas.UserRead.model_validate(user)
 
 
-def _extract_course_code_candidates(text: str) -> list[str]:
-    candidates = re.findall(r"\b[A-Z]{2,5}[-\s]?\d{3}\b", text.upper())
-    normalized = []
-    for candidate in candidates:
-        code = re.sub(r"[^A-Z0-9]", "", candidate)
-        if code and code not in normalized:
-            normalized.append(code)
-    return normalized
-
-
 def _normalize_import_source(import_source: str) -> str:
     allowed = {"manual", "transcript_text", "canvas_export", "websis_export"}
     normalized = (import_source or "manual").strip().lower()
     return normalized if normalized in allowed else "manual"
+
+
+def _infer_import_document_type(import_source: str, attachment_context) -> str:
+    if attachment_context and attachment_context.document_type:
+        return attachment_context.document_type
+    if import_source in {"transcript_text", "canvas_export", "websis_export"}:
+        return "transcript"
+    return "text_document"
+
+
+def _extract_import_course_candidates(
+    import_text: str,
+    import_source: str,
+    attachment_context,
+) -> list[str]:
+    document_type = _infer_import_document_type(import_source, attachment_context)
+    signals = extract_attachment_course_signals(import_text, document_type, limit=30)
+
+    if document_type == "degree_audit":
+        return list(signals.completed_codes)
+    if document_type in {"transcript", "schedule"}:
+        return list(signals.completed_codes or signals.mentioned_codes)
+    return extract_known_course_codes(import_text, limit=30)
 
 
 @router.get("/me", response_model=schemas.UserRead)
@@ -192,7 +209,11 @@ async def import_completed_courses_preview(
         for row in load_course_rows()
         if row.get("code")
     }
-    candidates = _extract_course_code_candidates(import_text)
+    candidates = _extract_import_course_candidates(
+        import_text,
+        normalized_import_source,
+        attachment_context,
+    )
     matched = sorted(code for code in candidates if code in known_codes)
     unknown = sorted(code for code in candidates if code not in known_codes)
 

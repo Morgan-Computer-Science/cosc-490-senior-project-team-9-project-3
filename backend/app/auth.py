@@ -114,19 +114,32 @@ def _infer_import_document_type(import_source: str, attachment_context) -> str:
     return "text_document"
 
 
-def _extract_import_course_candidates(
+def _build_import_preview_codes(
     import_text: str,
     import_source: str,
     attachment_context,
-) -> list[str]:
+) -> tuple[str, list[str], list[str], list[str], list[str]]:
     document_type = _infer_import_document_type(import_source, attachment_context)
     signals = extract_attachment_course_signals(import_text, document_type, limit=30)
 
-    if document_type == "degree_audit":
-        return list(signals.completed_codes)
-    if document_type in {"transcript", "schedule"}:
-        return list(signals.completed_codes or signals.mentioned_codes)
-    return extract_known_course_codes(import_text, limit=30)
+    completed = list(signals.completed_codes)
+    planned = list(signals.planned_codes)
+    remaining = list(signals.remaining_codes)
+
+    if document_type == "degree_audit" and not completed:
+        completed = []
+    elif document_type in {"transcript", "schedule"} and not completed:
+        completed = list(signals.mentioned_codes)
+
+    combined_candidates = sorted(
+        {
+            *completed,
+            *planned,
+            *remaining,
+            *extract_known_course_codes(import_text, limit=30),
+        }
+    )
+    return document_type, combined_candidates, completed, planned, remaining
 
 
 @router.get("/me", response_model=schemas.UserRead)
@@ -209,7 +222,13 @@ async def import_completed_courses_preview(
         for row in load_course_rows()
         if row.get("code")
     }
-    candidates = _extract_import_course_candidates(
+    (
+        detected_document_type,
+        candidates,
+        completed_codes,
+        planned_codes,
+        remaining_codes,
+    ) = _build_import_preview_codes(
         import_text,
         normalized_import_source,
         attachment_context,
@@ -231,7 +250,11 @@ async def import_completed_courses_preview(
 
     return schemas.CompletedCoursesImportPreview(
         import_source=normalized_import_source,
+        detected_document_type=detected_document_type,
         matched_course_codes=matched,
+        completed_course_codes=[code for code in completed_codes if code in known_codes],
+        planned_course_codes=[code for code in planned_codes if code in known_codes],
+        remaining_course_codes=[code for code in remaining_codes if code in known_codes],
         unknown_course_codes=unknown,
         matched_count=len(matched),
         source_summary=source_summary,

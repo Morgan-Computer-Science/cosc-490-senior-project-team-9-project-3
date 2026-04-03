@@ -1071,6 +1071,30 @@ textarea:focus {
   background: rgba(255, 255, 255, 0.04);
 }
 
+.import-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 14px 0;
+}
+
+.import-preview-block {
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  background: rgba(6, 16, 27, 0.46);
+}
+
+.import-preview-label {
+  display: inline-block;
+  margin-bottom: 10px;
+  color: var(--primary-strong);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 .wizard-steps {
   display: flex;
   flex-wrap: wrap;
@@ -1090,6 +1114,74 @@ textarea:focus {
 .wizard-step.active {
   background: rgba(87, 179, 180, 0.16);
   color: #b0f1ed;
+}
+
+.demo-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.demo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.demo-capability-card,
+.demo-scenario-card {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(14, 28, 44, 0.94), rgba(10, 20, 33, 0.9));
+  box-shadow: var(--shadow-md);
+}
+
+.demo-capability-card h3,
+.demo-scenario-copy h3 {
+  margin: 0 0 10px;
+  font-size: 1.1rem;
+}
+
+.demo-capability-card p:last-child,
+.demo-scenario-copy p {
+  margin: 0;
+  color: var(--text-soft);
+  line-height: 1.6;
+}
+
+.demo-scenario-list {
+  display: grid;
+  gap: 14px;
+}
+
+.demo-scenario-card {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.demo-step-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  background: rgba(240, 179, 95, 0.12);
+  color: var(--primary-strong);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.demo-step-list {
+  margin: 14px 0 0;
+  padding-left: 18px;
+  color: var(--text);
+  line-height: 1.75;
 }
 
 .completed-course-card {
@@ -1172,6 +1264,17 @@ textarea:focus {
     grid-column: 1 / -1;
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1080px) {
+  .import-preview-grid,
+  .demo-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .demo-scenario-card {
+    grid-template-columns: 1fr;
   }
 }
 

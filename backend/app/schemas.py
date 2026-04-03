@@ -40,7 +40,11 @@ class CompletedCoursesUpdate(BaseModel):
 
 class CompletedCoursesImportPreview(BaseModel):
     import_source: str = "manual"
+    detected_document_type: str = "text_document"
     matched_course_codes: list[str] = Field(default_factory=list)
+    completed_course_codes: list[str] = Field(default_factory=list)
+    planned_course_codes: list[str] = Field(default_factory=list)
+    remaining_course_codes: list[str] = Field(default_factory=list)
     unknown_course_codes: list[str] = Field(default_factory=list)
     matched_count: int = 0
     source_summary: Optional[str] = None

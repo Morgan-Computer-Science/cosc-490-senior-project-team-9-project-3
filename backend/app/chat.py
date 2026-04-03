@@ -27,6 +27,29 @@ from .student_state import analyze_student_state
 router = APIRouter(prefix="/chat", tags=["chat"])
 
 
+def _refine_attachment_document_type(question: str, attachment_context) -> str | None:
+    if not attachment_context:
+        return None
+
+    base_type = attachment_context.document_type
+    if base_type not in {"image_screenshot", "pdf_document", "generic_file", "text_document"}:
+        return base_type
+
+    lowered = (question or "").lower()
+    keyword_map = {
+        "degree_audit": {"audit", "degree", "degreeworks", "requirements", "remaining", "graduate"},
+        "schedule": {"schedule", "calendar", "timetable", "next term", "next semester", "load", "credits"},
+        "transcript": {"transcript", "completed", "history", "grades", "took", "taken"},
+        "academic_form": {"form", "approval", "registration", "petition", "withdraw", "override"},
+    }
+
+    for document_type, keywords in keyword_map.items():
+        if any(keyword in lowered for keyword in keywords):
+            return document_type
+
+    return base_type
+
+
 def _build_student_context(user: models.User, effective_completed_codes: list[str] | None = None) -> str:
     pieces = ["Student profile context:"]
     pieces.append(f"- Name: {user.full_name or 'Not provided'}")
@@ -388,6 +411,7 @@ async def send_message(
     attachment_context = None
     if attachment:
         attachment_context = await extract_attachment_context(attachment)
+    effective_attachment_document_type = _refine_attachment_document_type(clean_content, attachment_context)
 
     user_msg = models.ChatMessage(
         session_id=session.id,
@@ -420,6 +444,23 @@ async def send_message(
         user_major=current_user.major,
         top_k=6,
     )
+    if attachment_context and effective_attachment_document_type:
+        attachment_context = attachment_context.__class__(
+            filename=attachment_context.filename,
+            content_type=attachment_context.content_type,
+            context_text=attachment_context.context_text.replace(
+                attachment_context.document_type.replace("_", " "),
+                effective_attachment_document_type.replace("_", " "),
+            ),
+            summary=attachment_context.summary.replace(
+                attachment_context.document_type.replace("_", " ").title(),
+                effective_attachment_document_type.replace("_", " ").title(),
+            ),
+            extracted_text=attachment_context.extracted_text,
+            temp_path=attachment_context.temp_path,
+            document_type=effective_attachment_document_type,
+        )
+
     attachment_course_context, attachment_course_docs = _build_attachment_course_context(
         attachment_context
     )

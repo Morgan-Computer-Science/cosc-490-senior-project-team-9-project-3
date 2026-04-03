@@ -27,6 +27,17 @@ const ProfilePanel = ({
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
+  const importDocumentLabels = {
+    transcript: "Transcript",
+    degree_audit: "Degree audit",
+    schedule: "Schedule",
+    academic_form: "Academic form",
+    image_screenshot: "Screenshot",
+    pdf_document: "PDF",
+    text_document: "Text document",
+    generic_file: "File",
+  };
+
   useEffect(() => {
     if (!user) {
       return;
@@ -122,9 +133,11 @@ const ProfilePanel = ({
     try {
       const preview = await onImportCompletedCourses(importText, importFile, importSource);
       setImportPreview(preview);
-      setStagedImportCodes(preview.matched_course_codes);
-      if (preview.matched_course_codes.length) {
-        setMessage(`Preview ready: ${preview.matched_count} recognized course code(s) can be applied.`);
+      setStagedImportCodes(preview.completed_course_codes);
+      if (preview.completed_course_codes.length) {
+        setMessage(`Preview ready: ${preview.completed_course_codes.length} recognized completed course(s) can be applied.`);
+      } else if (preview.matched_course_codes.length) {
+        setMessage("Preview ready. We recognized course codes, but not all of them look like completed classes.");
       } else {
         setMessage("No recognized Morgan course codes were found in that import.");
       }
@@ -142,7 +155,7 @@ const ProfilePanel = ({
       Array.from(new Set([...current, ...stagedImportCodes])).sort(),
     );
     setStagedImportCodes([]);
-    setMessage(`Applied ${importPreview?.matched_count ?? 0} recognized course code(s) to your draft list.`);
+    setMessage(`Applied ${importPreview?.completed_course_codes?.length ?? 0} recognized completed course(s) to your draft list.`);
   };
 
   const handleClearImport = () => {
@@ -340,16 +353,59 @@ const ProfilePanel = ({
           {importPreview ? (
             <div className="import-preview">
               <p className="panel-subtext">
-                {importPreview.source_summary} | {importPreview.matched_count} matched
+                {importPreview.source_summary} | {importPreview.matched_count} matched | Detected as {importDocumentLabels[importPreview.detected_document_type] || "Document"}
               </p>
-              {importPreview.matched_course_codes.length ? (
-                <div className="remaining-list">
-                  {importPreview.matched_course_codes.map((courseCode) => (
-                    <span key={`import-${courseCode}`} className="course-chip suggested-chip">
-                      Match: {courseCode}
-                    </span>
-                  ))}
+              <div className="import-preview-grid">
+                <div className="import-preview-block">
+                  <span className="import-preview-label">Completed</span>
+                  {importPreview.completed_course_codes.length ? (
+                    <div className="remaining-list">
+                      {importPreview.completed_course_codes.map((courseCode) => (
+                        <span key={`import-completed-${courseCode}`} className="course-chip suggested-chip">
+                          {courseCode}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="panel-subtext">No clearly completed courses recognized.</p>
+                  )}
                 </div>
+
+                <div className="import-preview-block">
+                  <span className="import-preview-label">Planned / Current</span>
+                  {importPreview.planned_course_codes.length ? (
+                    <div className="remaining-list">
+                      {importPreview.planned_course_codes.map((courseCode) => (
+                        <span key={`import-planned-${courseCode}`} className="course-chip next-chip">
+                          {courseCode}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="panel-subtext">No planned-course signals recognized.</p>
+                  )}
+                </div>
+
+                <div className="import-preview-block">
+                  <span className="import-preview-label">Remaining / Needed</span>
+                  {importPreview.remaining_course_codes.length ? (
+                    <div className="remaining-list">
+                      {importPreview.remaining_course_codes.map((courseCode) => (
+                        <span key={`import-remaining-${courseCode}`} className="course-chip blocked-chip">
+                          {courseCode}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="panel-subtext">No remaining-course signals recognized.</p>
+                  )}
+                </div>
+              </div>
+
+              {importPreview.matched_course_codes.length ? (
+                <p className="panel-subtext">
+                  Recognized course codes overall: {importPreview.matched_course_codes.join(", ")}
+                </p>
               ) : null}
               {importPreview.unknown_course_codes.length ? (
                 <p className="panel-subtext">
@@ -363,7 +419,7 @@ const ProfilePanel = ({
                   onClick={handleApplyImport}
                   disabled={!stagedImportCodes.length}
                 >
-                  Apply matches
+                  Apply completed courses
                 </button>
                 <button type="button" className="secondary-button" onClick={handleClearImport}>
                   Clear preview

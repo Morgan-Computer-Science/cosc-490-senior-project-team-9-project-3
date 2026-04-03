@@ -10,6 +10,7 @@ import {
   updateCurrentUser,
 } from "./api";
 import Chatbot from "./components/Chatbot.jsx";
+import DemoPanel from "./components/DemoPanel.jsx";
 import Login from "./components/Login.jsx";
 import ProfilePanel from "./components/ProfilePanel.jsx";
 import Signup from "./components/Signup.jsx";
@@ -40,6 +41,12 @@ const tabs = [
     label: "Profile",
     icon: "PF",
     description: "Ground the advisor in your academic path",
+  },
+  {
+    id: "demo",
+    label: "Demo",
+    icon: "DM",
+    description: "Walk through the presentation story clearly",
   },
 ];
 
@@ -348,6 +355,8 @@ function App() {
               saving={savingProfile}
             />
           ) : null}
+
+          {activeTab === "demo" ? <DemoPanel /> : null}
         </section>
 
         <aside className="context-rail">

@@ -25,14 +25,14 @@ const formatMessageContent = (content) =>
     .replace(/`/g, "")
     .trim();
 
-const inferAttachmentPreview = (file) => {
+const inferAttachmentPreview = (file, draftQuestion = "") => {
   if (!file) {
     return null;
   }
 
   const loweredName = file.name.toLowerCase();
   const contentType = (file.type || "").toLowerCase();
-  const combined = `${loweredName} ${contentType}`;
+  const combined = `${loweredName} ${contentType} ${draftQuestion.toLowerCase()}`;
 
   if (combined.includes("audit") || combined.includes("degreeworks") || combined.includes("requirement")) {
     return {
@@ -381,7 +381,7 @@ const Chatbot = ({ token, user }) => {
   };
 
   const activeTitle = sessions.find((session) => session.id === activeSessionId)?.title;
-  const attachmentPreview = inferAttachmentPreview(selectedAttachment);
+  const attachmentPreview = inferAttachmentPreview(selectedAttachment, input);
 
   return (
     <section className="panel advisor-panel">

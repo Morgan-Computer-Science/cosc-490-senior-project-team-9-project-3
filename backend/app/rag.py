@@ -217,7 +217,13 @@ def extract_attachment_course_signals(
     seen_planned: set[str] = set()
     seen_remaining: set[str] = set()
 
-    for raw_line in text.splitlines() or [text]:
+    text_segments = [
+        segment.strip()
+        for segment in re.split(r"[\r\n]+|(?<=[.!?;])\s+", text)
+        if segment.strip()
+    ] or [text]
+
+    for raw_line in text_segments:
         lowered_line = raw_line.lower()
         line_codes: list[str] = []
         for prefix, number in COURSE_CODE_PATTERN.findall(raw_line):
@@ -236,9 +242,14 @@ def extract_attachment_course_signals(
         has_completed_signal = any(keyword in lowered_line for keyword in completed_keywords)
         has_planned_signal = any(keyword in lowered_line for keyword in planned_keywords)
         has_remaining_signal = any(keyword in lowered_line for keyword in remaining_keywords)
+        transcript_completed_line = (
+            document_type == "transcript"
+            and not has_planned_signal
+            and not has_remaining_signal
+        )
 
         for code in line_codes:
-            if has_completed_signal or document_type == "transcript":
+            if has_completed_signal or transcript_completed_line:
                 if code not in seen_completed:
                     seen_completed.add(code)
                     completed.append(code)

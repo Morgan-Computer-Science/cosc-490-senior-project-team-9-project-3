@@ -10,7 +10,6 @@ import {
   updateCurrentUser,
 } from "./api";
 import Chatbot from "./components/Chatbot.jsx";
-import DemoPanel from "./components/DemoPanel.jsx";
 import Login from "./components/Login.jsx";
 import ProfilePanel from "./components/ProfilePanel.jsx";
 import Signup from "./components/Signup.jsx";
@@ -41,12 +40,6 @@ const tabs = [
     label: "Profile",
     icon: "PF",
     description: "Ground the advisor in your academic path",
-  },
-  {
-    id: "demo",
-    label: "Demo",
-    icon: "DM",
-    description: "Walk through the presentation story clearly",
   },
 ];
 
@@ -293,7 +286,7 @@ function App() {
         <section className="content-area">
           <div className="content-hero">
             <div>
-              <p className="eyebrow">Active Surface</p>
+              <p className="eyebrow">Current Workspace</p>
               <h2>{activeTabMeta?.label || "Advisor"}</h2>
               <p className="panel-subtext">{activeTabMeta?.description}</p>
             </div>
@@ -355,8 +348,6 @@ function App() {
               saving={savingProfile}
             />
           ) : null}
-
-          {activeTab === "demo" ? <DemoPanel /> : null}
         </section>
 
         <aside className="context-rail">

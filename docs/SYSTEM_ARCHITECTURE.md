@@ -116,5 +116,5 @@ Even though not every stage is a separate hosted ML service, the system clearly 
 1. Add richer major coverage and source materials
 2. Add transcript or degree-audit document ingestion
 3. Add stronger semantic retrieval embeddings
-4. Add presentation/demo views for explaining the system to reviewers
+4. Continue product hardening with stronger operations, polish, and integration surfaces
 5. Add transcript and screenshot-specific extraction quality improvements

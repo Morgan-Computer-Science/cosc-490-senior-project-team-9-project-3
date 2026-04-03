@@ -60,6 +60,50 @@ def _attachment_prompt(document_type: Optional[str]) -> str:
     )
 
 
+def extract_text_from_attachment(
+    attachment_path: str,
+    attachment_mime_type: Optional[str] = None,
+    attachment_document_type: Optional[str] = None,
+    attachment_summary: Optional[str] = None,
+) -> Optional[str]:
+    if not _API_KEY or not attachment_path:
+        return None
+
+    model = genai.GenerativeModel(_MODEL_NAME)
+    uploaded_file = None
+    try:
+        uploaded_file = genai.upload_file(
+            attachment_path,
+            mime_type=attachment_mime_type,
+            display_name=attachment_summary,
+        )
+        response = model.generate_content(
+            [
+                (
+                    "Extract readable text from this attachment for Morgan State advising workflows. "
+                    f"Treat the file as {((attachment_document_type or 'supporting document').replace('_', ' '))}. "
+                    "Return only the extracted text content with minimal cleanup. "
+                    "If the file contains a schedule, transcript, degree audit, or form, preserve course codes, headings, and important labels. "
+                    "Do not summarize or explain."
+                ),
+                uploaded_file,
+            ]
+        )
+        text = getattr(response, "text", None)
+        if not text:
+            return None
+        cleaned = text.strip()
+        return cleaned or None
+    except Exception:
+        return None
+    finally:
+        if uploaded_file is not None:
+            try:
+                genai.delete_file(uploaded_file.name)
+            except Exception:
+                pass
+
+
 def generate_ai_reply(
     history: List[Dict[str, str]],
     extra_context: Optional[str] = None,

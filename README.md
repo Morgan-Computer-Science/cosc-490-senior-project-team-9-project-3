@@ -1,6 +1,6 @@
 # Morgan State AI Faculty Advisor
 
-Morgan State AI Faculty Advisor is a full-stack student advising system built for a university-wide advising experience. It combines authentication, degree-progress tracking, retrieval-augmented advising, student-state analysis, and multimodal chat features into one demo-ready application.
+Morgan State AI Faculty Advisor is a full-stack student advising system built for a university-wide advising experience. It combines authentication, degree-progress tracking, retrieval-augmented advising, student-state analysis, and multimodal chat features into one launch-oriented application.
 
 ## Current capabilities
 
@@ -50,7 +50,6 @@ Frontend runs at `http://127.0.0.1:5173` and backend runs at `http://127.0.0.1:8
 ## Key documentation
 
 - [System Architecture](docs/SYSTEM_ARCHITECTURE.md)
-- [Demo Walkthrough](docs/DEMO_WALKTHROUGH.md)
 - [Data Connectors Plan](docs/DATA_CONNECTORS.md)
 
 ## Current focus

@@ -28,3 +28,25 @@ EEGR203,ENGE102; MATH141,Circuit analysis depends on engineering foundations and
 EEGR205,ENGE102,Digital logic usually follows early engineering foundations.
 EEGR301,EEGR203; MATH241,Signals and systems should follow circuits and calculus.
 EEGR317,EEGR203; PHYS102,Electronics is stronger after circuits and the physics sequence.
+MATH310,MATH141,Discrete mathematics follows early college mathematics preparation.
+MATH320,MATH241,Differential equations should follow calculus preparation.
+ENGL220,ENGL102,Survey and literature study should follow the composition sequence.
+ENGL310,ENGL102,Advanced composition follows the writing foundation sequence.
+ENGL320,ENGL220,Literary theory is stronger after an early literature survey.
+ENGL350,ENGL102,Professional writing builds on the composition sequence.
+HIST102,HIST101,World History II follows the initial survey course.
+HIST210,ENGL102,Historical methods benefits from college-level writing preparation.
+HIST310,HIST101,Upper-level history coursework should follow early survey study.
+HIST320,HIST101,African American history is stronger after foundational survey work.
+SOCY201,SOCY101,Social problems follows introductory sociology.
+SOCY320,SOCY101; STAT302,Research methods should follow introductory sociology and statistics.
+ACCT301,ACCT202,Intermediate accounting follows the full introductory accounting sequence.
+ACCT302,ACCT301,Intermediate Accounting II follows Intermediate Accounting I.
+CEGR201,ENGE102; PHYS101,Statics follows engineering foundations and introductory physics.
+CEGR220,CEGR201,Civil engineering materials is stronger after statics.
+CEGR310,CEGR201; MATH241,Structural analysis follows statics and calculus.
+CEGR320,CEGR201,Transportation engineering should follow early civil engineering mechanics.
+NURS201,NURS101; BIOL101,Foundations of nursing practice follows early nursing orientation and biology.
+NURS220,NURS101; BIOL101,Health assessment follows introductory nursing and biology.
+NURS301,NURS201; NURS220; BIOL102,Adult health nursing should follow foundations health assessment and anatomy-related preparation.
+NURS320,NURS201; STAT302,Community health is stronger after nursing foundations and statistics.

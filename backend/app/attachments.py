@@ -7,6 +7,7 @@ from typing import Optional
 
 from fastapi import HTTPException, UploadFile, status
 
+from .ai_client import extract_text_from_attachment
 
 MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
 TEXT_MIME_PREFIXES = ("text/",)
@@ -81,6 +82,22 @@ def _extract_pdf_text(file_bytes: bytes) -> Optional[str]:
         return None
 
 
+def _extract_gemini_text(
+    temp_path: Optional[str],
+    content_type: str,
+    document_type: str,
+    filename: str,
+) -> Optional[str]:
+    if not temp_path:
+        return None
+    return extract_text_from_attachment(
+        attachment_path=temp_path,
+        attachment_mime_type=content_type,
+        attachment_document_type=document_type,
+        attachment_summary=filename,
+    )
+
+
 async def extract_attachment_context(attachment: Optional[UploadFile]) -> Optional[AttachmentContext]:
     if not attachment:
         return None
@@ -100,6 +117,9 @@ async def extract_attachment_context(attachment: Optional[UploadFile]) -> Option
         temp_path = _write_temp_attachment(filename, file_bytes)
         extracted_text = _extract_pdf_text(file_bytes)
         document_type = _infer_document_type(filename, content_type, extracted_text)
+        if not extracted_text:
+            extracted_text = _extract_gemini_text(temp_path, content_type, document_type, filename)
+            document_type = _infer_document_type(filename, content_type, extracted_text)
         if extracted_text:
             excerpt = extracted_text[:4000]
             return AttachmentContext(
@@ -145,7 +165,14 @@ async def extract_attachment_context(attachment: Optional[UploadFile]) -> Option
 
     if content_type.startswith(IMAGE_MIME_PREFIXES):
         temp_path = _write_temp_attachment(filename, file_bytes)
-        document_type = _infer_document_type(filename, content_type)
+        initial_document_type = _infer_document_type(filename, content_type)
+        extracted_text = _extract_gemini_text(temp_path, content_type, initial_document_type, filename)
+        document_type = _infer_document_type(filename, content_type, extracted_text)
+        excerpt_text = (
+            f" Extracted visible text excerpt: {_normalize_text(extracted_text)[:4000]}"
+            if extracted_text else
+            ""
+        )
         return AttachmentContext(
             filename=filename,
             content_type=content_type,
@@ -153,8 +180,10 @@ async def extract_attachment_context(attachment: Optional[UploadFile]) -> Option
             context_text=(
                 f"Student uploaded a {document_type.replace('_', ' ')} image named {filename} with content type {content_type}. "
                 "Use the image itself along with the advising context to answer questions about schedules, screenshots, forms, transcripts, or planning materials."
+                f"{excerpt_text}"
             ),
             temp_path=temp_path,
+            extracted_text=extracted_text,
             document_type=document_type,
         )
 

@@ -297,6 +297,43 @@ def evaluate_course_plan(
     }
 
 
+def summarize_schedule_plan(
+    planned_course_codes: Iterable[str],
+    completed_course_codes: Iterable[str],
+    major: Optional[str] = None,
+) -> dict[str, object]:
+    planned = [code.strip().upper() for code in planned_course_codes if code.strip()]
+    course_map = {
+        _normalize(row.get("code")).upper(): row
+        for row in load_course_rows()
+        if _normalize(row.get("code"))
+    }
+    progress = get_degree_progress(major, completed_course_codes)
+    required_set = set(progress.get("required_courses", []))
+
+    total_credits = 0
+    credit_known = False
+    required_in_plan: list[str] = []
+    outside_known_requirements: list[str] = []
+
+    for code in planned:
+        row = course_map.get(code)
+        credits_value = _normalize(row.get("credits")) if row else ""
+        if credits_value.isdigit():
+            total_credits += int(credits_value)
+            credit_known = True
+        if code in required_set:
+            required_in_plan.append(code)
+        elif major:
+            outside_known_requirements.append(code)
+
+    return {
+        "total_credits": total_credits if credit_known else None,
+        "required_in_plan": required_in_plan,
+        "outside_known_requirements": outside_known_requirements,
+    }
+
+
 def _department_documents() -> List[RetrievedDocument]:
     path = DATA_DIR / "departments.csv"
     if not path.exists():

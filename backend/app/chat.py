@@ -19,6 +19,7 @@ from .rag import (
     get_course_documents_by_code,
     get_degree_progress,
     retrieve_relevant_documents,
+    summarize_schedule_plan,
 )
 from .student_state import analyze_student_state
 
@@ -149,6 +150,7 @@ def _build_attachment_course_context(attachment_context) -> tuple[str, list[Retr
 def _build_attachment_signal_context(
     attachment_context,
     attachment_signals: AttachmentCourseSignals,
+    user: models.User,
     effective_completed_codes: list[str],
 ) -> str:
     if not attachment_context:
@@ -170,10 +172,19 @@ def _build_attachment_signal_context(
             attachment_signals.planned_codes,
             effective_completed_codes,
         )
+        schedule_summary = summarize_schedule_plan(
+            attachment_signals.planned_codes,
+            effective_completed_codes,
+            user.major,
+        )
         lines.append(
             f"- Recognized planned or scheduled courses from the uploaded {attachment_context.document_type.replace('_', ' ')}: "
             f"{', '.join(attachment_signals.planned_codes)}"
         )
+        if schedule_summary["total_credits"] is not None:
+            lines.append(
+                f"- Estimated total credits in the planned schedule: {schedule_summary['total_credits']}"
+            )
         if schedule_evaluation["ready_courses"]:
             lines.append(
                 f"- Planned courses that look ready based on known prerequisites: "
@@ -188,6 +199,16 @@ def _build_attachment_signal_context(
             lines.append(
                 f"- Planned courses that already appear completed: "
                 f"{', '.join(schedule_evaluation['already_completed_courses'])}"
+            )
+        if schedule_summary["required_in_plan"]:
+            lines.append(
+                f"- Planned courses that match known required courses for the student's major: "
+                f"{', '.join(schedule_summary['required_in_plan'])}"
+            )
+        if schedule_summary["outside_known_requirements"]:
+            lines.append(
+                f"- Planned courses not currently listed in the known required-course set for the student's major: "
+                f"{', '.join(schedule_summary['outside_known_requirements'])}"
             )
 
     if not lines:
@@ -394,6 +415,7 @@ async def send_message(
     attachment_signal_context = _build_attachment_signal_context(
         attachment_context,
         attachment_signals,
+        current_user,
         effective_completed_codes,
     )
     combined_docs = _merge_retrieved_documents(retrieved_docs, attachment_course_docs)

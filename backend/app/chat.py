@@ -12,6 +12,7 @@ from .db import get_db
 from .rag import (
     AttachmentCourseSignals,
     RetrievedDocument,
+    compare_degree_audit,
     evaluate_course_plan,
     extract_attachment_course_signals,
     extract_known_course_codes,
@@ -167,6 +168,27 @@ def _build_attachment_signal_context(
             f"- Recognized remaining or needed courses from the uploaded {attachment_context.document_type.replace('_', ' ')}: "
             f"{', '.join(attachment_signals.remaining_codes)}"
         )
+        if attachment_context.document_type == "degree_audit":
+            audit_comparison = compare_degree_audit(
+                attachment_signals.remaining_codes,
+                effective_completed_codes,
+                user.major,
+            )
+            if audit_comparison["overlap_remaining"]:
+                lines.append(
+                    f"- Remaining courses that match the app's current degree-progress view: "
+                    f"{', '.join(audit_comparison['overlap_remaining'])}"
+                )
+            if audit_comparison["audit_only_remaining"]:
+                lines.append(
+                    f"- Remaining courses listed by the uploaded audit but not currently in the app's remaining-course set: "
+                    f"{', '.join(audit_comparison['audit_only_remaining'])}"
+                )
+            if audit_comparison["system_only_remaining"]:
+                lines.append(
+                    f"- Courses the app still expects as remaining that were not clearly recognized in the uploaded audit: "
+                    f"{', '.join(audit_comparison['system_only_remaining'][:8])}"
+                )
     if attachment_signals.planned_codes:
         schedule_evaluation = evaluate_course_plan(
             attachment_signals.planned_codes,

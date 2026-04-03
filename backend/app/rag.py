@@ -334,6 +334,24 @@ def summarize_schedule_plan(
     }
 
 
+def compare_degree_audit(
+    audit_remaining_codes: Iterable[str],
+    completed_course_codes: Iterable[str],
+    major: Optional[str] = None,
+) -> dict[str, list[str]]:
+    audit_remaining = {
+        code.strip().upper() for code in audit_remaining_codes if code.strip()
+    }
+    progress = get_degree_progress(major, completed_course_codes)
+    system_remaining = set(progress.get("remaining_courses", []))
+
+    return {
+        "overlap_remaining": sorted(audit_remaining & system_remaining),
+        "audit_only_remaining": sorted(audit_remaining - system_remaining),
+        "system_only_remaining": sorted(system_remaining - audit_remaining),
+    }
+
+
 def _department_documents() -> List[RetrievedDocument]:
     path = DATA_DIR / "departments.csv"
     if not path.exists():

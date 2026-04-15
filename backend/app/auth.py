@@ -114,12 +114,56 @@ def _normalize_import_source(import_source: str) -> str:
     return normalized if normalized in allowed else "manual"
 
 
-def _infer_import_document_type(import_source: str, attachment_context) -> str:
+def _infer_import_document_type(import_source: str, attachment_context, import_text: str = "") -> str:
     if attachment_context and attachment_context.document_type:
         return attachment_context.document_type
+    lowered = (import_text or "").lower()
+    if import_source == "canvas_export":
+        if any(keyword in lowered for keyword in {"current", "enrolled", "semester", "assignment", "dashboard"}):
+            return "schedule"
+    if import_source == "websis_export":
+        if any(
+            keyword in lowered
+            for keyword in {
+                "remaining requirement",
+                "remaining requirements",
+                "degree audit",
+                "program audit",
+                "academic record",
+                "major:",
+            }
+        ):
+            return "degree_audit"
     if import_source in {"transcript_text", "canvas_export", "websis_export"}:
         return "transcript"
     return "text_document"
+
+
+def _apply_canvas_import_bias(
+    import_text: str,
+    completed: list[str],
+    planned: list[str],
+    remaining: list[str],
+) -> tuple[list[str], list[str], list[str]]:
+    mentioned = extract_known_course_codes(import_text, limit=30)
+    return [], sorted({*planned, *mentioned}), remaining
+
+
+def _apply_websis_import_bias(
+    import_text: str,
+    document_type: str,
+    completed: list[str],
+    planned: list[str],
+    remaining: list[str],
+) -> tuple[list[str], list[str], list[str]]:
+    mentioned = extract_known_course_codes(import_text, limit=30)
+    if document_type == "degree_audit":
+        if not remaining:
+            remaining = sorted(set(mentioned) - set(completed))
+        return sorted(set(completed)), planned, sorted(set(remaining))
+    if not completed:
+        completed = sorted(set(mentioned))
+    return completed, planned, remaining
 
 
 def _build_import_preview_codes(
@@ -127,16 +171,37 @@ def _build_import_preview_codes(
     import_source: str,
     attachment_context,
 ) -> tuple[str, list[str], list[str], list[str], list[str]]:
-    document_type = _infer_import_document_type(import_source, attachment_context)
+    document_type = _infer_import_document_type(import_source, attachment_context, import_text)
     signals = extract_attachment_course_signals(import_text, document_type, limit=30)
 
     completed = list(signals.completed_codes)
     planned = list(signals.planned_codes)
     remaining = list(signals.remaining_codes)
+    mentioned = extract_known_course_codes(import_text, limit=30)
+
+    if import_source == "canvas_export":
+        completed, planned, remaining = _apply_canvas_import_bias(
+            import_text,
+            completed,
+            planned,
+            remaining,
+        )
+    elif import_source == "websis_export":
+        completed, planned, remaining = _apply_websis_import_bias(
+            import_text,
+            document_type,
+            completed,
+            planned,
+            remaining,
+        )
 
     if document_type == "degree_audit" and not completed:
         completed = []
-    elif document_type in {"transcript", "schedule"} and not completed:
+    elif (
+        import_source != "canvas_export"
+        and document_type in {"transcript", "schedule"}
+        and not completed
+    ):
         completed = list(signals.mentioned_codes)
 
     combined_candidates = sorted(
@@ -144,13 +209,14 @@ def _build_import_preview_codes(
             *completed,
             *planned,
             *remaining,
-            *extract_known_course_codes(import_text, limit=30),
+            *mentioned,
         }
     )
     return document_type, combined_candidates, completed, planned, remaining
 
 
 def _build_import_preview_summary(
+    import_source: str,
     detected_document_type: str,
     completed_codes: list[str],
     planned_codes: list[str],
@@ -158,6 +224,18 @@ def _build_import_preview_summary(
     matched_codes: list[str],
 ) -> str:
     document_label = detected_document_type.replace("_", " ")
+    if import_source == "canvas_export" and planned_codes:
+        return (
+            f"This Canvas export looks like current-course context with "
+            f"{len(planned_codes)} planned or active course signal"
+            f"{'' if len(planned_codes) == 1 else 's'}."
+        )
+    if import_source == "websis_export" and completed_codes:
+        return (
+            f"This WebSIS export looks like official course history with "
+            f"{len(completed_codes)} completed course"
+            f"{'' if len(completed_codes) == 1 else 's'} recognized."
+        )
     if completed_codes:
         return (
             f"Recognized {len(completed_codes)} completed course"
@@ -179,6 +257,25 @@ def _build_import_preview_summary(
             f"{'' if len(matched_codes) == 1 else 's'} in this {document_label}."
         )
     return f"Processed this {document_label}, but no supported Morgan course codes were recognized."
+
+
+def _build_import_confidence_note(
+    import_source: str,
+    attachment_context,
+) -> str:
+    if attachment_context and attachment_context.confidence_note:
+        return attachment_context.confidence_note
+    if import_source == "canvas_export":
+        return (
+            "Interpreting this as current-course context from a Canvas-style export, "
+            "so active and planned classes are weighted more heavily than completed history."
+        )
+    if import_source == "websis_export":
+        return (
+            "Interpreting this as a WebSIS-style academic record export, so completed "
+            "and remaining requirement signals are weighted more heavily."
+        )
+    return "Using the provided text directly for OCR-free course extraction."
 
 
 @router.get("/me", response_model=schemas.UserRead)
@@ -299,6 +396,7 @@ async def import_completed_courses_preview(
             attachment_context.summary
             if attachment_context and attachment_context.summary
             else _build_import_preview_summary(
+                normalized_import_source,
                 detected_document_type,
                 [code for code in completed_codes if code in known_codes],
                 [code for code in planned_codes if code in known_codes],
@@ -306,10 +404,9 @@ async def import_completed_courses_preview(
                 matched,
             )
         ),
-        confidence_note=(
-            attachment_context.confidence_note
-            if attachment_context and attachment_context.confidence_note
-            else "Using the provided text directly for OCR-free course extraction."
+        confidence_note=_build_import_confidence_note(
+            normalized_import_source,
+            attachment_context,
         ),
         matched_course_codes=matched,
         completed_course_codes=[code for code in completed_codes if code in known_codes],

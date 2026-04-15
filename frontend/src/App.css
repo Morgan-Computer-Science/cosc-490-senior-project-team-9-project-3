@@ -1324,6 +1324,28 @@ textarea::placeholder {
   margin-bottom: 12px;
 }
 
+.import-source-guidance {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.72);
+  margin: 10px 0 4px;
+}
+
+.import-source-guidance strong {
+  color: var(--text-main);
+  font-size: 0.92rem;
+}
+
+.import-source-guidance p {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  font-size: 0.88rem;
+}
+
 .wizard-step {
   padding: 8px 12px;
   border-radius: 999px;

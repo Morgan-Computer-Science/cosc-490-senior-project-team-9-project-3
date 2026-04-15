@@ -15,6 +15,7 @@ Morgan State AI Faculty Advisor is a full-stack student advising system built fo
 - Image, PDF, and text-file attachment support in chat
 - Student-state analysis for planning, career, and wellness-support signals
 - Connector-ready import flow for manual, Canvas-style, and WebSIS-style student data
+- Source-specific connector parsing for Canvas current-course context and WebSIS academic-record context
 
 ## Tech stack
 

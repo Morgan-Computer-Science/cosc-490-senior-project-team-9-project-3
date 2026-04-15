@@ -57,8 +57,8 @@ Each connector now exposes metadata about:
 The current product behavior is intentionally honest:
 
 - `Manual` is available now
-- `Canvas` supports export-style uploads today, with direct sync planned later
-- `WebSIS` supports export-style uploads today, with direct sync planned later
+- `Canvas` supports export-style uploads today for current-course and schedule context, with direct sync planned later
+- `WebSIS` supports export-style uploads today for official-record-style history and degree-audit context, with direct sync planned later
 
 The import wizard still remains the active ingestion path, but connectors are now a first-class part of the product instead of just labels on a form.
 
@@ -83,6 +83,32 @@ The import wizard still remains the active ingestion path, but connectors are no
 - Real Canvas authenticated sync
 - Real WebSIS or SIS authenticated sync
 - Official course history and major sync into the normalized advising data layer
+
+## Source-specific behavior today
+
+### Canvas
+
+Canvas-style imports are interpreted as present-tense academic context.
+
+That means the system now prefers:
+
+- planned or current courses
+- schedule-style interpretation
+- workload and enrollment cues when available
+
+Canvas uploads are intentionally not treated as the primary source of completed-course history unless the content clearly shows that.
+
+### WebSIS
+
+WebSIS-style imports are interpreted as academic-record-style context.
+
+That means the system now prefers:
+
+- completed courses
+- remaining or needed coursework
+- degree-audit or official-record style summaries when the text supports that
+
+WebSIS uploads are the stronger path for degree-progress style interpretation until real direct sync exists.
 
 ## Architecture implication
 

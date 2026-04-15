@@ -117,3 +117,53 @@ def test_degree_progress_supports_launch_visible_majors(client, auth_headers):
         payload = progress.json()
         assert payload["major"] == major
         assert payload["required_courses"]
+
+
+def test_canvas_export_preview_prefers_current_schedule_context(client, auth_headers):
+    response = client.post(
+        "/auth/me/completed-courses/import",
+        headers=auth_headers,
+        data={
+            "import_source": "canvas_export",
+            "source_text": (
+                "Canvas dashboard export\n"
+                "Current Courses: COSC 111, MATH 141\n"
+                "Enrolled for Fall Semester\n"
+                "Upcoming Assignments in ENGL 101\n"
+            ),
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["detected_document_type"] == "schedule"
+    assert payload["completed_course_codes"] == []
+    assert {"COSC111", "MATH141", "ENGL101"}.issubset(set(payload["planned_course_codes"]))
+    assert "Canvas" in payload["source_summary"]
+    assert "current" in payload["summary"].lower()
+    assert "current-course context" in payload["confidence_note"].lower()
+
+
+def test_websis_export_preview_prefers_official_record_context(client, auth_headers):
+    response = client.post(
+        "/auth/me/completed-courses/import",
+        headers=auth_headers,
+        data={
+            "import_source": "websis_export",
+            "source_text": (
+                "WebSIS academic record\n"
+                "Major: Computer Science\n"
+                "Completed Courses: COSC 111, MATH 141\n"
+                "Remaining Requirements: COSC 241, MATH 241\n"
+            ),
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["detected_document_type"] == "degree_audit"
+    assert {"COSC111", "MATH141"}.issubset(set(payload["completed_course_codes"]))
+    assert {"COSC241", "MATH241"}.issubset(set(payload["remaining_course_codes"]))
+    assert "WebSIS" in payload["source_summary"]
+    assert "official" in payload["summary"].lower()
+    assert "academic record" in payload["confidence_note"].lower()

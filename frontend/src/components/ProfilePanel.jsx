@@ -59,6 +59,35 @@ const ProfilePanel = ({
     none: "No extraction",
   };
 
+  const importSourceDescriptions = {
+    transcript_text: {
+      title: "Transcript text",
+      helper: "Best for pasted transcript lines, OCR text, or manual course-history notes.",
+      placeholder: "Paste transcript text or academic history here...",
+      action: "Preview transcript import",
+    },
+    manual: {
+      title: "Manual course list",
+      helper: "Best for a short list of course codes you already know you completed.",
+      placeholder: "Paste course codes like COSC111, MATH141, ENGL101...",
+      action: "Preview manual import",
+    },
+    canvas_export: {
+      title: "Canvas-style export",
+      helper: "Best for current-course dashboards, enrollment snapshots, and schedule-style exports.",
+      placeholder: "Paste Canvas dashboard text, current courses, or upload a Canvas export...",
+      action: "Preview Canvas import",
+    },
+    websis_export: {
+      title: "WebSIS-style export",
+      helper: "Best for official-looking course history, degree audit, or academic record exports.",
+      placeholder: "Paste WebSIS course history, audit text, or upload an academic record export...",
+      action: "Preview WebSIS import",
+    },
+  };
+
+  const selectedImportSource = importSourceDescriptions[importSource] || importSourceDescriptions.manual;
+
   useEffect(() => {
     if (!user) {
       return;
@@ -324,7 +353,7 @@ const ProfilePanel = ({
             <span className="meta-pill">{connectors?.length || 0} connectors</span>
           </div>
           <p className="panel-subtext">
-            Manual and OCR-assisted uploads work today. Canvas and WebSIS are represented as real product connectors so direct sync can plug into the same workflow later.
+            Manual and OCR-assisted uploads work today. Canvas is positioned for current-course context, while WebSIS is positioned for official-record-style imports.
           </p>
           <div className="connector-grid">
             {(connectors ?? []).map((connector) => (
@@ -386,14 +415,18 @@ const ProfilePanel = ({
             <option value="canvas_export">Canvas-style export</option>
             <option value="websis_export">WebSIS-style export</option>
           </select>
+          <div className="import-source-guidance">
+            <strong>{selectedImportSource.title}</strong>
+            <p>{selectedImportSource.helper}</p>
+          </div>
           <textarea
             value={importText}
             onChange={(event) => setImportText(event.target.value)}
-            placeholder="Paste transcript text, exported course history, or degree audit notes here..."
+            placeholder={selectedImportSource.placeholder}
             rows={4}
           />
           <p className="panel-subtext">
-            This import preview supports manual text today and leaves a clean lane for future Canvas or WebSIS connectors.
+            Upload now, direct sync later. The preview will interpret Canvas more like current enrollment context and WebSIS more like academic-record context.
           </p>
           <div className="bulk-entry-row import-row">
             <label className="upload-button inline-upload-button">
@@ -405,7 +438,7 @@ const ProfilePanel = ({
               />
             </label>
             <button type="button" className="secondary-button" onClick={handleImportPreview}>
-              Preview import
+              {selectedImportSource.action}
             </button>
           </div>
           {importFile ? (

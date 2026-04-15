@@ -1,6 +1,7 @@
 from dataclasses import replace
-from typing import List
+import logging
 import os
+from typing import List
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
 from sqlalchemy.orm import Session
@@ -29,6 +30,7 @@ from .student_state import analyze_student_state
 from .rate_limit import limit_chat
 
 router = APIRouter(prefix="/chat", tags=["chat"])
+logger = logging.getLogger(__name__)
 
 
 def _refine_attachment_document_type(question: str, attachment_context) -> str | None:
@@ -537,7 +539,7 @@ async def send_message(
             attachment_document_type=attachment_context.document_type if attachment_context else None,
         )
     except Exception as exc:
-        print("AI error in generate_ai_reply:", repr(exc))
+        logger.exception("AI error in generate_ai_reply: %r", exc)
         ai_text = _fallback_advising_reply(current_user, clean_content, combined_docs, student_state)
     finally:
         if attachment_context and attachment_context.temp_path:

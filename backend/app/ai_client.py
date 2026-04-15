@@ -1,12 +1,28 @@
+import logging
 import os
+from pathlib import Path
 from typing import Dict, List, Optional
 
 import google.generativeai as genai
+from dotenv import load_dotenv
 
-_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-genai.configure(api_key=_API_KEY)
+logger = logging.getLogger(__name__)
+_BACKEND_ENV_PATH = Path(__file__).resolve().parents[1] / ".env"
 
 _MODEL_NAME = "models/gemini-2.5-flash"
+
+
+def _get_runtime_api_key() -> str:
+    load_dotenv(_BACKEND_ENV_PATH)
+    api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    if not api_key:
+        raise RuntimeError("Gemini API key is not configured in backend/.env or the process environment.")
+    return api_key
+
+
+def _build_model():
+    genai.configure(api_key=_get_runtime_api_key())
+    return genai.GenerativeModel(_MODEL_NAME)
 
 
 def _system_prompt() -> str:
@@ -66,10 +82,13 @@ def extract_text_from_attachment(
     attachment_document_type: Optional[str] = None,
     attachment_summary: Optional[str] = None,
 ) -> Optional[str]:
-    if not _API_KEY or not attachment_path:
+    if not attachment_path:
         return None
 
-    model = genai.GenerativeModel(_MODEL_NAME)
+    try:
+        model = _build_model()
+    except RuntimeError:
+        return None
     uploaded_file = None
     try:
         uploaded_file = genai.upload_file(
@@ -95,6 +114,7 @@ def extract_text_from_attachment(
         cleaned = text.strip()
         return cleaned or None
     except Exception:
+        logger.exception("Gemini OCR extraction failed for attachment '%s'.", attachment_summary or attachment_path)
         return None
     finally:
         if uploaded_file is not None:
@@ -126,7 +146,7 @@ def generate_ai_reply(
         role = "model" if msg["role"] == "assistant" else "user"
         contents.append({"role": role, "parts": [msg["content"]]})
 
-    model = genai.GenerativeModel(_MODEL_NAME)
+    model = _build_model()
     uploaded_file = None
     if attachment_path:
         uploaded_file = genai.upload_file(

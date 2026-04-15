@@ -14,6 +14,7 @@ Morgan State AI Faculty Advisor is a full-stack student advising system built fo
 - Spoken advisor replies through browser text-to-speech
 - Image, PDF, and text-file attachment support in chat
 - Student-state analysis for planning, career, and wellness-support signals
+- Connector-ready import flow for manual, Canvas-style, and WebSIS-style student data
 
 ## Tech stack
 
@@ -54,4 +55,4 @@ Frontend runs at `http://127.0.0.1:5173` and backend runs at `http://127.0.0.1:8
 
 ## Current focus
 
-The project has moved beyond a Computer Science-only chatbot. The system now aims to support students across multiple Morgan State majors while remaining grounded in university-specific source material.
+The project has moved beyond a Computer Science-only chatbot. The system now aims to support students across multiple Morgan State majors while remaining grounded in university-specific source material, OCR-assisted document understanding, and connector-ready student data ingestion.

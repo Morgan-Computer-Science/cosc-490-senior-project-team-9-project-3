@@ -2,6 +2,7 @@ import { startTransition, useDeferredValue, useEffect, useMemo, useState } from 
 
 import "./App.css";
 import {
+  fetchConnectors,
   fetchCourses,
   fetchCurrentUser,
   fetchDegreeProgress,
@@ -119,6 +120,7 @@ const App = () => {
   const [departments, setDepartments] = useState([]);
   const [faculty, setFaculty] = useState([]);
   const [supportResources, setSupportResources] = useState([]);
+  const [connectors, setConnectors] = useState([]);
   const [searchText, setSearchText] = useState("");
   const [selectedLevel, setSelectedLevel] = useState("");
   const [loadingCourses, setLoadingCourses] = useState(false);
@@ -173,6 +175,23 @@ const App = () => {
     };
 
     loadReferenceData();
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) {
+      return;
+    }
+
+    const loadConnectors = async () => {
+      try {
+        const connectorRows = await fetchConnectors(token);
+        setConnectors(connectorRows);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load connector options.");
+      }
+    };
+
+    loadConnectors();
   }, [token]);
 
   useEffect(() => {
@@ -458,6 +477,7 @@ const App = () => {
             <ProfilePanel
               user={user}
               courses={courses}
+              connectors={connectors}
               degreeProgress={degreeProgress}
               onSave={handleSaveProfile}
               onSaveCompletedCourses={handleSaveCompletedCourses}

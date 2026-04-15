@@ -53,6 +53,31 @@ class CompletedCoursesImportPreview(BaseModel):
     source_summary: Optional[str] = None
 
 
+class ConnectorSummary(BaseModel):
+    id: str
+    display_name: str
+    status: str
+    description: str
+    capabilities: list[str] = Field(default_factory=list)
+    supports_file_upload: bool = False
+    requires_authentication: bool = False
+    launch_stage: str
+
+
+class ConnectorDetail(ConnectorSummary):
+    supported_record_types: list[str] = Field(default_factory=list)
+
+
+class NormalizedAcademicRecord(BaseModel):
+    connector_id: str
+    source_type: str
+    record_type: str
+    confidence: Optional[str] = None
+    raw_summary: Optional[str] = None
+    course_codes: list[str] = Field(default_factory=list)
+    detected_document_type: Optional[str] = None
+
+
 class DegreeProgressSummary(BaseModel):
     major: Optional[str] = None
     required_courses: list[str] = Field(default_factory=list)

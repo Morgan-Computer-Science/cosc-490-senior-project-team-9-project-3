@@ -5,6 +5,7 @@ import { majorOptions } from "../majors";
 const ProfilePanel = ({
   user,
   courses,
+  connectors,
   degreeProgress,
   onSave,
   onSaveCompletedCourses,
@@ -36,6 +37,18 @@ const ProfilePanel = ({
     pdf_document: "PDF",
     text_document: "Text document",
     generic_file: "File",
+  };
+
+  const connectorStatusLabels = {
+    available: "Available now",
+    upload_available: "Upload today",
+    planned: "Planned",
+  };
+
+  const connectorStageLabels = {
+    available_now: "Use directly in this workflow",
+    upload_today_sync_later: "Upload-based now, direct sync later",
+    planned_direct_sync: "Planned direct sync",
   };
 
   const extractionMethodLabels = {
@@ -300,6 +313,46 @@ const ProfilePanel = ({
           <button type="button" className="secondary-button" onClick={handleCompletedCoursesSave}>
             Save completed courses
           </button>
+        </div>
+
+        <div className="connector-surface">
+          <div className="connector-surface-header">
+            <div>
+              <p className="eyebrow">Student Data Sources</p>
+              <h4>Bring course history in from the right source</h4>
+            </div>
+            <span className="meta-pill">{connectors?.length || 0} connectors</span>
+          </div>
+          <p className="panel-subtext">
+            Manual and OCR-assisted uploads work today. Canvas and WebSIS are represented as real product connectors so direct sync can plug into the same workflow later.
+          </p>
+          <div className="connector-grid">
+            {(connectors ?? []).map((connector) => (
+              <article key={connector.id} className="connector-card">
+                <div className="connector-card-top">
+                  <strong>{connector.display_name}</strong>
+                  <span className={`connector-status status-${connector.status}`}>
+                    {connectorStatusLabels[connector.status] || connector.status}
+                  </span>
+                </div>
+                <p>{connector.description}</p>
+                <div className="connector-meta">
+                  <span>{connector.supports_file_upload ? "File upload supported" : "No file upload"}</span>
+                  <span>{connector.requires_authentication ? "Auth required" : "No auth yet"}</span>
+                </div>
+                <div className="remaining-list connector-capabilities">
+                  {(connector.capabilities ?? []).map((capability) => (
+                    <span key={`${connector.id}-${capability}`} className="course-chip remaining-chip">
+                      {capability.replaceAll("_", " ")}
+                    </span>
+                  ))}
+                </div>
+                <p className="panel-subtext connector-stage-note">
+                  {connectorStageLabels[connector.launch_stage] || connector.launch_stage}
+                </p>
+              </article>
+            ))}
+          </div>
         </div>
 
         <label className="field-label">

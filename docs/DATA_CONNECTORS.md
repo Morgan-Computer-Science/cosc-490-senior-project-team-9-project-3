@@ -38,14 +38,29 @@ For this project, Canvas is a strong future connector for present-tense academic
 
 ## Current system state
 
-The app now supports a source-aware import wizard with these import labels:
+The app now has a real connector registry in the backend and a connector surface in the profile import workflow.
 
-- `transcript_text`
+Supported connectors:
+
 - `manual`
-- `canvas_export`
-- `websis_export`
+- `canvas`
+- `websis`
 
-At the moment, all of them still flow through the same parsing pipeline, but the source labels prepare the project for real integrations later.
+Each connector now exposes metadata about:
+
+- status
+- supported record types
+- capabilities
+- whether file upload is supported now
+- whether authentication is required yet
+
+The current product behavior is intentionally honest:
+
+- `Manual` is available now
+- `Canvas` supports export-style uploads today, with direct sync planned later
+- `WebSIS` supports export-style uploads today, with direct sync planned later
+
+The import wizard still remains the active ingestion path, but connectors are now a first-class part of the product instead of just labels on a form.
 
 ## Connector roadmap
 
@@ -55,23 +70,30 @@ At the moment, all of them still flow through the same parsing pipeline, but the
 - Student confirmation before saving matched courses
 
 ### Phase 2
-- Canvas export ingestion
-- Student can upload or authorize a current-course export
-- Advisor uses current-course context in planning and wellness checks
+- OCR-backed transcript, schedule, and degree-audit ingestion
+- Shared document workflow for profile imports and chat uploads
+- Stronger confidence and source-awareness in import previews
 
 ### Phase 3
-- SIS or WebSIS integration
-- Pull official completed courses and major
-- Reduce manual data entry
-- Improve degree-audit reliability
+- Connector registry and integration metadata endpoints
+- Frontend connector surface inside the import workflow
+- Upload-assisted Canvas and WebSIS paths represented as real product connectors
+
+### Future phase
+- Real Canvas authenticated sync
+- Real WebSIS or SIS authenticated sync
+- Official course history and major sync into the normalized advising data layer
 
 ## Architecture implication
 
-All imports should normalize into the same internal completed-course format:
+All imports and future syncs should normalize into the same internal academic-record shape:
 
+- connector id
 - course code
 - source type
 - confidence
 - raw import summary
+- record type
+- detected document type when relevant
 
 That keeps the rest of the advising system stable no matter where student data comes from.

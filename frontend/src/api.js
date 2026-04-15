@@ -149,6 +149,14 @@ export async function fetchSupportResources(token) {
   return parseResponse(response, "Failed to fetch support resources.");
 }
 
+export async function fetchConnectors(token) {
+  const response = await fetch(`${API_BASE_URL}/integrations/connectors`, {
+    headers: authHeaders(token),
+  });
+
+  return parseResponse(response, "Failed to fetch connectors.");
+}
+
 export async function listChatSessions(token) {
   const response = await fetch(`${API_BASE_URL}/chat/sessions`, {
     headers: authHeaders(token),

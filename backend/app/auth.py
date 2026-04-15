@@ -12,6 +12,7 @@ from .rag import (
     extract_all_course_codes,
     extract_attachment_course_signals,
     extract_known_course_codes,
+    get_computer_science_audit_summary,
     get_degree_progress,
     load_course_rows,
 )
@@ -392,6 +393,21 @@ async def import_completed_courses_preview(
     elif current_user.email:
         source_summary = f"{source_labels[normalized_import_source]} for {current_user.email}"
 
+    normalized_completed_codes = [code for code in completed_codes if code in known_codes]
+    normalized_planned_codes = [code for code in planned_codes if code in known_codes]
+    normalized_remaining_codes = [code for code in remaining_codes if code in known_codes]
+
+    cs_audit_summary = None
+    if (current_user.major or "").strip().lower() == "computer science" or any(
+        code.startswith("COSC") for code in combined_candidates
+    ):
+        cs_audit_summary = get_computer_science_audit_summary(
+            completed_codes=normalized_completed_codes,
+            in_progress_codes=normalized_planned_codes,
+            remaining_codes=normalized_remaining_codes,
+            planning_interest="Import preview interpretation",
+        )
+
     return schemas.CompletedCoursesImportPreview(
         import_source=normalized_import_source,
         detected_document_type=detected_document_type,
@@ -404,9 +420,9 @@ async def import_completed_courses_preview(
             else _build_import_preview_summary(
                 normalized_import_source,
                 detected_document_type,
-                [code for code in completed_codes if code in known_codes],
-                [code for code in planned_codes if code in known_codes],
-                [code for code in remaining_codes if code in known_codes],
+                normalized_completed_codes,
+                normalized_planned_codes,
+                normalized_remaining_codes,
                 matched,
             )
         ),
@@ -415,12 +431,13 @@ async def import_completed_courses_preview(
             attachment_context,
         ),
         matched_course_codes=matched,
-        completed_course_codes=[code for code in completed_codes if code in known_codes],
-        planned_course_codes=[code for code in planned_codes if code in known_codes],
-        remaining_course_codes=[code for code in remaining_codes if code in known_codes],
+        completed_course_codes=normalized_completed_codes,
+        planned_course_codes=normalized_planned_codes,
+        remaining_course_codes=normalized_remaining_codes,
         unknown_course_codes=unknown,
         matched_count=len(matched),
         source_summary=source_summary,
+        cs_audit_summary=cs_audit_summary,
     )
 
 
@@ -432,3 +449,4 @@ def get_current_user_degree_progress(
     return schemas.DegreeProgressSummary(
         **get_degree_progress(current_user.major, completed_codes)
     )
+

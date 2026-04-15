@@ -88,3 +88,34 @@ def test_chat_ai_interest_uses_focus_area_context(client, auth_headers, monkeypa
 
     assert response.status_code == 200
     assert "AI and Data" in captured_context["extra_context"]
+
+
+def test_chat_uses_cs_audit_summary_for_capstone_question(client, auth_headers, monkeypatch):
+    captured_context = {}
+
+    def fake_generate_ai_reply(**kwargs):
+        captured_context["extra_context"] = kwargs["extra_context"]
+        return "Test advisor reply"
+
+    monkeypatch.setattr("app.chat.generate_ai_reply", fake_generate_ai_reply)
+    client.put(
+        "/auth/me",
+        headers=auth_headers,
+        json={"major": "Computer Science"},
+    )
+    client.put(
+        "/auth/me/completed-courses",
+        headers=auth_headers,
+        json={"course_codes": ["COSC111", "COSC112", "COSC241", "MATH141"]},
+    )
+    session = client.post("/chat/sessions", headers=auth_headers, json={"title": "CS Audit"}).json()
+
+    response = client.post(
+        f"/chat/sessions/{session['id']}/messages",
+        headers=auth_headers,
+        data={"content": "Am I ready for COSC490 based on my CS record so far?"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["advisor_insights"]["capstone_readiness"]["status"] == "not_ready"
+    assert "Computer Science audit interpretation" in captured_context["extra_context"]

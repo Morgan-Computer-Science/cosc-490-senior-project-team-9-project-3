@@ -114,6 +114,35 @@ def _build_degree_progress_context(
             lines.append(
                 f"  Missing foundations before capstone: {', '.join(summary['capstone_readiness']['missing_foundations'])}"
             )
+    if summary.get("cs_audit_summary"):
+        cs_audit = summary["cs_audit_summary"]
+        lines.append("- Computer Science audit interpretation:")
+        if cs_audit["foundations"]["completed"]:
+            lines.append(
+                f"  Completed CS foundations: {', '.join(cs_audit['foundations']['completed'])}"
+            )
+        if cs_audit["foundations"]["remaining"]:
+            lines.append(
+                f"  Foundations still missing: {', '.join(cs_audit['foundations']['remaining'])}"
+            )
+        if cs_audit["core_progress"]["completed"]:
+            lines.append(
+                f"  Completed CS core: {', '.join(cs_audit['core_progress']['completed'])}"
+            )
+        if cs_audit["core_progress"]["remaining"]:
+            lines.append(
+                f"  Core CS courses still missing: {', '.join(cs_audit['core_progress']['remaining'])}"
+            )
+        if cs_audit["pathway_direction"]["primary_pathway"]:
+            lines.append(
+                f"  Current pathway leaning: {cs_audit['pathway_direction']['primary_pathway']}"
+            )
+        if cs_audit["unmapped_courses"]:
+            lines.append(
+                f"  CS courses still needing advisor confirmation: {', '.join(cs_audit['unmapped_courses'])}"
+            )
+        for summary_line in cs_audit["summary_lines"][:3]:
+            lines.append(f"  {summary_line}")
     if summary["notes"]:
         lines.append(f"- Notes: {summary['notes']}")
     if summary["advising_tips"]:
@@ -597,5 +626,6 @@ async def send_message(
         ai_message=ai_msg,
         advisor_insights=advisor_insights,
     )
+
 
 

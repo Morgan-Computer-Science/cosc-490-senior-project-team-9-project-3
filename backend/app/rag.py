@@ -1044,6 +1044,23 @@ def _build_cs_capstone_readiness(completed: list[str]) -> dict[str, object]:
     }
 
 
+def get_computer_science_audit_summary(
+    completed_codes: list[str],
+    in_progress_codes: list[str],
+    remaining_codes: list[str],
+    planning_interest: Optional[str] = None,
+) -> dict[str, object]:
+    from .cs_audit import interpret_computer_science_audit
+
+    return interpret_computer_science_audit(
+        completed_codes=completed_codes,
+        in_progress_codes=in_progress_codes,
+        remaining_codes=remaining_codes,
+        planning_interest=planning_interest,
+    )
+
+
+
 def get_degree_progress(
     major: Optional[str],
     completed_course_codes: Iterable[str],
@@ -1062,6 +1079,7 @@ def get_degree_progress(
             "blocked_courses": [],
             "pathway_recommendations": [],
             "capstone_readiness": {"status": "unknown", "missing_foundations": [], "notes": None},
+            "cs_audit_summary": None,
             "completion_percent": 0.0,
             "notes": None,
             "advising_tips": None,
@@ -1087,6 +1105,7 @@ def get_degree_progress(
             "blocked_courses": [],
             "pathway_recommendations": [],
             "capstone_readiness": {"status": "unknown", "missing_foundations": [], "notes": None},
+            "cs_audit_summary": None,
             "completion_percent": 0.0,
             "notes": program_notes or None,
             "advising_tips": (
@@ -1107,6 +1126,7 @@ def get_degree_progress(
     completion_percent = round((len(required) - len(remaining)) / len(required) * 100, 1) if required else 0.0
     pathway_recommendations: list[dict[str, object]] = []
     capstone_readiness = {"status": "unknown", "missing_foundations": [], "notes": None}
+    cs_audit_summary = None
 
     if _is_computer_science_major(canonical_major):
         pathway_recommendations = _build_cs_pathway_recommendations(
@@ -1115,6 +1135,12 @@ def get_degree_progress(
             question_hint=planning_interest,
         )
         capstone_readiness = _build_cs_capstone_readiness(completed)
+        cs_audit_summary = get_computer_science_audit_summary(
+            completed_codes=completed,
+            in_progress_codes=[],
+            remaining_codes=remaining,
+            planning_interest=planning_interest,
+        )
 
     return {
         "major": _normalize(matching_row.get("major")) or major,
@@ -1125,7 +1151,10 @@ def get_degree_progress(
         "blocked_courses": blocked_courses,
         "pathway_recommendations": pathway_recommendations,
         "capstone_readiness": capstone_readiness,
+        "cs_audit_summary": cs_audit_summary,
         "completion_percent": completion_percent,
         "notes": _normalize(matching_row.get("notes")) or None,
         "advising_tips": _normalize(matching_row.get("advising_tips")) or None,
     }
+
+

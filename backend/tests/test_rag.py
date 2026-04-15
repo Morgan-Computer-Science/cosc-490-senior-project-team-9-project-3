@@ -171,3 +171,14 @@ def test_retrieve_relevant_documents_supports_cs_focus_area_faculty_context():
 
     assert docs
     assert any(doc.source_type == "faculty" and (doc.department or "") == "Computer Science" for doc in docs)
+
+
+def test_cs_degree_progress_surfaces_audit_summary():
+    progress = get_degree_progress(
+        "Computer Science",
+        ["COSC111", "COSC112", "COSC241", "MATH141"],
+        planning_interest="I want to know if I am on track for capstone.",
+    )
+
+    assert progress["cs_audit_summary"]["capstone_readiness"]["status"] == "not_ready"
+    assert "COSC241" in progress["cs_audit_summary"]["core_progress"]["completed"]

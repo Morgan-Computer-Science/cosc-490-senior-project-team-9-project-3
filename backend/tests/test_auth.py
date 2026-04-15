@@ -231,3 +231,19 @@ def test_import_preview_recognizes_new_political_science_codes(client, auth_head
     assert response.status_code == 200
     payload = response.json()
     assert {"POSC101", "POSC201"}.issubset(set(payload["completed_course_codes"]))
+
+
+def test_cs_import_preview_returns_cs_specific_audit_summary(client, auth_headers):
+    response = client.post(
+        "/auth/me/completed-courses/import",
+        headers=auth_headers,
+        data={
+            "import_source": "websis_export",
+            "source_text": "Computer Science degree audit\nCOSC 111 A\nCOSC 241 A\nCOSC 490 IP\nMATH 141 A",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["cs_audit_summary"]["capstone_readiness"]["status"] == "not_ready"
+    assert payload["cs_audit_summary"]["summary_lines"]

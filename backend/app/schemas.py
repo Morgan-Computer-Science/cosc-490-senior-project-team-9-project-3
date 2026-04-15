@@ -51,6 +51,7 @@ class CompletedCoursesImportPreview(BaseModel):
     unknown_course_codes: list[str] = Field(default_factory=list)
     matched_count: int = 0
     source_summary: Optional[str] = None
+    cs_audit_summary: Optional["CSAuditSummary"] = None
 
 
 class ConnectorSummary(BaseModel):
@@ -92,6 +93,29 @@ class CapstoneReadiness(BaseModel):
     notes: Optional[str] = None
 
 
+class CSAuditBucket(BaseModel):
+    completed: list[str] = Field(default_factory=list)
+    in_progress: list[str] = Field(default_factory=list)
+    remaining: list[str] = Field(default_factory=list)
+
+
+class CSAuditDirection(BaseModel):
+    primary_pathway: Optional[str] = None
+    aligned_courses: list[str] = Field(default_factory=list)
+    notes: Optional[str] = None
+
+
+class CSAuditSummary(BaseModel):
+    foundations: CSAuditBucket = Field(default_factory=CSAuditBucket)
+    core_progress: CSAuditBucket = Field(default_factory=CSAuditBucket)
+    math_support: CSAuditBucket = Field(default_factory=CSAuditBucket)
+    upper_level_progress: CSAuditBucket = Field(default_factory=CSAuditBucket)
+    capstone_readiness: CapstoneReadiness = Field(default_factory=CapstoneReadiness)
+    pathway_direction: CSAuditDirection = Field(default_factory=CSAuditDirection)
+    unmapped_courses: list[str] = Field(default_factory=list)
+    summary_lines: list[str] = Field(default_factory=list)
+
+
 class DegreeProgressSummary(BaseModel):
     major: Optional[str] = None
     required_courses: list[str] = Field(default_factory=list)
@@ -101,6 +125,7 @@ class DegreeProgressSummary(BaseModel):
     blocked_courses: list[str] = Field(default_factory=list)
     pathway_recommendations: list[PathwayRecommendation] = Field(default_factory=list)
     capstone_readiness: CapstoneReadiness = Field(default_factory=CapstoneReadiness)
+    cs_audit_summary: Optional[CSAuditSummary] = None
     completion_percent: float = 0.0
     notes: Optional[str] = None
     advising_tips: Optional[str] = None
@@ -219,3 +244,4 @@ class ChatSendResponse(BaseModel):
     user_message: ChatMessageOut
     ai_message: ChatMessageOut
     advisor_insights: AdvisorInsights
+

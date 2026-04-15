@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { majorOptions } from "../majors";
+import CSAuditSummary from "./CSAuditSummary";
 
 const ProfilePanel = ({
   user,
@@ -308,6 +309,13 @@ const ProfilePanel = ({
             {degreeProgress?.advising_tips || "Add completed courses to see what is still left."}
           </p>
 
+          {degreeProgress?.cs_audit_summary ? (
+            <CSAuditSummary
+              summary={degreeProgress.cs_audit_summary}
+              title="Your Computer Science standing"
+            />
+          ) : null}
+
           <div className="remaining-list">
             {(degreeProgress?.recommended_next_courses ?? []).map((courseCode) => (
               <span key={`recommended-${courseCode}`} className="course-chip suggested-chip">
@@ -522,6 +530,13 @@ const ProfilePanel = ({
                   Unmatched codes: {importPreview.unknown_course_codes.join(", ")}
                 </p>
               ) : null}
+              {importPreview?.cs_audit_summary ? (
+                <CSAuditSummary
+                  summary={importPreview.cs_audit_summary}
+                  compact
+                  title="Computer Science interpretation from this import"
+                />
+              ) : null}
               <div className="bulk-entry-row import-actions">
                 <button
                   type="button"
@@ -575,3 +590,4 @@ const ProfilePanel = ({
 };
 
 export default ProfilePanel;
+

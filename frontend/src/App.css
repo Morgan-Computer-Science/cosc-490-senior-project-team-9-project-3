@@ -996,6 +996,142 @@ textarea::placeholder {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.cs-audit-surface {
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--panel-soft) 78%, var(--panel) 22%);
+  box-shadow: var(--shadow-soft);
+}
+
+.cs-audit-surface.compact {
+  margin-top: 14px;
+  padding: 16px;
+}
+
+.cs-audit-topline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.cs-audit-topline h4 {
+  margin: 4px 0 0;
+  font-size: 1rem;
+}
+
+.cs-audit-pill.status-ready {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.cs-audit-pill.status-nearly_ready {
+  color: #9a3412;
+  background: #ffedd5;
+}
+
+.cs-audit-pill.status-not_ready {
+  color: #991b1b;
+  background: #fee2e2;
+}
+
+.cs-audit-pill.status-unknown {
+  color: var(--text-soft);
+  background: color-mix(in srgb, var(--panel) 70%, var(--bg-soft) 30%);
+}
+
+.cs-audit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.cs-audit-card {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--panel);
+}
+
+.cs-audit-card h5 {
+  margin: 0 0 10px;
+  font-size: 0.92rem;
+}
+
+.cs-audit-group + .cs-audit-group {
+  margin-top: 10px;
+}
+
+.cs-audit-group-label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-soft);
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.cs-audit-summary-lines {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0 0;
+}
+
+.cs-audit-summary-lines p {
+  margin: 0;
+  color: var(--text-soft);
+  line-height: 1.55;
+}
+
+.cs-audit-callout {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.cs-audit-callout strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.cs-audit-callout p {
+  margin: 0;
+  color: var(--text-soft);
+  line-height: 1.5;
+}
+
+.cs-audit-callout.warning {
+  border-color: rgba(234, 88, 12, 0.2);
+  background: rgba(255, 237, 213, 0.6);
+}
+
+.cs-audit-callout.pathway {
+  border-color: rgba(0, 45, 98, 0.18);
+}
+
+.cs-audit-callout.confirmation {
+  border-style: dashed;
+}
+
+.cs-audit-chip-complete {
+  background: rgba(21, 128, 61, 0.12);
+}
+
+.cs-audit-chip-progress {
+  background: rgba(2, 132, 199, 0.12);
+}
+
+.cs-audit-chip-remaining {
+  background: rgba(148, 163, 184, 0.14);
+}
+
 .course-card-light,
 .info-card,
 .support-card,
@@ -1540,6 +1676,10 @@ textarea::placeholder {
 }
 
 @media (max-width: 920px) {
+  .cs-audit-grid {
+    grid-template-columns: 1fr;
+  }
+
   .ms-sidebar {
     width: 92px;
   }
@@ -1644,3 +1784,4 @@ textarea::placeholder {
     align-items: stretch;
   }
 }
+

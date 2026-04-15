@@ -25,6 +25,7 @@ STOPWORDS = {
 }
 SUPPORT_TOKENS = {"stress", "anxiety", "help", "support", "counseling", "mental", "overwhelmed"}
 COURSE_CODE_PATTERN = re.compile(r"\b([A-Za-z]{2,5})[\s-]?(\d{3}[A-Za-z]?)\b")
+GRADE_TOKEN_PATTERN = re.compile(r"\b(?:A|A-|A\+|B|B-|B\+|C|C-|C\+|D|D-|D\+|P|PS|CR|S)\b")
 
 
 @dataclass(frozen=True)
@@ -121,6 +122,24 @@ def extract_known_course_codes(text: Optional[str], limit: int = 12) -> list[str
     return matched_codes
 
 
+def extract_all_course_codes(text: Optional[str], limit: int = 30) -> list[str]:
+    if not text:
+        return []
+
+    detected_codes: list[str] = []
+    seen: set[str] = set()
+    for prefix, number in COURSE_CODE_PATTERN.findall(text):
+        normalized = f"{prefix.upper()}{number.upper()}"
+        if normalized in seen:
+            continue
+        seen.add(normalized)
+        detected_codes.append(normalized)
+        if len(detected_codes) >= limit:
+            break
+
+    return detected_codes
+
+
 def get_course_documents_by_code(course_codes: Iterable[str], limit: int = 6) -> list[RetrievedDocument]:
     target_codes = [code.strip().upper() for code in course_codes if code.strip()]
     if not target_codes:
@@ -192,11 +211,11 @@ def extract_attachment_course_signals(
         "registered",
         "current",
         "taking",
-        "semester",
-        "fall",
-        "spring",
-        "summer",
+        "ip",
+        "in-progress",
+        "in progress",
     }
+    schedule_keywords = {"semester", "fall", "spring", "summer", "winter"}
     remaining_keywords = {
         "remaining",
         "needed",
@@ -240,7 +259,13 @@ def extract_attachment_course_signals(
             continue
 
         has_completed_signal = any(keyword in lowered_line for keyword in completed_keywords)
-        has_planned_signal = any(keyword in lowered_line for keyword in planned_keywords)
+        has_grade_signal = document_type in {"transcript", "degree_audit"} and bool(
+            GRADE_TOKEN_PATTERN.search(raw_line)
+        )
+        has_planned_signal = any(keyword in lowered_line for keyword in planned_keywords) or (
+            document_type == "schedule"
+            and any(keyword in lowered_line for keyword in schedule_keywords)
+        )
         has_remaining_signal = any(keyword in lowered_line for keyword in remaining_keywords)
         transcript_completed_line = (
             document_type == "transcript"
@@ -249,7 +274,7 @@ def extract_attachment_course_signals(
         )
 
         for code in line_codes:
-            if has_completed_signal or transcript_completed_line:
+            if has_completed_signal or has_grade_signal or transcript_completed_line:
                 if code not in seen_completed:
                     seen_completed.add(code)
                     completed.append(code)
@@ -264,7 +289,11 @@ def extract_attachment_course_signals(
 
     if document_type == "degree_audit" and not remaining:
         for code in mentioned:
-            if code not in seen_completed and code not in seen_remaining:
+            if (
+                code not in seen_completed
+                and code not in seen_planned
+                and code not in seen_remaining
+            ):
                 seen_remaining.add(code)
                 remaining.append(code)
 

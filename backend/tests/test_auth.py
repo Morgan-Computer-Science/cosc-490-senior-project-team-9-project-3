@@ -167,3 +167,29 @@ def test_websis_export_preview_prefers_official_record_context(client, auth_head
     assert "WebSIS" in payload["source_summary"]
     assert "official" in payload["summary"].lower()
     assert "academic record" in payload["confidence_note"].lower()
+
+
+def test_websis_export_preview_surfaces_unknown_real_transcript_codes(client, auth_headers):
+    response = client.post(
+        "/auth/me/completed-courses/import",
+        headers=auth_headers,
+        data={
+            "import_source": "websis_export",
+            "source_text": (
+                "Program Audit for Computer Science\n"
+                "Major in Computer Science IN-PROGRESS\n"
+                "Introduction to Computer Science II COSC 112 INTRO TO COMPUTER SCIENCE II A 4 SPRING 2021\n"
+                "Computer Systems & Digital Logic COSC 241 COMPUTER SYSTEMS & DIG LOGIC A 3 SPRING 2025\n"
+                "Foundations of Computing COSC 220 FOUNDATIONS OF COMPUTING A 3 FALL 2024\n"
+                "Database Design COSC 459 DATABASE DESIGN IP (3) SPRING 2026\n"
+                "Discrete Structures MATH 331 DISCRETE STRUCTURES IP (3) SPRING 2026\n"
+            ),
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["detected_document_type"] == "degree_audit"
+    assert "COSC241" in payload["completed_course_codes"]
+    assert "COSC459" in payload["planned_course_codes"]
+    assert {"COSC112", "COSC220", "MATH331"}.issubset(set(payload["unknown_course_codes"]))

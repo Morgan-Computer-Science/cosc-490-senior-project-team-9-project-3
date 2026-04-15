@@ -9,7 +9,7 @@ from fastapi import HTTPException, UploadFile, status
 
 from .ai_client import extract_text_from_attachment
 from .config import MAX_ATTACHMENT_BYTES
-from .rag import extract_attachment_course_signals, extract_known_course_codes
+from .rag import extract_all_course_codes, extract_attachment_course_signals, extract_known_course_codes
 
 TEXT_MIME_PREFIXES = ("text/",)
 TEXT_MIME_TYPES = {
@@ -62,6 +62,11 @@ def _normalize_text(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
+def _normalize_multiline_text(text: str) -> str:
+    lines = [re.sub(r"[ \t]+", " ", line).strip() for line in text.splitlines()]
+    return "\n".join(line for line in lines if line).strip()
+
+
 def _build_confidence_note(extracted_text: Optional[str], extraction_method: str) -> Optional[str]:
     if extraction_method == "none":
         return "This file type could not be fully analyzed. Review it manually before making important academic decisions."
@@ -77,10 +82,7 @@ def build_document_course_signals(extracted_text: Optional[str], document_type: 
     interpreted = extract_attachment_course_signals(extracted_text, document_type, limit=30)
     matched = tuple(extract_known_course_codes(extracted_text, limit=30))
 
-    mentioned_candidates = {
-        prefix.upper() + number.upper()
-        for prefix, number in re.findall(r"\b([A-Za-z]{2,5})[-\s]*([0-9]{3}[A-Za-z]?)\b", extracted_text)
-    }
+    mentioned_candidates = set(extract_all_course_codes(extracted_text, limit=60))
     unknown = tuple(sorted(code for code in mentioned_candidates if code not in matched))
 
     return DocumentCourseSignals(
@@ -144,7 +146,7 @@ def _extract_pdf_text(file_bytes: bytes) -> Optional[str]:
             extracted = page.extract_text() or ""
             if extracted.strip():
                 pages.append(extracted)
-        return _normalize_text(" ".join(pages)) or None
+        return _normalize_multiline_text("\n\n".join(pages)) or None
     except Exception:
         return None
 

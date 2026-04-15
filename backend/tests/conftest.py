@@ -14,7 +14,8 @@ from app import models
 from app.db import Base, get_db
 from app.main import app
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test_morgan_ai.db"
+TEST_DB_PATH = BACKEND_DIR / "test_morgan_ai.db"
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{TEST_DB_PATH.as_posix()}"
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

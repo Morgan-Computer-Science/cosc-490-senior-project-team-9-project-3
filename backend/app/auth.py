@@ -8,6 +8,7 @@ from . import models, schemas, security
 from .attachments import extract_attachment_context
 from .db import get_db
 from .rag import (
+    extract_all_course_codes,
     extract_attachment_course_signals,
     extract_known_course_codes,
     get_degree_progress,
@@ -371,8 +372,12 @@ async def import_completed_courses_preview(
         normalized_import_source,
         attachment_context,
     )
+    all_detected_codes = set(extract_all_course_codes(import_text, limit=60))
+    if attachment_context:
+        all_detected_codes.update(attachment_context.signals.unknown_course_codes)
+        all_detected_codes.update(attachment_context.signals.matched_course_codes)
     matched = sorted(code for code in candidates if code in known_codes)
-    unknown = sorted(code for code in candidates if code not in known_codes)
+    unknown = sorted(code for code in all_detected_codes if code not in known_codes)
 
     source_labels = {
         "manual": "Manual course import",

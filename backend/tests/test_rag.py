@@ -145,3 +145,29 @@ def test_cs_degree_progress_prioritizes_ai_pathway_when_interest_is_explicit():
 
     assert cs_progress["pathway_recommendations"]
     assert cs_progress["pathway_recommendations"][0]["pathway"] == "AI and Data"
+
+
+def test_cs_degree_progress_surfaces_cybersecurity_focus_area():
+    cs_progress = get_degree_progress(
+        "Computer Science",
+        ["COSC111", "COSC241", "COSC242", "MATH141", "MATH241"],
+        planning_interest="I want to focus on cybersecurity and secure systems.",
+    )
+
+    assert cs_progress["pathway_recommendations"]
+    assert cs_progress["pathway_recommendations"][0]["pathway"] == "Cybersecurity"
+    assert any(
+        course in cs_progress["pathway_recommendations"][0]["recommended_courses"]
+        for course in ["COSC360", "COSC459"]
+    )
+
+
+def test_retrieve_relevant_documents_supports_cs_focus_area_faculty_context():
+    docs = retrieve_relevant_documents(
+        "Who in Morgan Computer Science is most relevant to AI and cloud computing?",
+        user_major="Computer Science",
+        top_k=8,
+    )
+
+    assert docs
+    assert any(doc.source_type == "faculty" and (doc.department or "") == "Computer Science" for doc in docs)

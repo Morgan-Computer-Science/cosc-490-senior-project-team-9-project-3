@@ -9,6 +9,7 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 COURSE_ALIAS_PATH = DATA_DIR / "course_aliases.csv"
 CS_PATHWAYS_PATH = DATA_DIR / "cs_pathways.csv"
 CS_CAPSTONE_RULES_PATH = DATA_DIR / "cs_capstone_rules.csv"
+CS_FOCUS_AREAS_PATH = DATA_DIR / "cs_focus_areas.csv"
 STOPWORDS = {
     "a",
     "an",
@@ -788,6 +789,15 @@ def load_cs_capstone_rule_rows() -> tuple[dict[str, str], ...]:
         return tuple(csv.DictReader(file))
 
 
+@lru_cache(maxsize=1)
+def load_cs_focus_area_rows() -> tuple[dict[str, str], ...]:
+    if not CS_FOCUS_AREAS_PATH.exists():
+        return tuple()
+
+    with CS_FOCUS_AREAS_PATH.open(newline="", encoding="utf-8") as file:
+        return tuple(csv.DictReader(file))
+
+
 def _recommend_next_courses(required: list[str], completed: list[str]) -> tuple[list[str], list[str]]:
     completed_set = set(completed)
     course_map = {
@@ -816,11 +826,113 @@ def _is_computer_science_major(major: Optional[str]) -> bool:
     return _normalize(major).lower() == "computer science"
 
 
+def _unique_preserve_order(values: Iterable[str]) -> list[str]:
+    ordered: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        if not value or value in seen:
+            continue
+        seen.add(value)
+        ordered.append(value)
+    return ordered
+
+
+def _cs_focus_area_to_pathway(focus_area: str) -> str:
+    mapping = {
+        "artificial intelligence": "AI and Data",
+        "data science": "AI and Data",
+        "software engineering": "Software Engineering",
+        "cybersecurity": "Cybersecurity",
+        "quantum security": "Cybersecurity",
+        "cloud computing": "Systems and Cloud",
+    }
+    return mapping.get(focus_area.lower(), focus_area)
+
+
+def _build_cs_focus_area_recommendations(
+    completed: list[str],
+    remaining: list[str],
+    question_hint: Optional[str] = None,
+) -> list[dict[str, object]]:
+    question_tokens = _tokenize(question_hint or "")
+    if not question_tokens:
+        return []
+
+    completed_set = set(completed)
+    remaining_set = set(remaining)
+    grouped: dict[str, dict[str, object]] = {}
+
+    for row in load_cs_focus_area_rows():
+        keyword_tokens = _tokenize((_normalize(row.get("interest_keywords"))).replace(";", " "))
+        overlap = question_tokens & keyword_tokens
+        if keyword_tokens and not overlap:
+            continue
+
+        focus_area = _normalize(row.get("focus_area"))
+        pathway = _cs_focus_area_to_pathway(focus_area)
+        related_courses = [
+            canonicalize_course_code(code)
+            for code in _normalize(row.get("related_courses")).split(";")
+            if code.strip()
+        ]
+        foundational_courses = [
+            canonicalize_course_code(code)
+            for code in _normalize(row.get("foundational_courses")).split(";")
+            if code.strip()
+        ]
+        missing_foundations = [code for code in foundational_courses if code not in completed_set]
+        recommended_courses = [code for code in related_courses if code not in completed_set]
+        if not recommended_courses:
+            recommended_courses = [code for code in foundational_courses if code in remaining_set]
+
+        current = grouped.setdefault(
+            pathway,
+            {
+                "pathway": pathway,
+                "recommended_courses": [],
+                "missing_foundations": [],
+                "relevant_contact": None,
+                "notes": [],
+                "score": 0,
+            },
+        )
+        current["recommended_courses"].extend(recommended_courses)
+        current["missing_foundations"].extend(missing_foundations)
+        if not current["relevant_contact"]:
+            current["relevant_contact"] = _normalize(row.get("faculty_contact")) or None
+        note = _normalize(row.get("notes"))
+        if note:
+            current["notes"].append(note)
+        current["score"] += len(overlap) or 1
+
+    ranked = sorted(grouped.values(), key=lambda row: (-int(row["score"]), row["pathway"]))
+    results: list[dict[str, object]] = []
+    for row in ranked[:2]:
+        results.append(
+            {
+                "pathway": row["pathway"],
+                "recommended_courses": _unique_preserve_order(row["recommended_courses"])[:3],
+                "missing_foundations": _unique_preserve_order(row["missing_foundations"])[:3],
+                "relevant_contact": row["relevant_contact"],
+                "notes": " ".join(_unique_preserve_order(row["notes"])) or None,
+            }
+        )
+    return results
+
+
 def _build_cs_pathway_recommendations(
     completed: list[str],
     remaining: list[str],
     question_hint: Optional[str] = None,
 ) -> list[dict[str, object]]:
+    focus_area_recommendations = _build_cs_focus_area_recommendations(
+        completed,
+        remaining,
+        question_hint=question_hint,
+    )
+    if focus_area_recommendations:
+        return focus_area_recommendations
+
     completed_set = set(completed)
     remaining_set = set(remaining)
     question_tokens = _tokenize(question_hint or "")
@@ -855,6 +967,7 @@ def _build_cs_pathway_recommendations(
                 "pathway": pathway,
                 "recommended_courses": suggested_courses[:3],
                 "missing_foundations": missing_foundations[:3],
+                "relevant_contact": None,
                 "notes": _normalize(row.get("notes")) or None,
             }
         )
@@ -880,6 +993,7 @@ def _build_cs_pathway_recommendations(
                 "pathway": pathway,
                 "recommended_courses": [code for code in recommended_courses if code in remaining_set][:3],
                 "missing_foundations": [code for code in foundation_courses if code not in completed_set][:3],
+                "relevant_contact": None,
                 "notes": _normalize(row.get("notes")) or None,
             }
         )

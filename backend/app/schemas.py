@@ -82,6 +82,7 @@ class PathwayRecommendation(BaseModel):
     pathway: str
     recommended_courses: list[str] = Field(default_factory=list)
     missing_foundations: list[str] = Field(default_factory=list)
+    relevant_contact: Optional[str] = None
     notes: Optional[str] = None
 
 

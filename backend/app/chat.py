@@ -104,6 +104,8 @@ def _build_degree_progress_context(
                 lines.append(
                     f"    Missing foundations: {', '.join(pathway['missing_foundations'])}"
                 )
+            if pathway.get("relevant_contact"):
+                lines.append(f"    Relevant contact: {pathway['relevant_contact']}")
     if summary.get("capstone_readiness", {}).get("status") != "unknown":
         lines.append(
             f"- COSC490 Readiness: {summary['capstone_readiness']['status'].replace('_', ' ')}"

@@ -64,6 +64,9 @@ INTD310,INTD210,The second interior design studio follows the first studio seque
 INTD410,INTD310,Professional practice follows the upper-level studio sequence.
 ENTR300,MGMT220; MKTG210,Venture creation is strongest after basic management and marketing preparation.
 ENTR410,ENTR300,Small business strategy follows venture-creation coursework.
+COSC470,COSC360; COSC459,Information assurance follows core security and networking preparation.
+COSC475,COSC310; STAT302,Data mining is strongest after database and statistics preparation.
+COSC480,COSC331; COSC350,Special topics should typically follow upper-level CS core preparation.
 ENGE102,ENGE101,Engineering Foundations II follows the first foundations course.
 EEGR203,ENGE102; MATH141,Circuit analysis depends on engineering foundations and calculus.
 EEGR205,ENGE102,Digital logic usually follows early engineering foundations.

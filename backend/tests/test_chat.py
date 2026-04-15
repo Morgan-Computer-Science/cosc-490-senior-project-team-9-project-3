@@ -68,3 +68,23 @@ def test_refined_attachment_document_type_preserves_ocr_metadata():
     assert refined.confidence_note == context.confidence_note
     assert refined.summary != context.summary
     assert refined.signals.completed_codes == ("COSC111",)
+
+
+def test_chat_ai_interest_uses_focus_area_context(client, auth_headers, monkeypatch):
+    captured_context = {}
+
+    def fake_generate_ai_reply(**kwargs):
+        captured_context["extra_context"] = kwargs["extra_context"]
+        return "Test advisor reply"
+
+    monkeypatch.setattr("app.chat.generate_ai_reply", fake_generate_ai_reply)
+    session_id = client.post("/chat/sessions", headers=auth_headers, json={"title": "AI path"}).json()["id"]
+
+    response = client.post(
+        f"/chat/sessions/{session_id}/messages",
+        headers=auth_headers,
+        data={"content": "I want to focus on AI and data science in Computer Science. What should I line up next?"},
+    )
+
+    assert response.status_code == 200
+    assert "AI and Data" in captured_context["extra_context"]

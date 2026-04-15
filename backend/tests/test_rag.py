@@ -85,3 +85,24 @@ def test_degree_progress_supports_additional_official_programs():
     assert "ECON301" in economics["required_courses"]
     assert "CHEM201" in chemistry["required_courses"]
     assert "POSC101" in political_science["required_courses"]
+
+
+def test_degree_progress_supports_next_high_impact_programs():
+    physics = get_degree_progress("Physics", [])
+    philosophy = get_degree_progress("Philosophy", [])
+    marketing = get_degree_progress("Marketing", [])
+
+    assert "PHYS201" in physics["required_courses"]
+    assert "PHIL201" in philosophy["required_courses"]
+    assert "MKTG331" in marketing["required_courses"]
+
+
+def test_retrieve_relevant_documents_supports_construction_management_queries():
+    docs = retrieve_relevant_documents(
+        "What construction estimating and scheduling classes should I take next?",
+        user_major="Construction Management",
+        top_k=5,
+    )
+
+    assert docs
+    assert any((doc.major or "") == "Construction Management" for doc in docs)

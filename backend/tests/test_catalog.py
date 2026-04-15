@@ -72,3 +72,14 @@ def test_catalog_departments_preserve_curated_contact_details(client, auth_heade
     assert rows_by_major["Actuarial Science"]["email"] == "actuarialscience@morgan.edu"
     assert economics["email"] == "randal.reed@morgan.edu"
     assert political_science["phone"] == "443-885-3277"
+
+
+def test_catalog_departments_include_new_high_impact_program_contacts(client, auth_headers):
+    response = client.get("/catalog/departments", headers=auth_headers)
+
+    assert response.status_code == 200
+    rows_by_major = {row["major"]: row for row in response.json()}
+
+    assert rows_by_major["Physics"]["email"]
+    assert rows_by_major["Philosophy"]["email"]
+    assert rows_by_major["Construction Management"]["office"]

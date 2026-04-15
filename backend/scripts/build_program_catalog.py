@@ -53,6 +53,66 @@ DEPARTMENT_OVERRIDES = {
         ),
         "source_url": "https://www.morgan.edu/cla/politicalscience",
     },
+    "Physics": {
+        "office": "Key Hall 213",
+        "email": "physicsdept@morgan.edu",
+        "phone": "443-885-3118",
+        "overview": (
+            "Physics advises students on mathematical preparation, laboratory science, undergraduate research, "
+            "and advanced physical reasoning for technical and graduate-study pathways."
+        ),
+        "source_url": "https://www.morgan.edu/physics",
+    },
+    "Philosophy": {
+        "office": "Holmes Hall 407",
+        "email": "philosophydept@morgan.edu",
+        "phone": "443-885-3185",
+        "overview": (
+            "Philosophy advises students on ethics, logic, religion, critical reasoning, "
+            "and preparation for law school, graduate study, and public service."
+        ),
+        "source_url": "https://www.morgan.edu/cla/philosophy",
+    },
+    "Construction Management": {
+        "office": "School of Architecture and Planning",
+        "email": "bscm@morgan.edu",
+        "phone": "443-885-4793",
+        "overview": (
+            "Construction Management advises students on estimating, scheduling, project delivery, "
+            "sustainable construction, and built-environment professional preparation."
+        ),
+        "source_url": "https://www.morgan.edu/sap/bscm",
+    },
+    "Interior Design": {
+        "office": "Banneker Hall 138",
+        "email": "interiordesign@morgan.edu",
+        "phone": "443-885-3475",
+        "overview": (
+            "Interior Design advises students on studio progression, materials, space planning, "
+            "communication skills, and professional practice in interior environments."
+        ),
+        "source_url": "https://www.morgan.edu/sap/intd",
+    },
+    "Marketing": {
+        "office": "Morgan Business Center",
+        "email": "gravesschool@morgan.edu",
+        "phone": "443-885-3160",
+        "overview": (
+            "Marketing advises students on promotion, distribution, research, sales, "
+            "and evidence-based marketing policy development."
+        ),
+        "source_url": "https://www.morgan.edu/school-of-business-and-management/academics/undergraduate-programs",
+    },
+    "Entrepreneurship": {
+        "office": "Morgan Business Center",
+        "email": "gravesschool@morgan.edu",
+        "phone": "443-885-3160",
+        "overview": (
+            "Entrepreneurship advises students on venture creation, innovation, business-model development, "
+            "and building skills for launching and operating new businesses."
+        ),
+        "source_url": "https://www.morgan.edu/school-of-business-and-management/academics/undergraduate-programs",
+    },
 }
 
 

@@ -48,6 +48,22 @@ POSC307,POSC101,Research methods follows an initial political science foundation
 POSC314,POSC101,Political theory follows the introductory political science survey.
 POSC385,POSC101,Public policy benefits from the introductory political science foundation.
 POSC402,POSC307; POSC314,Senior seminar should follow methods and theory preparation.
+PHYS201,PHYS102; MATH241,Modern physics follows the introductory physics sequence and calculus preparation.
+PHYS310,PHYS102; MATH243,Electromagnetism is strongest after the introductory physics sequence and multivariable calculus.
+PHYS320,PHYS102; MATH243,Thermodynamics and statistical physics benefit from physics foundations and multivariable calculus.
+PHYS401,PHYS201; PHYS310,Senior seminar should follow upper-level physics preparation.
+PHIL201,PHIL101,Logic builds on introductory philosophy and supports upper-level philosophical reasoning.
+PHIL310,PHIL101,Social and political philosophy is strongest after introductory philosophical foundations.
+PHIL330,PHIL101,Philosophy of religion follows the introductory philosophy survey.
+PHIL401,PHIL201; PHIL310,Senior seminar should follow logic and upper-level philosophy preparation.
+CMGT220,CMGT210,Construction estimating follows the introduction to construction materials and methods.
+CMGT310,CMGT220,Construction scheduling is strongest after early estimating and project foundations.
+CMGT410,CMGT310,Construction project management follows scheduling and control preparation.
+INTD220,INTD210,Interior materials and finishes follows the first interior design studio.
+INTD310,INTD210,The second interior design studio follows the first studio sequence.
+INTD410,INTD310,Professional practice follows the upper-level studio sequence.
+ENTR300,MGMT220; MKTG210,Venture creation is strongest after basic management and marketing preparation.
+ENTR410,ENTR300,Small business strategy follows venture-creation coursework.
 ENGE102,ENGE101,Engineering Foundations II follows the first foundations course.
 EEGR203,ENGE102; MATH141,Circuit analysis depends on engineering foundations and calculus.
 EEGR205,ENGE102,Digital logic usually follows early engineering foundations.

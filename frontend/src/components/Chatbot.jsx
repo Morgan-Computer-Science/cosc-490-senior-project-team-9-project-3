@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   createChatSession,
@@ -9,13 +9,9 @@ import {
 } from "../api";
 
 const starterPrompts = [
-  "Help me plan a strong sophomore schedule.",
-  "What classes should I take after COSC 111?",
-  "Who should I contact for Information Systems advising?",
-  "What are the degree requirements for Business Administration?",
-  "I feel overwhelmed and need help finding the right campus support.",
-  "How should I prepare for internships in my major?",
-  "Can you review this screenshot or schedule image and tell me what matters for advising?",
+  "Draft a schedule for next semester",
+  "Show degree requirements for my major",
+  "Find the right advising office",
 ];
 
 const formatMessageContent = (content) =>
@@ -35,70 +31,29 @@ const inferAttachmentPreview = (file, draftQuestion = "") => {
   const combined = `${loweredName} ${contentType} ${draftQuestion.toLowerCase()}`;
 
   if (combined.includes("audit") || combined.includes("degreeworks") || combined.includes("requirement")) {
-    return {
-      label: "Degree audit",
-      title: "Audit review ready",
-      tip: "Ask what still looks incomplete, what is ready next, or where the audit seems unclear.",
-      placeholder: "Ask what this degree audit suggests about what you should do next...",
-    };
+    return "Degree audit";
   }
-
   if (combined.includes("transcript") || combined.includes("history") || combined.includes("grade")) {
-    return {
-      label: "Transcript",
-      title: "Transcript review ready",
-      tip: "Ask which completed courses matter most or what the transcript suggests you should take next.",
-      placeholder: "Ask what this transcript suggests about your next courses...",
-    };
+    return "Transcript";
   }
-
   if (combined.includes("schedule") || combined.includes("calendar") || combined.includes("timetable")) {
-    return {
-      label: "Schedule",
-      title: "Schedule review ready",
-      tip: "Ask about workload balance, missing requirements, or whether the schedule looks realistic.",
-      placeholder: "Ask what stands out in this schedule or what you should change...",
-    };
+    return "Schedule";
   }
-
   if (combined.includes("form") || combined.includes("approval") || combined.includes("registration")) {
-    return {
-      label: "Academic form",
-      title: "Form review ready",
-      tip: "Ask what the form appears to require or which advising office should handle it.",
-      placeholder: "Ask what this form means or what action you should take...",
-    };
+    return "Academic form";
   }
-
   if (contentType.startsWith("image/")) {
-    return {
-      label: "Screenshot",
-      title: "Image review ready",
-      tip: "Ask what matters in the screenshot for advising, planning, or next steps.",
-      placeholder: "Ask what matters in this screenshot for your advising question...",
-    };
+    return "Screenshot";
   }
-
   if (loweredName.endsWith(".pdf")) {
-    return {
-      label: "PDF",
-      title: "PDF review ready",
-      tip: "Ask for a summary, key requirements, or anything that needs follow-up.",
-      placeholder: "Ask what matters in this PDF for your advising plan...",
-    };
+    return "PDF";
   }
-
-  return {
-    label: "Attachment",
-    title: "File ready",
-    tip: "Ask what matters in this file for advising, planning, or student support.",
-    placeholder: "Ask what matters in this file for your advising question...",
-  };
+  return "Attachment";
 };
 
 const formatMessageTime = (value) => {
   if (!value) {
-    return "Just now";
+    return "";
   }
 
   try {
@@ -107,7 +62,7 @@ const formatMessageTime = (value) => {
       minute: "2-digit",
     });
   } catch {
-    return "Just now";
+    return "";
   }
 };
 
@@ -125,18 +80,16 @@ const Chatbot = ({ token, user }) => {
   const [speechSupported, setSpeechSupported] = useState(false);
   const [speakingMessageId, setSpeakingMessageId] = useState(null);
   const [selectedAttachment, setSelectedAttachment] = useState(null);
-  const bottomRef = useRef(null);
   const recognitionRef = useRef(null);
   const attachmentInputRef = useRef(null);
+  const bottomRef = useRef(null);
 
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
     }
 
-    const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
-
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       setVoiceSupported(false);
       return;
@@ -151,7 +104,6 @@ const Chatbot = ({ token, user }) => {
       setListening(true);
       setVoiceStatus("Listening...");
     };
-
     recognition.onresult = (event) => {
       const transcript = event.results?.[0]?.[0]?.transcript?.trim();
       if (transcript) {
@@ -159,12 +111,10 @@ const Chatbot = ({ token, user }) => {
         setVoiceStatus("Voice captured.");
       }
     };
-
     recognition.onerror = () => {
-      setVoiceStatus("Voice input was unavailable for that attempt.");
       setListening(false);
+      setVoiceStatus("Voice input was unavailable for that attempt.");
     };
-
     recognition.onend = () => {
       setListening(false);
     };
@@ -184,10 +134,7 @@ const Chatbot = ({ token, user }) => {
     }
 
     setSpeechSupported(true);
-
-    return () => {
-      window.speechSynthesis.cancel();
-    };
+    return () => window.speechSynthesis.cancel();
   }, []);
 
   useEffect(() => {
@@ -204,7 +151,6 @@ const Chatbot = ({ token, user }) => {
         const nextSessions = currentSessions.length
           ? currentSessions
           : [await createChatSession(token, "New advising session")];
-
         setSessions(nextSessions);
         setActiveSessionId(nextSessions[0].id);
       } catch (err) {
@@ -238,6 +184,10 @@ const Chatbot = ({ token, user }) => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, sending]);
 
+  const activeTitle = sessions.find((session) => session.id === activeSessionId)?.title || "Advisor Chat";
+  const attachmentPreview = inferAttachmentPreview(selectedAttachment, input);
+  const groupedSessions = useMemo(() => sessions.slice(0, 5), [sessions]);
+
   const handleCreateSession = async () => {
     try {
       const nextSession = await createChatSession(token, "New advising session");
@@ -255,16 +205,12 @@ const Chatbot = ({ token, user }) => {
       await deleteChatSession(token, sessionId);
       const remaining = sessions.filter((session) => session.id !== sessionId);
       setSessions(remaining);
-
-      if (remaining.length === 0) {
-        const freshSession = await createChatSession(token, "New advising session");
-        setSessions([freshSession]);
-        setActiveSessionId(freshSession.id);
+      if (!remaining.length) {
+        const fresh = await createChatSession(token, "New advising session");
+        setSessions([fresh]);
+        setActiveSessionId(fresh.id);
         setMessages([]);
-        return;
-      }
-
-      if (activeSessionId === sessionId) {
+      } else if (activeSessionId === sessionId) {
         setActiveSessionId(remaining[0].id);
       }
     } catch (err) {
@@ -283,6 +229,7 @@ const Chatbot = ({ token, user }) => {
       id: `local-user-${Date.now()}`,
       sender: "user",
       content: selectedAttachment ? `${text}\n\nAttachment: ${selectedAttachment.name}`.trim() : text,
+      created_at: new Date().toISOString(),
     };
 
     setMessages((current) => [...current, optimisticMessage]);
@@ -291,17 +238,21 @@ const Chatbot = ({ token, user }) => {
     setError("");
 
     try {
-      const payload = await sendChatMessage(token, activeSessionId, text || "Please review the attached file.", selectedAttachment);
+      const payload = await sendChatMessage(
+        token,
+        activeSessionId,
+        text || "Please review the attached file.",
+        selectedAttachment,
+      );
       setMessages((current) => [
         ...current.filter((message) => message.id !== optimisticMessage.id),
         payload.user_message,
-        { ...payload.ai_message, advisor_insights: payload.advisor_insights },
+        payload.ai_message,
       ]);
       setSelectedAttachment(null);
       if (attachmentInputRef.current) {
         attachmentInputRef.current.value = "";
       }
-
       setSessions((current) =>
         current.map((session) =>
           session.id === activeSessionId
@@ -322,28 +273,11 @@ const Chatbot = ({ token, user }) => {
       setVoiceStatus("Voice input is not supported in this browser.");
       return;
     }
-
     if (listening) {
       recognitionRef.current.stop();
       return;
     }
-
-    setError("");
-    setVoiceStatus("");
     recognitionRef.current.start();
-  };
-
-  const handleAttachmentPick = (event) => {
-    const nextFile = event.target.files?.[0] || null;
-    setSelectedAttachment(nextFile);
-    setError("");
-  };
-
-  const handleClearAttachment = () => {
-    setSelectedAttachment(null);
-    if (attachmentInputRef.current) {
-      attachmentInputRef.current.value = "";
-    }
   };
 
   const handleSpeakMessage = (message) => {
@@ -356,191 +290,180 @@ const Chatbot = ({ token, user }) => {
     if (speakingMessageId === message.id) {
       synth.cancel();
       setSpeakingMessageId(null);
-      setVoiceStatus("Stopped reading aloud.");
       return;
     }
 
     synth.cancel();
-
     const utterance = new SpeechSynthesisUtterance(formatMessageContent(message.content));
     utterance.lang = "en-US";
-    utterance.rate = 1;
-    utterance.onstart = () => {
-      setSpeakingMessageId(message.id);
-      setVoiceStatus("Reading advisor response aloud...");
-    };
-    utterance.onend = () => {
-      setSpeakingMessageId(null);
-      setVoiceStatus("Finished reading response.");
-    };
-    utterance.onerror = () => {
-      setSpeakingMessageId(null);
-      setVoiceStatus("Spoken playback was unavailable for that reply.");
-    };
+    utterance.onstart = () => setSpeakingMessageId(message.id);
+    utterance.onend = () => setSpeakingMessageId(null);
+    utterance.onerror = () => setSpeakingMessageId(null);
     synth.speak(utterance);
   };
 
-  const activeTitle = sessions.find((session) => session.id === activeSessionId)?.title;
-  const attachmentPreview = inferAttachmentPreview(selectedAttachment, input);
+  const handleAttachmentPick = (event) => {
+    setSelectedAttachment(event.target.files?.[0] || null);
+  };
 
   return (
-    <section className="panel advisor-panel">
-      <div className="panel-header">
-        <div>
-          <p className="eyebrow">Advisor Workspace</p>
-          <h2>{activeTitle || "Academic advisor chat"}</h2>
-          <p className="panel-subtext">
-            Built for {user?.major || "Morgan State students"} and grounded in Morgan State advising data.
-          </p>
-          <p className="panel-subtext">
-            You can also upload screenshots, PDFs, or text files for multimodal advising.
-          </p>
-        </div>
-        <div className="chat-header-actions">
-          <div className="chat-status-pill">
-            <span>Mode</span>
-            <strong>{selectedAttachment ? "Multimodal" : "Advising chat"}</strong>
-          </div>
-          <button type="button" className="secondary-button" onClick={handleCreateSession}>
-            New chat
-          </button>
-        </div>
-      </div>
-
-      <div className="chat-layout">
-        <aside className="session-list">
-          <div className="session-list-header">
-            <p className="eyebrow">Sessions</p>
-            <span>{sessions.length} active</span>
-          </div>
-          {sessions.map((session) => (
-            <div
-              key={session.id}
-              className={`session-card ${session.id === activeSessionId ? "active" : ""}`}
-            >
-              <button type="button" className="session-select" onClick={() => setActiveSessionId(session.id)}>
-                <strong>{session.title}</strong>
-                <span>{new Date(session.created_at).toLocaleDateString()}</span>
-              </button>
-              <button
-                type="button"
-                className="session-delete"
-                onClick={() => handleDeleteSession(session.id)}
-                aria-label={`Delete ${session.title}`}
-              >
-                x
-              </button>
-            </div>
-          ))}
-        </aside>
-
+    <section className="advisor-shell">
+      <div className="chat-scroll-region" id="chat-container">
         <div className="chat-column">
-          <div className="chat-surface-intro">
-            <div className="hero-badges">
-              <span className="hero-chip">Context aware</span>
-              <span className="hero-chip">Support aware</span>
-              <span className="hero-chip">Voice + file input</span>
-            </div>
-          </div>
-          <div className="starter-row">
-            {starterPrompts.map((prompt) => (
-              <button key={prompt} type="button" className="starter-pill" onClick={() => setInput(prompt)}>
-                {prompt}
+          <div className="date-chip">Today</div>
+
+          <div className="session-strip">
+            {groupedSessions.map((session) => (
+              <button
+                key={session.id}
+                type="button"
+                className={`session-pill ${session.id === activeSessionId ? "active" : ""}`}
+                onClick={() => setActiveSessionId(session.id)}
+              >
+                <span>{session.title}</span>
+                {groupedSessions.length > 1 ? (
+                  <span
+                    className="session-pill-delete"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleDeleteSession(session.id);
+                    }}
+                  >
+                    ×
+                  </span>
+                ) : null}
               </button>
             ))}
+            <button type="button" className="session-pill add-pill" onClick={handleCreateSession}>
+              + New chat
+            </button>
           </div>
 
-          <div className="messages-panel">
-            {loading ? <p className="empty-state">Loading your advisor workspace...</p> : null}
-            {!loading && messages.length === 0 ? (
-              <p className="empty-state">
-                Ask about schedules, faculty, department contacts, requirements, internships, or support resources.
-              </p>
-            ) : null}
+          {loading ? <div className="empty-note">Loading chat…</div> : null}
+          {error ? <div className="error-banner">{error}</div> : null}
 
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`message-bubble ${message.sender === "assistant" ? "assistant" : "user"}`}
-              >
+          {!messages.length && !loading ? (
+            <div className="message-row assistant">
+              <div className="avatar advisor-avatar">A</div>
+              <div className="message-stack">
                 <div className="message-meta">
-                  <span className="message-sender">
-                    {message.sender === "assistant" ? "Advisor" : "You"}
-                  </span>
-                  <span className="message-time">{formatMessageTime(message.created_at)}</span>
+                  <span>Advisor AI</span>
+                  <span className="status-badge"><span className="status-dot" /> Ready</span>
                 </div>
-                <p>{formatMessageContent(message.content)}</p>
-                {message.sender === "assistant" && speechSupported ? (
-                  <button
-                    type="button"
-                    className="listen-button"
-                    onClick={() => handleSpeakMessage(message)}
-                  >
-                    {speakingMessageId === message.id ? "Stop audio" : "Read aloud"}
-                  </button>
-                ) : null}
+                <div className="message-bubble assistant-bubble">
+                  <p>Hello {user?.full_name?.split(" ")[0] || "there"}, I’m your Morgan State AI Advisor.</p>
+                  <p className="message-spacer">I can help with degree planning, course choices, faculty contacts, and uploaded screenshots or documents.</p>
+                  <p>How can I help with your academic planning today?</p>
+                </div>
               </div>
-            ))}
-
-            {sending ? <p className="typing-indicator">Advisor is thinking...</p> : null}
-            {voiceStatus ? <p className="typing-indicator">{voiceStatus}</p> : null}
-            {error ? <p className="form-error">{error}</p> : null}
-            <div ref={bottomRef} />
-          </div>
-
-          {attachmentPreview ? (
-            <div className="attachment-review-card">
-              <div className="attachment-review-header">
-                <span className="attachment-review-label">{attachmentPreview.label}</span>
-                <button type="button" className="clear-attachment-button" onClick={handleClearAttachment}>
-                  Remove
-                </button>
-              </div>
-              <h3>{attachmentPreview.title}</h3>
-              <p>{attachmentPreview.tip}</p>
-              <span className="attachment-file-name">{selectedAttachment?.name}</span>
             </div>
           ) : null}
 
-          <form className="chat-input-row" onSubmit={handleSend}>
-            <input
-              value={input}
-              onChange={(event) => setInput(event.target.value)}
-              placeholder={
-                attachmentPreview?.placeholder ||
-                "Ask about requirements, advising offices, professors, course planning, or an attached file..."
-              }
-              disabled={!activeSessionId || sending}
-            />
-            <label className="upload-button">
-              Add file
-              <input
-                ref={attachmentInputRef}
-                type="file"
-                accept=".pdf,.txt,.md,.csv,.json,image/*"
-                onChange={handleAttachmentPick}
-                disabled={sending}
-              />
-            </label>
-            <button
-              type="submit"
-              disabled={(!input.trim() && !selectedAttachment) || sending || !activeSessionId}
-            >
-              {sending ? "Sending..." : "Send"}
+          {messages.map((message) => {
+            const isAssistant = message.sender === "assistant";
+            return (
+              <div key={message.id} className={`message-row ${isAssistant ? "assistant" : "user"}`}>
+                <div className={`avatar ${isAssistant ? "advisor-avatar" : "user-avatar"}`}>
+                  {isAssistant ? "A" : (user?.full_name?.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase() || "MS")}
+                </div>
+                <div className={`message-stack ${isAssistant ? "" : "align-end"}`}>
+                  <div className="message-meta">
+                    <span>{isAssistant ? "Advisor AI" : "You"}</span>
+                    {formatMessageTime(message.created_at) ? <span>{formatMessageTime(message.created_at)}</span> : null}
+                  </div>
+                  <div className={`message-bubble ${isAssistant ? "assistant-bubble" : "user-bubble"}`}>
+                    {formatMessageContent(message.content).split("\n").filter(Boolean).map((line) => (
+                      <p key={`${message.id}-${line}`}>{line}</p>
+                    ))}
+                    {isAssistant && speechSupported ? (
+                      <button
+                        type="button"
+                        className="inline-voice-button"
+                        onClick={() => handleSpeakMessage(message)}
+                      >
+                        {speakingMessageId === message.id ? "Stop reading" : "Read aloud"}
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+
+          {sending ? (
+            <div className="message-row assistant">
+              <div className="avatar advisor-avatar">A</div>
+              <div className="message-stack">
+                <div className="message-meta">
+                  <span>Advisor AI is typing</span>
+                </div>
+                <div className="typing-bubble">
+                  <div className="typing-dot" />
+                  <div className="typing-dot" />
+                  <div className="typing-dot" />
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          <div ref={bottomRef} />
+        </div>
+      </div>
+
+      <div className="composer-wrap">
+        <div className="prompt-row">
+          {starterPrompts.map((prompt) => (
+            <button key={prompt} type="button" className="prompt-pill" onClick={() => setInput(prompt)}>
+              {prompt}
             </button>
-            <button
-              type="button"
-              className="voice-button"
-              onClick={handleVoiceInput}
-              disabled={!voiceSupported}
-            >
-              {listening ? "Stop mic" : "Use mic"}
+          ))}
+        </div>
+
+        <form className="chat-composer" onSubmit={handleSend}>
+          <button type="button" className="composer-icon" onClick={() => attachmentInputRef.current?.click()}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+            </svg>
+          </button>
+
+          <textarea
+            rows="1"
+            value={input}
+            onChange={(event) => setInput(event.target.value)}
+            placeholder="Ask about courses, faculty, or degree requirements..."
+          />
+
+          <div className="composer-actions">
+            <button type="button" className="composer-icon" onClick={handleVoiceInput}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                <line x1="12" x2="12" y1="19" y2="22" />
+              </svg>
             </button>
-          </form>
-          <div className="composer-footnote">
-            <span>Tip</span>
-            <p>Use screenshots for schedule reviews, PDFs for audits, or voice input for quick advising questions.</p>
+            <button type="submit" className="send-button" disabled={(!input.trim() && !selectedAttachment) || sending || !activeSessionId}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="22" x2="11" y1="2" y2="13" />
+                <polygon points="22 2 15 22 11 13 2 9 22 2" />
+              </svg>
+            </button>
           </div>
+
+          <input
+            ref={attachmentInputRef}
+            type="file"
+            className="hidden-input"
+            accept=".pdf,.txt,.md,.csv,.json,image/*"
+            onChange={handleAttachmentPick}
+          />
+        </form>
+
+        <div className="composer-footnote">
+          {selectedAttachment ? <span>{attachmentPreview}: {selectedAttachment.name}</span> : null}
+          {!selectedAttachment && voiceStatus ? <span>{voiceStatus}</span> : null}
+          {!selectedAttachment && !voiceStatus ? (
+            <span>AI Advisor can make mistakes. Always verify critical requirements in the official course catalog.</span>
+          ) : null}
         </div>
       </div>
     </section>
@@ -548,3 +471,4 @@ const Chatbot = ({ token, user }) => {
 };
 
 export default Chatbot;
+

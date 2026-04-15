@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 
+from .config import ALLOWED_CORS_ORIGINS
 from .db import init_db
 from .auth import router as auth_router
 from .catalog import router as catalog_router
@@ -13,7 +14,7 @@ app = FastAPI(title="Morgan State AI Advisor Backend")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  
+    allow_origins=ALLOWED_CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -22,7 +23,6 @@ app.add_middleware(
 
 @app.on_event("startup")
 def on_startup():
-    # Create tables if they don't exist
     init_db()
 
 
@@ -31,7 +31,6 @@ async def health_check():
     return {"status": "ok", "service": "morgan-ai-backend-web"}
 
 
-# Register auth routes under /auth
 app.include_router(auth_router)
 app.include_router(catalog_router)
 app.include_router(chat_router)

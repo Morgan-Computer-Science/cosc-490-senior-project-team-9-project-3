@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
@@ -13,6 +13,7 @@ from .rag import (
     get_degree_progress,
     load_course_rows,
 )
+from .rate_limit import limit_auth, limit_import
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -24,7 +25,12 @@ def _get_user_by_email(db: Session, email: str) -> models.User | None:
 
 
 @router.post("/register", response_model=schemas.UserRead, status_code=status.HTTP_201_CREATED)
-def register_user(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
+def register_user(
+    user_in: schemas.UserCreate,
+    request: Request,
+    _: None = Depends(limit_auth),
+    db: Session = Depends(get_db),
+):
     existing = _get_user_by_email(db, user_in.email)
     if existing:
         raise HTTPException(
@@ -47,6 +53,8 @@ def register_user(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=schemas.Token)
 def login(
+    request: Request,
+    _: None = Depends(limit_auth),
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ):
@@ -195,6 +203,8 @@ def update_completed_courses(
 
 @router.post("/me/completed-courses/import", response_model=schemas.CompletedCoursesImportPreview)
 async def import_completed_courses_preview(
+    request: Request,
+    _: None = Depends(limit_import),
     import_source: str = Form(default="manual"),
     source_text: str = Form(default=""),
     attachment: UploadFile | None = File(default=None),

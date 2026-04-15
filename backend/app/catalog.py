@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app import models, schemas
 from app.auth import get_current_user
 from app.db import get_db
+from app.rag import load_department_rows, load_faculty_rows, load_support_resource_rows
 
 router = APIRouter(prefix="/catalog", tags=["catalog"])
 
@@ -52,3 +53,24 @@ def create_course(
     db.commit()
     db.refresh(new_course)
     return new_course
+
+
+@router.get("/departments", response_model=List[schemas.DepartmentInfo])
+def list_departments(
+    current_user: models.User = Depends(get_current_user),
+):
+    return [schemas.DepartmentInfo(**row) for row in load_department_rows()]
+
+
+@router.get("/faculty", response_model=List[schemas.FacultyInfo])
+def list_faculty(
+    current_user: models.User = Depends(get_current_user),
+):
+    return [schemas.FacultyInfo(**row) for row in load_faculty_rows()]
+
+
+@router.get("/support-resources", response_model=List[schemas.SupportResourceInfo])
+def list_support_resources(
+    current_user: models.User = Depends(get_current_user),
+):
+    return [schemas.SupportResourceInfo(**row) for row in load_support_resource_rows()]

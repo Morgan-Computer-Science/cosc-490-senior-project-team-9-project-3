@@ -8,8 +8,8 @@ from typing import Optional
 from fastapi import HTTPException, UploadFile, status
 
 from .ai_client import extract_text_from_attachment
+from .config import MAX_ATTACHMENT_BYTES
 
-MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
 TEXT_MIME_PREFIXES = ("text/",)
 TEXT_MIME_TYPES = {
     "application/json",
@@ -18,6 +18,9 @@ TEXT_MIME_TYPES = {
 }
 IMAGE_MIME_PREFIXES = ("image/",)
 PDF_MIME_TYPE = "application/pdf"
+ALLOWED_ATTACHMENT_SUFFIXES = {".pdf", ".txt", ".md", ".csv", ".json", ".png", ".jpg", ".jpeg", ".webp"}
+ALLOWED_ATTACHMENT_MIME_PREFIXES = TEXT_MIME_PREFIXES + IMAGE_MIME_PREFIXES
+ALLOWED_ATTACHMENT_MIME_TYPES = TEXT_MIME_TYPES | {PDF_MIME_TYPE}
 
 
 @dataclass(frozen=True)
@@ -40,6 +43,23 @@ def _write_temp_attachment(filename: str, file_bytes: bytes) -> str:
 
 def _normalize_text(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
+
+
+def validate_attachment_upload(filename: str, content_type: str, file_bytes: bytes) -> None:
+    suffix = Path(filename).suffix.lower()
+    allowed_mime = content_type in ALLOWED_ATTACHMENT_MIME_TYPES or content_type.startswith(ALLOWED_ATTACHMENT_MIME_PREFIXES)
+
+    if len(file_bytes) > MAX_ATTACHMENT_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="Attachments must be 10 MB or smaller.",
+        )
+
+    if suffix not in ALLOWED_ATTACHMENT_SUFFIXES and not allowed_mime:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unsupported attachment type.",
+        )
 
 
 def _infer_document_type(filename: str, content_type: str, extracted_text: Optional[str] = None) -> str:
@@ -106,12 +126,7 @@ async def extract_attachment_context(attachment: Optional[UploadFile]) -> Option
     content_type = attachment.content_type or "application/octet-stream"
     file_bytes = await attachment.read()
     await attachment.close()
-
-    if len(file_bytes) > MAX_ATTACHMENT_BYTES:
-        raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail="Attachments must be 10 MB or smaller.",
-        )
+    validate_attachment_upload(filename, content_type, file_bytes)
 
     if content_type == PDF_MIME_TYPE or filename.lower().endswith(".pdf"):
         temp_path = _write_temp_attachment(filename, file_bytes)

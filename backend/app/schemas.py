@@ -91,6 +91,32 @@ class CourseOut(CourseBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class DepartmentInfo(BaseModel):
+    department: str
+    major: Optional[str] = None
+    office: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    overview: Optional[str] = None
+
+
+class FacultyInfo(BaseModel):
+    name: str
+    title: Optional[str] = None
+    department: Optional[str] = None
+    email: Optional[str] = None
+    office: Optional[str] = None
+    office_hours: Optional[str] = None
+    specialties: Optional[str] = None
+
+
+class SupportResourceInfo(BaseModel):
+    resource: str
+    category: Optional[str] = None
+    contact: Optional[str] = None
+    details: Optional[str] = None
+
+
 class ChatSessionCreate(BaseModel):
     title: Optional[str] = None
 

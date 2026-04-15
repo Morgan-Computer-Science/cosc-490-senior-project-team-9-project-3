@@ -1,7 +1,7 @@
 from typing import List
 import os
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
 from sqlalchemy.orm import Session
 
 from . import models, schemas
@@ -23,6 +23,7 @@ from .rag import (
     summarize_schedule_plan,
 )
 from .student_state import analyze_student_state
+from .rate_limit import limit_chat
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -401,6 +402,8 @@ def list_messages(
 @router.post("/sessions/{session_id}/messages", response_model=schemas.ChatSendResponse)
 async def send_message(
     session_id: int,
+    request: Request,
+    _: None = Depends(limit_chat),
     content: str = Form(...),
     attachment: UploadFile | None = File(default=None),
     db: Session = Depends(get_db),
@@ -541,3 +544,5 @@ async def send_message(
         ai_message=ai_msg,
         advisor_insights=advisor_insights,
     )
+
+

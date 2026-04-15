@@ -458,6 +458,36 @@ def load_degree_requirement_rows() -> tuple[dict[str, str], ...]:
 
 
 @lru_cache(maxsize=1)
+def load_department_rows() -> tuple[dict[str, str], ...]:
+    path = DATA_DIR / "departments.csv"
+    if not path.exists():
+        return tuple()
+
+    with path.open(newline="", encoding="utf-8") as file:
+        return tuple(csv.DictReader(file))
+
+
+@lru_cache(maxsize=1)
+def load_faculty_rows() -> tuple[dict[str, str], ...]:
+    path = DATA_DIR / "faculty.csv"
+    if not path.exists():
+        return tuple()
+
+    with path.open(newline="", encoding="utf-8") as file:
+        return tuple(csv.DictReader(file))
+
+
+@lru_cache(maxsize=1)
+def load_support_resource_rows() -> tuple[dict[str, str], ...]:
+    path = DATA_DIR / "support_resources.csv"
+    if not path.exists():
+        return tuple()
+
+    with path.open(newline="", encoding="utf-8") as file:
+        return tuple(csv.DictReader(file))
+
+
+@lru_cache(maxsize=1)
 def load_prerequisite_rows() -> tuple[dict[str, str], ...]:
     path = DATA_DIR / "prerequisites.csv"
     if not path.exists():

@@ -125,6 +125,30 @@ export async function fetchCourses(token, filters = {}) {
   return parseResponse(response, "Failed to fetch courses.");
 }
 
+export async function fetchDepartments(token) {
+  const response = await fetch(`${API_BASE_URL}/catalog/departments`, {
+    headers: authHeaders(token),
+  });
+
+  return parseResponse(response, "Failed to fetch departments.");
+}
+
+export async function fetchFaculty(token) {
+  const response = await fetch(`${API_BASE_URL}/catalog/faculty`, {
+    headers: authHeaders(token),
+  });
+
+  return parseResponse(response, "Failed to fetch faculty.");
+}
+
+export async function fetchSupportResources(token) {
+  const response = await fetch(`${API_BASE_URL}/catalog/support-resources`, {
+    headers: authHeaders(token),
+  });
+
+  return parseResponse(response, "Failed to fetch support resources.");
+}
+
 export async function listChatSessions(token) {
   const response = await fetch(`${API_BASE_URL}/chat/sessions`, {
     headers: authHeaders(token),

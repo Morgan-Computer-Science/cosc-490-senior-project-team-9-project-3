@@ -476,9 +476,50 @@ def _degree_documents() -> List[RetrievedDocument]:
     return docs
 
 
+def _program_documents() -> List[RetrievedDocument]:
+    path = DATA_DIR / "programs.csv"
+    if not path.exists():
+        return []
+
+    docs = []
+    with path.open(newline="", encoding="utf-8") as file:
+        reader = csv.DictReader(file)
+        for row in reader:
+            major = _normalize(row.get("major"))
+            canonical_major = _normalize(row.get("canonical_major"))
+            department = _normalize(row.get("department"))
+            school = _normalize(row.get("school"))
+            aliases = _normalize(row.get("aliases"))
+            docs.append(
+                RetrievedDocument(
+                    source_type="program",
+                    title=f"{major} program",
+                    content=(
+                        f"Canonical Major: {canonical_major}. Degree Type: {_normalize(row.get('degree_type'))}. "
+                        f"Department: {department}. School: {school}. "
+                        f"Aliases: {aliases}. Notes: {_normalize(row.get('notes'))}. "
+                        f"Source URL: {_normalize(row.get('source_url'))}."
+                    ),
+                    department=department or None,
+                    major=major or None,
+                )
+            )
+    return docs
+
+
 @lru_cache(maxsize=1)
 def load_degree_requirement_rows() -> tuple[dict[str, str], ...]:
     path = DATA_DIR / "degree_requirements.csv"
+    if not path.exists():
+        return tuple()
+
+    with path.open(newline="", encoding="utf-8") as file:
+        return tuple(csv.DictReader(file))
+
+
+@lru_cache(maxsize=1)
+def load_program_rows() -> tuple[dict[str, str], ...]:
+    path = DATA_DIR / "programs.csv"
     if not path.exists():
         return tuple()
 
@@ -526,6 +567,31 @@ def load_prerequisite_rows() -> tuple[dict[str, str], ...]:
         return tuple(csv.DictReader(file))
 
 
+@lru_cache(maxsize=1)
+def _program_lookup() -> dict[str, dict[str, str]]:
+    lookup: dict[str, dict[str, str]] = {}
+    for row in load_program_rows():
+        names = {
+            _normalize(row.get("major")),
+            _normalize(row.get("canonical_major")),
+        }
+        names.update(
+            alias.strip()
+            for alias in _normalize(row.get("aliases")).split(";")
+            if alias.strip()
+        )
+        for name in names:
+            if name:
+                lookup[name.lower()] = row
+    return lookup
+
+
+def find_program_row(major: Optional[str]) -> Optional[dict[str, str]]:
+    if not major:
+        return None
+    return _program_lookup().get(_normalize(major).lower())
+
+
 def _support_documents() -> List[RetrievedDocument]:
     path = DATA_DIR / "support_resources.csv"
     if not path.exists():
@@ -553,6 +619,7 @@ def _support_documents() -> List[RetrievedDocument]:
 def load_knowledge_documents() -> tuple[RetrievedDocument, ...]:
     docs = [
         *_course_documents(),
+        *_program_documents(),
         *_department_documents(),
         *_faculty_documents(),
         *_degree_documents(),
@@ -587,6 +654,8 @@ def _score_document(query_tokens: set[str], query: str, user_major: Optional[str
         score += 2.5
     if doc.source_type == "department" and any(token in query_tokens for token in {"department", "office", "advisor", "contact"}):
         score += 2.0
+    if doc.source_type == "program" and any(token in query_tokens for token in {"program", "major", "school", "college", "path"}):
+        score += 2.5
     if doc.source_type == "support_resource" and any(token in query_tokens for token in SUPPORT_TOKENS):
         score += 8.0
     if doc.source_type == "course" and any(token in query_tokens for token in {"course", "class", "take", "schedule", "prerequisite"}):
@@ -708,12 +777,17 @@ def get_degree_progress(major: Optional[str], completed_course_codes: Iterable[s
             "advising_tips": None,
         }
 
-    major_lower = major.lower()
+    program_row = find_program_row(major)
+    canonical_major = _normalize(program_row.get("canonical_major")) if program_row else major
+    major_lower = canonical_major.lower()
     matching_row = next(
         (row for row in load_degree_requirement_rows() if _normalize(row.get("major")).lower() == major_lower),
         None,
     )
     if not matching_row:
+        program_notes = _normalize(program_row.get("notes")) if program_row else ""
+        program_department = _normalize(program_row.get("department")) if program_row else ""
+        program_school = _normalize(program_row.get("school")) if program_row else ""
         return {
             "major": major,
             "required_courses": [],
@@ -722,8 +796,13 @@ def get_degree_progress(major: Optional[str], completed_course_codes: Iterable[s
             "recommended_next_courses": [],
             "blocked_courses": [],
             "completion_percent": 0.0,
-            "notes": None,
-            "advising_tips": None,
+            "notes": program_notes or None,
+            "advising_tips": (
+                f"This official Morgan program is currently mapped to {program_department} in {program_school}. "
+                "Use the program and department pages for detailed requirement verification until full major-level requirement modeling is added."
+                if program_department or program_school
+                else None
+            ),
         }
 
     required = [

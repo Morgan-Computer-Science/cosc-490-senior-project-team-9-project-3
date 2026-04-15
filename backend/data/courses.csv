@@ -1,16 +1,29 @@
 code,title,description,credits,department,level,semester_offered,instructor
 COSC111,Computer Science I,Introduction to programming and computational problem solving using a modern programming language.,3,Computer Science,100,Fall/Spring,Dr. Paul Wang
+COSC112,Intro to Computer Science II,Continuation of introductory programming with object-oriented problem solving and software development practice.,4,Computer Science,100,Fall/Spring,Dr. Paul Wang
+COSC220,Assembly Language and Computer Organization,Study of low-level programming machine organization and architecture-level problem solving for computing majors.,4,Computer Science,200,Fall/Spring,Dr. Shuangbao Wang
+COSC238,Object Oriented Programming,Advanced object-oriented programming techniques design patterns and modular software construction.,3,Computer Science,200,Fall/Spring,Dr. Jun Zheng
 COSC241,Computer Science II,Object-oriented programming and intermediate software development concepts.,3,Computer Science,200,Fall/Spring,Dr. Shuangbao Wang
 COSC242,Data Structures and Algorithms,Study of fundamental data structures and algorithm analysis.,3,Computer Science,200,Fall/Spring,Dr. Jun Zheng
+COSC243,Computer Architecture,Computer architecture concepts including processor organization memory hierarchy and systems-level performance.,3,Computer Science,200,Fall/Spring,Dr. Jun Zheng
 COSC331,Algorithms,Design and analysis of algorithms including sorting searching and graph algorithms.,3,Computer Science,300,Fall,Dr. Shuangbao Wang
 COSC332,Operating Systems,Concepts of operating systems including process management memory management and scheduling.,3,Computer Science,300,Fall/Spring,Dr. Jun Zheng
 COSC350,Software Engineering,Principles of software design development testing and maintenance.,3,Computer Science,300,Spring,Dr. Paul Wang
 COSC455,Artificial Intelligence,Introduction to artificial intelligence search algorithms machine learning and knowledge representation.,3,Computer Science,400,Fall,Dr. Shuangbao Wang
 COSC459,Computer Networks,Fundamentals of computer networking protocols architectures and distributed systems.,3,Computer Science,400,Spring,Dr. Paul Wang
 COSC490,Senior Project,Capstone course where students design and implement a major computing project.,3,Computer Science,400,Fall/Spring,Dr. Paul Wang
+MATH130,Introduction to Actuarial Science,Foundations of actuarial science with emphasis on risk modeling professional pathways and actuarial applications.,3,Mathematics,100,Fall,Dr. Traci Allotey
 MATH141,Calculus I,Differential calculus and its applications for science and engineering students.,4,Mathematics,100,Fall/Spring,Dr. Linda Williams
 MATH241,Calculus II,Integral calculus series and advanced applications.,4,Mathematics,200,Fall/Spring,Dr. Linda Williams
 MATH242,Linear Algebra,Vector spaces matrices eigenvalues and linear transformations.,3,Mathematics,200,Fall/Spring,Dr. Michael Green
+MATH243,Calculus III,Multivariable calculus including vectors partial derivatives and multiple integration.,4,Mathematics,200,Fall/Spring,Dr. Linda Williams
+MATH312,Linear Algebra I,Formal study of vector spaces matrices linear transformations and computational methods for applied mathematics.,3,Mathematics,300,Fall/Spring,Dr. Michael Green
+MATH331,Applied Probability and Statistics,Applied probability models and statistical methods for quantitative and actuarial analysis.,3,Mathematics,300,Fall/Spring,Dr. Michael Green
+MATH340,Introduction to Differential Equations,Ordinary differential equations modeling techniques and solution methods for science and engineering.,3,Mathematics,300,Fall/Spring,Dr. Linda Williams
+MATH346,Financial Mathematics,Mathematics of interest theory annuities loans bonds and financial valuation for actuarial preparation.,4,Mathematics,300,Spring,Dr. Traci Allotey
+MATH363,Actuarial and Stochastic Modeling I,Introduction to stochastic processes and actuarial modeling methods used in risk analysis.,3,Mathematics,300,Fall,Dr. Traci Allotey
+MATH364,Actuarial and Stochastic Modeling II,Continuation of actuarial and stochastic modeling with advanced applications to insurance and financial risk.,3,Mathematics,300,Spring,Dr. Traci Allotey
+MATH431,Mathematical Theory of Statistics I,Advanced probability distributions estimation and statistical theory for upper-level mathematics study.,3,Mathematics,400,Fall,Dr. Michael Green
 STAT302,Probability and Statistics,Probability models statistical inference and applications.,3,Mathematics,300,Fall/Spring,Dr. Michael Green
 ENGL101,English Composition I,Development of college-level writing analytical reading and argumentation.,3,English,100,Fall/Spring,Dr. Karen Smith
 ENGL102,English Composition II,Advanced writing research and rhetorical strategies.,3,English,100,Fall/Spring,Dr. Karen Smith
@@ -59,6 +72,7 @@ BUSN320,Business Law,Legal principles affecting business operations contracts an
 EDUC200,Foundations of Education,Introduction to educational systems teaching practices and learning theories.,3,Education,200,Fall/Spring,Dr. Rebecca Moore
 EDUC310,Educational Psychology,Study of learning processes motivation and assessment in educational settings.,3,Education,300,Spring,Dr. Rebecca Moore
 HLTH101,Personal Health and Wellness,Study of health behaviors nutrition fitness and wellness strategies.,3,Health Sciences,100,Fall/Spring,Dr. Karen Lewis
+INSS141,Digital Literacy and Application Software,Introduction to computer and information processing for business with hands-on work in productivity and data tools.,3,Information Science and Systems,100,Fall/Spring,Dr. Alicia Bennett
 ISYS201,Introduction to Information Systems,Overview of information systems business processes and digital transformation in organizations.,3,Information Science and Systems,200,Fall/Spring,Dr. Alicia Bennett
 ISYS220,Business Data Communications,Study of enterprise data communications networking concepts and business information flow.,3,Information Science and Systems,200,Spring,Dr. Alicia Bennett
 ISYS310,Systems Analysis and Design,Methods for analyzing business requirements and designing information systems solutions.,3,Information Science and Systems,300,Fall,Dr. Raymond Cole

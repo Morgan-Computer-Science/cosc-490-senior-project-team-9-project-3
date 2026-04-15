@@ -40,3 +40,31 @@ def test_catalog_includes_launch_visible_departments_and_faculty(client, auth_he
     faculty_departments = {row["department"] for row in faculty.json()}
     assert "Cloud Computing" in faculty_departments
     assert "Architecture" in faculty_departments
+
+
+def test_catalog_programs_endpoint_returns_broad_official_programs(client, auth_headers):
+    response = client.get("/catalog/programs", headers=auth_headers)
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert len(payload) >= 50
+    majors = {row["major"] for row in payload}
+    assert "Actuarial Science" in majors
+    assert "Architecture and Environmental Design" in majors
+    assert "Transportation Systems Engineering" in majors
+
+
+def test_catalog_departments_preserve_curated_contact_details(client, auth_headers):
+    response = client.get("/catalog/departments", headers=auth_headers)
+
+    assert response.status_code == 200
+    rows_by_major = {row["major"]: row for row in response.json()}
+
+    computer_science = rows_by_major["Computer Science"]
+    architecture = rows_by_major["Architecture"]
+
+    assert computer_science["email"] == "csdept@morgan.edu"
+    assert computer_science["office"] == "Calloway Hall 312"
+    assert architecture["email"] == "architecturedept@morgan.edu"
+    assert architecture["office"] == "Banneker Hall 140"
+    assert rows_by_major["Actuarial Science"]["email"] == "actuarialscience@morgan.edu"

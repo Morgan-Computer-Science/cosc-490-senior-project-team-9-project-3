@@ -1,6 +1,10 @@
 course_code,prerequisites,notes
+COSC112,COSC111,Official Morgan course listings require Computer Science I before Intro to Computer Science II.
+COSC220,COSC112,Assembly language and computer organization follows the second introductory computer science course.
+COSC238,COSC112,Object oriented programming is typically taken after the introductory programming sequence.
 COSC241,COSC111,Builds on introductory programming.
 COSC242,COSC241,Data structures should follow Computer Science II.
+COSC243,COSC238,Computer architecture is strongest after object oriented programming and systems-oriented preparation.
 COSC310,COSC242,Database work is stronger after data structures.
 COSC331,COSC242,Algorithm analysis assumes data structures fluency.
 COSC332,COSC242,Operating systems should follow programming foundations.
@@ -8,6 +12,14 @@ COSC350,COSC242,Software engineering is best after the core programming sequence
 COSC490,COSC350; COSC331,Capstone should come after core upper-level preparation.
 MATH241,MATH141,Calculus II follows Calculus I.
 MATH242,MATH141,Linear algebra is typically taken after initial college math preparation.
+MATH243,MATH242,Multivariable calculus builds naturally after the early calculus sequence.
+MATH312,MATH243,Linear algebra for upper-level quantitative study is stronger after the multivariable calculus sequence.
+MATH331,MATH243,Applied probability and statistics is commonly taken after the multivariable calculus sequence in Morgan actuarial study.
+MATH340,MATH243,Intro to differential equations should follow the core calculus sequence.
+MATH346,MATH331; MATH340,Financial mathematics is strongest after probability and differential equations preparation.
+MATH363,MATH331; MATH346,Actuarial and stochastic modeling builds on probability and financial mathematics.
+MATH364,MATH363,The second actuarial and stochastic modeling course follows the first sequence course.
+MATH431,MATH331,Mathematical theory of statistics is strongest after applied probability and statistics.
 ISYS220,ISYS201,Business data communications builds on introductory IS concepts.
 ISYS310,ISYS220,Systems analysis should follow early IS and communications coursework.
 ISYS340,ISYS220; STAT302,Analytics is stronger after business data communications and statistics.

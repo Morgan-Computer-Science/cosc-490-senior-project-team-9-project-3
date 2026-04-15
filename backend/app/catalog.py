@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app import models, schemas
 from app.auth import get_current_user
 from app.db import get_db
-from app.rag import load_department_rows, load_faculty_rows, load_support_resource_rows
+from app.rag import load_department_rows, load_faculty_rows, load_program_rows, load_support_resource_rows
 
 router = APIRouter(prefix="/catalog", tags=["catalog"])
 
@@ -60,6 +60,13 @@ def list_departments(
     current_user: models.User = Depends(get_current_user),
 ):
     return [schemas.DepartmentInfo(**row) for row in load_department_rows()]
+
+
+@router.get("/programs", response_model=List[schemas.ProgramInfo])
+def list_programs(
+    current_user: models.User = Depends(get_current_user),
+):
+    return [schemas.ProgramInfo(**row) for row in load_program_rows()]
 
 
 @router.get("/faculty", response_model=List[schemas.FacultyInfo])

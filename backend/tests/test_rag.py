@@ -1,4 +1,4 @@
-from app.rag import extract_attachment_course_signals, retrieve_relevant_documents
+from app.rag import extract_attachment_course_signals, get_degree_progress, retrieve_relevant_documents
 
 
 def test_retrieve_relevant_documents_supports_cloud_computing_queries():
@@ -46,3 +46,32 @@ def test_degree_audit_signal_extraction_recognizes_grades_and_ip_status():
     assert "COSC241" not in signals.planned_codes
     assert "COSC459" not in signals.completed_codes
     assert "COSC490" not in signals.completed_codes
+
+
+def test_retrieve_relevant_documents_supports_actuarial_science_queries():
+    docs = retrieve_relevant_documents(
+        "What should I know about the actuarial science program and advising path?",
+        user_major="Actuarial Science",
+        top_k=5,
+    )
+
+    assert docs
+    assert any((doc.major or "") == "Actuarial Science" for doc in docs)
+
+
+def test_degree_progress_supports_official_program_aliases():
+    architecture = get_degree_progress("Architecture and Environmental Design", [])
+    electrical = get_degree_progress("Electrical and Computer Engineering", [])
+    business = get_degree_progress("Management and Business Administration", [])
+
+    assert architecture["required_courses"]
+    assert electrical["required_courses"]
+    assert business["required_courses"]
+
+
+def test_degree_progress_supports_official_actuarial_science_requirements():
+    actuarial = get_degree_progress("Actuarial Science", [])
+
+    assert "MATH331" in actuarial["required_courses"]
+    assert "MATH363" in actuarial["required_courses"]
+    assert actuarial["advising_tips"]

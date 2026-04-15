@@ -126,6 +126,19 @@ class DepartmentInfo(BaseModel):
     email: Optional[str] = None
     phone: Optional[str] = None
     overview: Optional[str] = None
+    school: Optional[str] = None
+    source_url: Optional[str] = None
+
+
+class ProgramInfo(BaseModel):
+    major: str
+    canonical_major: Optional[str] = None
+    degree_type: Optional[str] = None
+    department: Optional[str] = None
+    school: Optional[str] = None
+    aliases: Optional[str] = None
+    source_url: Optional[str] = None
+    notes: Optional[str] = None
 
 
 class FacultyInfo(BaseModel):

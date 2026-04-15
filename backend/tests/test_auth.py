@@ -169,7 +169,7 @@ def test_websis_export_preview_prefers_official_record_context(client, auth_head
     assert "academic record" in payload["confidence_note"].lower()
 
 
-def test_websis_export_preview_surfaces_unknown_real_transcript_codes(client, auth_headers):
+def test_websis_export_preview_recognizes_real_transcript_codes_from_expanded_catalog(client, auth_headers):
     response = client.post(
         "/auth/me/completed-courses/import",
         headers=auth_headers,
@@ -190,6 +190,7 @@ def test_websis_export_preview_surfaces_unknown_real_transcript_codes(client, au
     assert response.status_code == 200
     payload = response.json()
     assert payload["detected_document_type"] == "degree_audit"
+    assert {"COSC112", "COSC220", "COSC241"}.issubset(set(payload["completed_course_codes"]))
     assert "COSC241" in payload["completed_course_codes"]
-    assert "COSC459" in payload["planned_course_codes"]
-    assert {"COSC112", "COSC220", "MATH331"}.issubset(set(payload["unknown_course_codes"]))
+    assert {"COSC459", "MATH331"}.issubset(set(payload["planned_course_codes"]))
+    assert payload["unknown_course_codes"] == []

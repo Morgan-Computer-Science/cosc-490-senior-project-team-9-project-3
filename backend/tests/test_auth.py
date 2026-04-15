@@ -194,3 +194,25 @@ def test_websis_export_preview_recognizes_real_transcript_codes_from_expanded_ca
     assert "COSC241" in payload["completed_course_codes"]
     assert {"COSC459", "MATH331"}.issubset(set(payload["planned_course_codes"]))
     assert payload["unknown_course_codes"] == []
+
+
+def test_import_preview_normalizes_information_systems_alias_codes(client, auth_headers):
+    response = client.post(
+        "/auth/me/completed-courses/import",
+        headers=auth_headers,
+        data={
+            "import_source": "websis_export",
+            "source_text": (
+                "WebSIS academic record\n"
+                "Major: Information Systems\n"
+                "Completed Courses: ISYS 201, ISYS 220\n"
+                "Remaining Requirements: ISYS 310, ISYS 340\n"
+            ),
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert {"INSS201", "INSS220"}.issubset(set(payload["completed_course_codes"]))
+    assert {"INSS310", "INSS340"}.issubset(set(payload["remaining_course_codes"]))
+    assert payload["unknown_course_codes"] == []

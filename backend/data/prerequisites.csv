@@ -20,11 +20,15 @@ MATH346,MATH331; MATH340,Financial mathematics is strongest after probability an
 MATH363,MATH331; MATH346,Actuarial and stochastic modeling builds on probability and financial mathematics.
 MATH364,MATH363,The second actuarial and stochastic modeling course follows the first sequence course.
 MATH431,MATH331,Mathematical theory of statistics is strongest after applied probability and statistics.
-ISYS220,ISYS201,Business data communications builds on introductory IS concepts.
-ISYS310,ISYS220,Systems analysis should follow early IS and communications coursework.
-ISYS340,ISYS220; STAT302,Analytics is stronger after business data communications and statistics.
+INSS220,INSS201,Business data communications builds on introductory information science and systems concepts.
+INSS310,INSS220,Systems analysis should follow early information science and communications coursework.
+INSS340,INSS220; STAT302,Analytics is stronger after business data communications and statistics.
 BIOL102,BIOL101,General Biology II follows General Biology I.
 CHEM102,CHEM101,General Chemistry II follows General Chemistry I.
+CHEM201,CHEM102,Organic Chemistry I follows the general chemistry sequence.
+CHEM202,CHEM201,Organic Chemistry II follows Organic Chemistry I.
+CHEM301,CHEM102,Quantitative analysis is typically taken after the general chemistry sequence.
+CHEM302,CHEM202; PHYS102,Physical chemistry is strongest after organic chemistry and the introductory physics sequence.
 PHYS102,PHYS101; MATH141,Physics II assumes Physics I and calculus readiness.
 BIOL320,BIOL102,Genetics should follow the introductory biology sequence.
 BIOL410,BIOL320; CHEM102,Cell biology is stronger after genetics and chemistry.
@@ -33,8 +37,17 @@ PSYC301,PSYC101; STAT302,Research methods should follow intro psychology and sta
 PSYC302,PSYC301,Experimental psychology should follow research methods.
 ACCT202,ACCT201,Accounting II follows Accounting I.
 ECON202,ECON201,Macroeconomics follows introductory economics.
+ECON301,ECON201,Intermediate microeconomics builds directly on principles of microeconomics.
+ECON302,ECON202,Intermediate macroeconomics follows the principles of macroeconomics sequence.
+ECON401,ECON301; STAT302,Econometrics is strongest after intermediate economics and statistics.
+ECON410,ECON301; ECON302,Senior economics seminar should follow the intermediate theory sequence.
 MKTG331,MKTG210,Marketing management should follow principles of marketing.
 FINA300,ACCT201; ECON201,Finance is stronger after accounting and economics.
+POSC201,POSC101,International relations builds on the introductory political science survey.
+POSC307,POSC101,Research methods follows an initial political science foundation.
+POSC314,POSC101,Political theory follows the introductory political science survey.
+POSC385,POSC101,Public policy benefits from the introductory political science foundation.
+POSC402,POSC307; POSC314,Senior seminar should follow methods and theory preparation.
 ENGE102,ENGE101,Engineering Foundations II follows the first foundations course.
 EEGR203,ENGE102; MATH141,Circuit analysis depends on engineering foundations and calculus.
 EEGR205,ENGE102,Digital logic usually follows early engineering foundations.

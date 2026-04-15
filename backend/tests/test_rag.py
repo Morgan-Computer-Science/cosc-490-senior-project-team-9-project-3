@@ -75,3 +75,13 @@ def test_degree_progress_supports_official_actuarial_science_requirements():
     assert "MATH331" in actuarial["required_courses"]
     assert "MATH363" in actuarial["required_courses"]
     assert actuarial["advising_tips"]
+
+
+def test_degree_progress_supports_additional_official_programs():
+    economics = get_degree_progress("Economics", [])
+    chemistry = get_degree_progress("Chemistry", [])
+    political_science = get_degree_progress("Political Science", [])
+
+    assert "ECON301" in economics["required_courses"]
+    assert "CHEM201" in chemistry["required_courses"]
+    assert "POSC101" in political_science["required_courses"]

@@ -62,9 +62,13 @@ def test_catalog_departments_preserve_curated_contact_details(client, auth_heade
 
     computer_science = rows_by_major["Computer Science"]
     architecture = rows_by_major["Architecture"]
+    economics = rows_by_major["Economics"]
+    political_science = rows_by_major["Political Science"]
 
     assert computer_science["email"] == "csdept@morgan.edu"
     assert computer_science["office"] == "Calloway Hall 312"
     assert architecture["email"] == "architecturedept@morgan.edu"
     assert architecture["office"] == "Banneker Hall 140"
     assert rows_by_major["Actuarial Science"]["email"] == "actuarialscience@morgan.edu"
+    assert economics["email"] == "randal.reed@morgan.edu"
+    assert political_science["phone"] == "443-885-3277"

@@ -8,6 +8,7 @@ from . import models, schemas, security
 from .attachments import extract_attachment_context
 from .db import get_db
 from .rag import (
+    canonicalize_course_code,
     extract_all_course_codes,
     extract_attachment_course_signals,
     extract_known_course_codes,
@@ -307,7 +308,7 @@ def update_completed_courses(
 ):
     normalized_codes = sorted(
         {
-            course_code.strip().upper()
+            canonicalize_course_code(course_code)
             for course_code in payload.course_codes
             if course_code.strip()
         }

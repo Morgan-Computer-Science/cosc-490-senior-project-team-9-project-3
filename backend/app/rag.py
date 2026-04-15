@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Iterable, List, Optional
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+COURSE_ALIAS_PATH = DATA_DIR / "course_aliases.csv"
 STOPWORDS = {
     "a",
     "an",
@@ -99,12 +100,39 @@ def load_course_rows() -> tuple[dict[str, str], ...]:
         return tuple(csv.DictReader(file))
 
 
+@lru_cache(maxsize=1)
+def load_course_alias_rows() -> tuple[dict[str, str], ...]:
+    if not COURSE_ALIAS_PATH.exists():
+        return tuple()
+
+    with COURSE_ALIAS_PATH.open(newline="", encoding="utf-8") as file:
+        return tuple(csv.DictReader(file))
+
+
+@lru_cache(maxsize=1)
+def _course_alias_map() -> dict[str, str]:
+    alias_map: dict[str, str] = {}
+    for row in load_course_alias_rows():
+        alias_code = _normalize(row.get("alias_code")).upper()
+        canonical_code = _normalize(row.get("canonical_code")).upper()
+        if alias_code and canonical_code:
+            alias_map[alias_code] = canonical_code
+    return alias_map
+
+
+def canonicalize_course_code(code: Optional[str]) -> str:
+    normalized = _normalize(code).upper()
+    if not normalized:
+        return ""
+    return _course_alias_map().get(normalized, normalized)
+
+
 def extract_known_course_codes(text: Optional[str], limit: int = 12) -> list[str]:
     if not text:
         return []
 
     known_codes = {
-        _normalize(row.get("code")).upper()
+        canonicalize_course_code(row.get("code"))
         for row in load_course_rows()
         if _normalize(row.get("code"))
     }
@@ -112,7 +140,7 @@ def extract_known_course_codes(text: Optional[str], limit: int = 12) -> list[str
     seen: set[str] = set()
 
     for prefix, number in COURSE_CODE_PATTERN.findall(text):
-        normalized = f"{prefix.upper()}{number.upper()}"
+        normalized = canonicalize_course_code(f"{prefix.upper()}{number.upper()}")
         if normalized in known_codes and normalized not in seen:
             seen.add(normalized)
             matched_codes.append(normalized)
@@ -129,7 +157,7 @@ def extract_all_course_codes(text: Optional[str], limit: int = 30) -> list[str]:
     detected_codes: list[str] = []
     seen: set[str] = set()
     for prefix, number in COURSE_CODE_PATTERN.findall(text):
-        normalized = f"{prefix.upper()}{number.upper()}"
+        normalized = canonicalize_course_code(f"{prefix.upper()}{number.upper()}")
         if normalized in seen:
             continue
         seen.add(normalized)
@@ -141,12 +169,12 @@ def extract_all_course_codes(text: Optional[str], limit: int = 30) -> list[str]:
 
 
 def get_course_documents_by_code(course_codes: Iterable[str], limit: int = 6) -> list[RetrievedDocument]:
-    target_codes = [code.strip().upper() for code in course_codes if code.strip()]
+    target_codes = [canonicalize_course_code(code) for code in course_codes if _normalize(code)]
     if not target_codes:
         return []
 
     row_map = {
-        _normalize(row.get("code")).upper(): row
+        canonicalize_course_code(row.get("code")): row
         for row in load_course_rows()
         if _normalize(row.get("code"))
     }
@@ -191,7 +219,7 @@ def extract_attachment_course_signals(
         return AttachmentCourseSignals()
 
     known_codes = {
-        _normalize(row.get("code")).upper()
+        canonicalize_course_code(row.get("code"))
         for row in load_course_rows()
         if _normalize(row.get("code"))
     }
@@ -246,7 +274,7 @@ def extract_attachment_course_signals(
         lowered_line = raw_line.lower()
         line_codes: list[str] = []
         for prefix, number in COURSE_CODE_PATTERN.findall(raw_line):
-            normalized = f"{prefix.upper()}{number.upper()}"
+            normalized = canonicalize_course_code(f"{prefix.upper()}{number.upper()}")
             if normalized not in known_codes:
                 continue
             line_codes.append(normalized)
@@ -309,8 +337,10 @@ def evaluate_course_plan(
     planned_course_codes: Iterable[str],
     completed_course_codes: Iterable[str],
 ) -> dict[str, list[str]]:
-    planned = [code.strip().upper() for code in planned_course_codes if code.strip()]
-    completed_set = {code.strip().upper() for code in completed_course_codes if code.strip()}
+    planned = [canonicalize_course_code(code) for code in planned_course_codes if _normalize(code)]
+    completed_set = {
+        canonicalize_course_code(code) for code in completed_course_codes if _normalize(code)
+    }
     prereq_map = _prerequisite_map()
 
     ready: list[str] = []
@@ -342,9 +372,9 @@ def summarize_schedule_plan(
     completed_course_codes: Iterable[str],
     major: Optional[str] = None,
 ) -> dict[str, object]:
-    planned = [code.strip().upper() for code in planned_course_codes if code.strip()]
+    planned = [canonicalize_course_code(code) for code in planned_course_codes if _normalize(code)]
     course_map = {
-        _normalize(row.get("code")).upper(): row
+        canonicalize_course_code(row.get("code")): row
         for row in load_course_rows()
         if _normalize(row.get("code"))
     }
@@ -380,7 +410,7 @@ def compare_degree_audit(
     major: Optional[str] = None,
 ) -> dict[str, list[str]]:
     audit_remaining = {
-        code.strip().upper() for code in audit_remaining_codes if code.strip()
+        canonicalize_course_code(code) for code in audit_remaining_codes if _normalize(code)
     }
     progress = get_degree_progress(major, completed_course_codes)
     system_remaining = set(progress.get("remaining_courses", []))
@@ -727,9 +757,9 @@ def _course_sort_key(code: str, course_map: dict[str, dict[str, str]]) -> tuple[
 def _prerequisite_map() -> dict[str, list[str]]:
     prereq_map: dict[str, list[str]] = {}
     for row in load_prerequisite_rows():
-        course_code = _normalize(row.get("course_code")).upper()
+        course_code = canonicalize_course_code(row.get("course_code"))
         prerequisites = [
-            code.strip().upper()
+            canonicalize_course_code(code)
             for code in _normalize(row.get("prerequisites")).split(";")
             if code.strip()
         ]
@@ -741,7 +771,7 @@ def _prerequisite_map() -> dict[str, list[str]]:
 def _recommend_next_courses(required: list[str], completed: list[str]) -> tuple[list[str], list[str]]:
     completed_set = set(completed)
     course_map = {
-        _normalize(row.get("code")).upper(): row
+        canonicalize_course_code(row.get("code")): row
         for row in load_course_rows()
     }
     prereq_map = _prerequisite_map()
@@ -763,7 +793,9 @@ def _recommend_next_courses(required: list[str], completed: list[str]) -> tuple[
 
 
 def get_degree_progress(major: Optional[str], completed_course_codes: Iterable[str]) -> dict[str, object]:
-    completed = sorted({code.strip().upper() for code in completed_course_codes if code.strip()})
+    completed = sorted(
+        {canonicalize_course_code(code) for code in completed_course_codes if _normalize(code)}
+    )
     if not major:
         return {
             "major": None,
@@ -806,7 +838,7 @@ def get_degree_progress(major: Optional[str], completed_course_codes: Iterable[s
         }
 
     required = [
-        code.strip().upper()
+        canonicalize_course_code(code)
         for code in _normalize(matching_row.get("required_courses")).split(";")
         if code.strip()
     ]

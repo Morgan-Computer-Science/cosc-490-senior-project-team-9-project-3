@@ -32,6 +32,11 @@ CHEM101,General Chemistry I,Fundamental chemical principles including atomic str
 PHYS101,Physics I,Mechanics motion and energy concepts with laboratory.,4,Physics,100,Fall/Spring,Dr. David Clark
 ORNS106,Introduction to University Orientation,Orientation course introducing academic resources and student success strategies.,1,Orientation,100,Fall/Spring,Dr. Angela Harris
 ECON201,Principles of Economics I,Introduction to microeconomic principles including supply demand and market systems.,3,Economics,200,Fall/Spring,Dr. Steven Lee
+ECON202,Principles of Economics II,Macroeconomic analysis including national income unemployment inflation and fiscal policy.,3,Economics,200,Spring,Dr. Steven Lee
+ECON301,Intermediate Microeconomics,Analysis of consumer behavior firm decision making market structure and welfare in modern economies.,3,Economics,300,Fall,Dr. Randal Reed
+ECON302,Intermediate Macroeconomics,Study of national income employment inflation monetary policy and macroeconomic modeling.,3,Economics,300,Spring,Dr. Randal Reed
+ECON401,Econometrics,Application of statistical methods to economic data with emphasis on regression modeling and forecasting.,3,Economics,400,Fall,Dr. Randal Reed
+ECON410,Senior Seminar in Economics,Capstone-style economic research writing and policy analysis for upper-level economics majors.,3,Economics,400,Spring,Dr. Randal Reed
 HIST101,World History I,Survey of major global civilizations and historical developments.,3,History,100,Fall/Spring,Dr. Robert Allen
 PSYC101,Introduction to Psychology,Overview of psychological principles including cognition behavior and mental processes.,3,Psychology,100,Fall/Spring,Dr. Sarah Davis
 COSC310,Database Systems,Design and implementation of relational databases SQL and data modeling.,3,Computer Science,300,Fall/Spring,Dr. Jun Zheng
@@ -48,7 +53,6 @@ MGMT200,Principles of Management,Overview of organizational management leadershi
 MGMT310,Organizational Behavior,Study of behavior within organizations including motivation teamwork and leadership.,3,Management,300,Fall,Dr. Angela Brooks
 MKTG210,Principles of Marketing,Introduction to marketing concepts consumer behavior and market analysis.,3,Marketing,200,Fall/Spring,Dr. Daniel Roberts
 FINA300,Corporate Finance,Fundamentals of financial management capital budgeting and investment decisions.,3,Finance,300,Spring,Dr. Daniel Roberts
-ECON202,Principles of Economics II,Macroeconomic analysis including national income unemployment inflation and fiscal policy.,3,Economics,200,Spring,Dr. Steven Lee
 SOCY101,Introduction to Sociology,Study of social behavior social institutions and societal structures.,3,Sociology,100,Fall/Spring,Dr. Patricia White
 SOCY305,Social Inequality,Analysis of inequality based on class race gender and global social structures.,3,Sociology,300,Spring,Dr. Patricia White
 PSYC210,Developmental Psychology,Study of human development across the lifespan including cognitive and social development.,3,Psychology,200,Fall,Dr. Sarah Davis
@@ -73,15 +77,25 @@ EDUC200,Foundations of Education,Introduction to educational systems teaching pr
 EDUC310,Educational Psychology,Study of learning processes motivation and assessment in educational settings.,3,Education,300,Spring,Dr. Rebecca Moore
 HLTH101,Personal Health and Wellness,Study of health behaviors nutrition fitness and wellness strategies.,3,Health Sciences,100,Fall/Spring,Dr. Karen Lewis
 INSS141,Digital Literacy and Application Software,Introduction to computer and information processing for business with hands-on work in productivity and data tools.,3,Information Science and Systems,100,Fall/Spring,Dr. Alicia Bennett
-ISYS201,Introduction to Information Systems,Overview of information systems business processes and digital transformation in organizations.,3,Information Science and Systems,200,Fall/Spring,Dr. Alicia Bennett
-ISYS220,Business Data Communications,Study of enterprise data communications networking concepts and business information flow.,3,Information Science and Systems,200,Spring,Dr. Alicia Bennett
-ISYS310,Systems Analysis and Design,Methods for analyzing business requirements and designing information systems solutions.,3,Information Science and Systems,300,Fall,Dr. Raymond Cole
-ISYS340,Business Analytics and Decision Support,Application of analytics reporting and decision support tools in organizational settings.,3,Information Science and Systems,300,Spring,Dr. Raymond Cole
+INSS201,Introduction to Information Systems,Overview of information systems business processes and digital transformation in organizations.,3,Information Science and Systems,200,Fall/Spring,Dr. Alicia Bennett
+INSS220,Business Data Communications,Study of enterprise data communications networking concepts and business information flow.,3,Information Science and Systems,200,Spring,Dr. Alicia Bennett
+INSS310,Systems Analysis and Design,Methods for analyzing business requirements and designing information systems solutions.,3,Information Science and Systems,300,Fall,Dr. Raymond Cole
+INSS340,Business Analytics and Decision Support,Application of analytics reporting and decision support tools in organizational settings.,3,Information Science and Systems,300,Spring,Dr. Raymond Cole
 BIOL102,General Biology II,Continuation of biological principles with emphasis on organismal biology ecology and laboratory analysis.,4,Biology,100,Spring,Dr. Lisa Johnson
 BIOL320,Genetics,Study of heredity molecular genetics and genomic analysis in modern biology.,3,Biology,300,Fall,Dr. Lisa Johnson
 BIOL410,Cell Biology,Advanced study of cellular structure signaling metabolism and laboratory methods.,3,Biology,400,Spring,Dr. Harold Evans
 CHEM102,General Chemistry II,Continuation of general chemistry including equilibrium kinetics thermodynamics and laboratory applications.,4,Chemistry,100,Spring,Dr. Robert Brown
+CHEM201,Organic Chemistry I,Structure reactivity and mechanisms of organic compounds with laboratory-oriented chemical analysis.,4,Chemistry,200,Fall,Dr. Pumtiwitt McCarthy
+CHEM202,Organic Chemistry II,Continuation of organic chemistry with synthesis spectroscopy and biomolecular applications.,4,Chemistry,200,Spring,Dr. Pumtiwitt McCarthy
+CHEM301,Quantitative Analysis,Analytical chemistry methods with emphasis on equilibrium titrations instrumentation and laboratory precision.,4,Chemistry,300,Fall,Dr. Santosh Mandal
+CHEM302,Physical Chemistry,Thermodynamics kinetics and quantum concepts applied to chemical systems and laboratory interpretation.,4,Chemistry,300,Spring,Dr. Santosh Mandal
 PHYS102,Physics II,Continuation of introductory physics with electricity magnetism waves and optics.,4,Physics,100,Spring,Dr. David Clark
+POSC101,Introduction to Political Science,Survey of political systems public institutions political behavior and core concepts in the discipline.,3,Political Science,100,Fall/Spring,Dr. Kweku Nubukpo
+POSC201,International Relations,Study of global politics diplomacy conflict cooperation and international institutions.,3,Political Science,200,Fall/Spring,Dr. Kweku Nubukpo
+POSC307,Research Methods in Political Science,Introduction to political inquiry evidence-based analysis and research design within political science.,3,Political Science,300,Fall,Dr. Kweku Nubukpo
+POSC314,Political Theory,Examination of major political thinkers traditions and normative debates in political life.,3,Political Science,300,Spring,Dr. Kweku Nubukpo
+POSC385,Public Policy,Analysis of public policy formation implementation evaluation and policy impact on communities.,3,Political Science,300,Fall,Dr. Kweku Nubukpo
+POSC402,Senior Seminar in Political Science,Capstone seminar integrating research writing and advanced analysis for political science majors.,3,Political Science,400,Spring,Dr. Kweku Nubukpo
 PSYC301,Research Methods in Psychology,Introduction to psychological research design methods ethics and scientific writing.,3,Psychology,300,Fall,Dr. Sarah Davis
 PSYC302,Experimental Psychology,Applied laboratory-based research in psychology with data collection analysis and reporting.,3,Psychology,300,Spring,Dr. Brian Foster
 MGMT220,Business Statistics and Decision Making,Quantitative analysis decision making and management applications for business students.,3,Business Administration,200,Fall/Spring,Dr. Angela Brooks

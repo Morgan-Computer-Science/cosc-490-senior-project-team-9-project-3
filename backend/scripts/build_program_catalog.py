@@ -23,6 +23,36 @@ DEPARTMENT_OVERRIDES = {
         ),
         "source_url": "https://www.morgan.edu/actuarial-science/prospective-students/degree-options",
     },
+    "Chemistry": {
+        "office": "Spencer 318",
+        "email": "chemistrydept@morgan.edu",
+        "phone": "443-885-3115",
+        "overview": (
+            "Chemistry advises students on general and ACS-oriented chemistry study, "
+            "laboratory progression, undergraduate research, and preparation for graduate or health-professions pathways."
+        ),
+        "source_url": "https://www.morgan.edu/chemistry/undergraduate-program",
+    },
+    "Economics": {
+        "office": "Behavioral and Social Science Center 226G",
+        "email": "randal.reed@morgan.edu",
+        "phone": "443-885-1880",
+        "overview": (
+            "Economics advises students on economic literacy, policy analysis, quantitative reasoning, "
+            "and preparation for private-sector, public-sector, and graduate-study pathways."
+        ),
+        "source_url": "https://www.morgan.edu/economics/mission",
+    },
+    "Political Science": {
+        "office": "Political Science and International Affairs Department",
+        "email": "polisci@morgan.edu",
+        "phone": "443-885-3277",
+        "overview": (
+            "Political Science advises students on leadership, international perspective, public service, "
+            "research skills, and preparation for law school, graduate study, and civic engagement."
+        ),
+        "source_url": "https://www.morgan.edu/cla/politicalscience",
+    },
 }
 
 

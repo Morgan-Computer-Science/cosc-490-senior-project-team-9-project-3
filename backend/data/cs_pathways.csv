@@ -1,0 +1,5 @@
+pathway,interest_keywords,recommended_courses,foundation_courses,notes
+AI and Data,"ai;artificial intelligence;machine learning;data;analytics","COSC455;COSC410;STAT302","COSC242;COSC331;MATH241","Best for students interested in intelligent systems, modeling, and data-driven problem solving."
+Systems and Cloud,"systems;cloud;infrastructure;distributed;devops;platform","COSC332;COSC420;COSC440","COSC220;COSC243;COSC310","Best for students interested in operating systems, scalable infrastructure, and platform engineering."
+Software Engineering,"software;engineering;applications;product;full stack;development","COSC350;COSC340;COSC430","COSC242;COSC310","Best for students interested in software design, user-facing products, and application development."
+Networking and Security,"network;security;cybersecurity;networks","COSC459;COSC360;COSC420","COSC220;COSC243;COSC242","Best for students interested in secure systems, communications, and distributed networked services."

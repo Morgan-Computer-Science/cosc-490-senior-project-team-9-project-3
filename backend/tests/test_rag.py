@@ -106,3 +106,42 @@ def test_retrieve_relevant_documents_supports_construction_management_queries():
 
     assert docs
     assert any((doc.major or "") == "Construction Management" for doc in docs)
+
+
+def test_cs_degree_progress_recommends_foundational_next_courses_after_cosc241():
+    cs_progress = get_degree_progress("Computer Science", ["COSC111", "COSC241", "MATH141"])
+
+    assert "COSC242" in cs_progress["recommended_next_courses"]
+    assert "MATH241" in cs_progress["recommended_next_courses"]
+    assert cs_progress["pathway_recommendations"]
+    assert any(pathway["pathway"] == "AI and Data" for pathway in cs_progress["pathway_recommendations"])
+
+
+def test_cs_degree_progress_flags_capstone_as_blocked_without_core_readiness():
+    cs_progress = get_degree_progress("Computer Science", ["COSC111", "COSC241", "COSC242"])
+
+    assert "COSC490" in cs_progress["blocked_courses"]
+    assert cs_progress["capstone_readiness"]["status"] == "not_ready"
+    assert "COSC310" in cs_progress["capstone_readiness"]["missing_foundations"]
+
+
+def test_retrieve_relevant_documents_supports_cs_ai_pathway_queries():
+    docs = retrieve_relevant_documents(
+        "I am a Computer Science major interested in AI and machine learning. What classes should I line up next?",
+        user_major="Computer Science",
+        top_k=6,
+    )
+
+    assert docs
+    assert any((doc.department or "") == "Computer Science" for doc in docs)
+
+
+def test_cs_degree_progress_prioritizes_ai_pathway_when_interest_is_explicit():
+    cs_progress = get_degree_progress(
+        "Computer Science",
+        ["COSC111", "COSC241", "COSC242", "MATH141", "MATH241"],
+        planning_interest="I am most interested in AI and machine learning.",
+    )
+
+    assert cs_progress["pathway_recommendations"]
+    assert cs_progress["pathway_recommendations"][0]["pathway"] == "AI and Data"

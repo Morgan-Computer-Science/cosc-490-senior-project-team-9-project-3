@@ -70,10 +70,12 @@ def _build_student_context(user: models.User, effective_completed_codes: list[st
 def _build_degree_progress_context(
     user: models.User,
     effective_completed_codes: list[str] | None = None,
+    planning_interest: str | None = None,
 ) -> str:
     summary = get_degree_progress(
         user.major,
         effective_completed_codes or [course.course_code for course in user.completed_courses],
+        planning_interest=planning_interest,
     )
     if not summary["required_courses"]:
         return ""
@@ -92,6 +94,24 @@ def _build_degree_progress_context(
         lines.append(
             f"- Courses Still Blocked By Prerequisites: {', '.join(summary['blocked_courses'][:6])}"
         )
+    if summary.get("pathway_recommendations"):
+        lines.append("- Computer Science pathway suggestions:")
+        for pathway in summary["pathway_recommendations"][:2]:
+            lines.append(
+                f"  - {pathway['pathway']}: recommended {', '.join(pathway['recommended_courses']) or 'review foundations first'}"
+            )
+            if pathway["missing_foundations"]:
+                lines.append(
+                    f"    Missing foundations: {', '.join(pathway['missing_foundations'])}"
+                )
+    if summary.get("capstone_readiness", {}).get("status") != "unknown":
+        lines.append(
+            f"- COSC490 Readiness: {summary['capstone_readiness']['status'].replace('_', ' ')}"
+        )
+        if summary["capstone_readiness"]["missing_foundations"]:
+            lines.append(
+                f"  Missing foundations before capstone: {', '.join(summary['capstone_readiness']['missing_foundations'])}"
+            )
     if summary["notes"]:
         lines.append(f"- Notes: {summary['notes']}")
     if summary["advising_tips"]:
@@ -105,10 +125,12 @@ def _build_advisor_insights(
     retrieved_docs: List[RetrievedDocument],
     attachment_summary: str | None = None,
     effective_completed_codes: list[str] | None = None,
+    planning_interest: str | None = None,
 ) -> schemas.AdvisorInsights:
     degree_progress = get_degree_progress(
         user.major,
         effective_completed_codes or [course.course_code for course in user.completed_courses],
+        planning_interest=planning_interest,
     )
     contact_candidates: list[str] = []
     source_titles: list[str] = []
@@ -126,6 +148,11 @@ def _build_advisor_insights(
             str(code) for code in degree_progress.get("recommended_next_courses", [])[:4]
         ],
         blocked_courses=[str(code) for code in degree_progress.get("blocked_courses", [])[:4]],
+        pathway_recommendations=degree_progress.get("pathway_recommendations", [])[:2],
+        capstone_readiness=degree_progress.get(
+            "capstone_readiness",
+            {"status": "unknown", "missing_foundations": [], "notes": None},
+        ),
         suggested_contacts=contact_candidates[:3],
         retrieved_sources=source_titles,
         attachment_summary=attachment_summary,
@@ -506,7 +533,11 @@ async def send_message(
     combined_docs = _merge_retrieved_documents(retrieved_docs, attachment_course_docs)
     retrieved_context = format_retrieved_context(combined_docs)
     student_context = _build_student_context(current_user, effective_completed_codes)
-    degree_progress_context = _build_degree_progress_context(current_user, effective_completed_codes)
+    degree_progress_context = _build_degree_progress_context(
+        current_user,
+        effective_completed_codes,
+        planning_interest=clean_content,
+    )
     student_state_context, student_state = _build_student_state_context(clean_content, current_user)
     advisor_insights = _build_advisor_insights(
         current_user,
@@ -514,6 +545,7 @@ async def send_message(
         combined_docs,
         attachment_context.summary if attachment_context else None,
         effective_completed_codes,
+        clean_content,
     )
     extra_context = "\n\n".join(
         part

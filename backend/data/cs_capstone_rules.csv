@@ -1,0 +1,4 @@
+status,required_courses,notes
+not_ready,"COSC310;COSC331;COSC332;COSC350;MATH241;MATH242","Students should complete the major CS core and supporting math foundation before taking COSC490."
+nearly_ready,"COSC310;COSC331;COSC332;COSC350","Students are close to capstone readiness if the remaining gaps are limited and the core CS sequence is almost finished."
+ready,"COSC310;COSC331;COSC332;COSC350;MATH241;MATH242;STAT302","Students who have completed the core CS sequence and supporting quantitative work are well-positioned for COSC490."

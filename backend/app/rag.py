@@ -7,6 +7,8 @@ from typing import Iterable, List, Optional
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 COURSE_ALIAS_PATH = DATA_DIR / "course_aliases.csv"
+CS_PATHWAYS_PATH = DATA_DIR / "cs_pathways.csv"
+CS_CAPSTONE_RULES_PATH = DATA_DIR / "cs_capstone_rules.csv"
 STOPWORDS = {
     "a",
     "an",
@@ -768,6 +770,24 @@ def _prerequisite_map() -> dict[str, list[str]]:
     return prereq_map
 
 
+@lru_cache(maxsize=1)
+def load_cs_pathway_rows() -> tuple[dict[str, str], ...]:
+    if not CS_PATHWAYS_PATH.exists():
+        return tuple()
+
+    with CS_PATHWAYS_PATH.open(newline="", encoding="utf-8") as file:
+        return tuple(csv.DictReader(file))
+
+
+@lru_cache(maxsize=1)
+def load_cs_capstone_rule_rows() -> tuple[dict[str, str], ...]:
+    if not CS_CAPSTONE_RULES_PATH.exists():
+        return tuple()
+
+    with CS_CAPSTONE_RULES_PATH.open(newline="", encoding="utf-8") as file:
+        return tuple(csv.DictReader(file))
+
+
 def _recommend_next_courses(required: list[str], completed: list[str]) -> tuple[list[str], list[str]]:
     completed_set = set(completed)
     course_map = {
@@ -792,7 +812,129 @@ def _recommend_next_courses(required: list[str], completed: list[str]) -> tuple[
     return recommendations, blocked
 
 
-def get_degree_progress(major: Optional[str], completed_course_codes: Iterable[str]) -> dict[str, object]:
+def _is_computer_science_major(major: Optional[str]) -> bool:
+    return _normalize(major).lower() == "computer science"
+
+
+def _build_cs_pathway_recommendations(
+    completed: list[str],
+    remaining: list[str],
+    question_hint: Optional[str] = None,
+) -> list[dict[str, object]]:
+    completed_set = set(completed)
+    remaining_set = set(remaining)
+    question_tokens = _tokenize(question_hint or "")
+    recommendations: list[dict[str, object]] = []
+
+    for row in load_cs_pathway_rows():
+        pathway = _normalize(row.get("pathway"))
+        keyword_tokens = _tokenize((_normalize(row.get("interest_keywords"))).replace(";", " "))
+        recommended_courses = [
+            canonicalize_course_code(code)
+            for code in _normalize(row.get("recommended_courses")).split(";")
+            if code.strip()
+        ]
+        foundation_courses = [
+            canonicalize_course_code(code)
+            for code in _normalize(row.get("foundation_courses")).split(";")
+            if code.strip()
+        ]
+
+        if question_tokens and keyword_tokens and not (question_tokens & keyword_tokens):
+            continue
+
+        missing_foundations = [code for code in foundation_courses if code not in completed_set]
+        suggested_courses = [
+            code for code in recommended_courses if code in remaining_set and code not in missing_foundations
+        ]
+        if not suggested_courses:
+            suggested_courses = [code for code in foundation_courses if code in remaining_set][:2]
+
+        recommendations.append(
+            {
+                "pathway": pathway,
+                "recommended_courses": suggested_courses[:3],
+                "missing_foundations": missing_foundations[:3],
+                "notes": _normalize(row.get("notes")) or None,
+            }
+        )
+
+    if recommendations:
+        return recommendations[:2]
+
+    default_rows = load_cs_pathway_rows()[:2]
+    for row in default_rows:
+        pathway = _normalize(row.get("pathway"))
+        recommended_courses = [
+            canonicalize_course_code(code)
+            for code in _normalize(row.get("recommended_courses")).split(";")
+            if code.strip()
+        ]
+        foundation_courses = [
+            canonicalize_course_code(code)
+            for code in _normalize(row.get("foundation_courses")).split(";")
+            if code.strip()
+        ]
+        recommendations.append(
+            {
+                "pathway": pathway,
+                "recommended_courses": [code for code in recommended_courses if code in remaining_set][:3],
+                "missing_foundations": [code for code in foundation_courses if code not in completed_set][:3],
+                "notes": _normalize(row.get("notes")) or None,
+            }
+        )
+    return recommendations
+
+
+def _build_cs_capstone_readiness(completed: list[str]) -> dict[str, object]:
+    completed_set = set(completed)
+    rule_map = {
+        _normalize(row.get("status")).lower(): row
+        for row in load_cs_capstone_rule_rows()
+        if _normalize(row.get("status"))
+    }
+
+    ready_row = rule_map.get("ready")
+    nearly_ready_row = rule_map.get("nearly_ready")
+    not_ready_row = rule_map.get("not_ready")
+
+    def _missing_from(row: Optional[dict[str, str]]) -> list[str]:
+        if not row:
+            return []
+        return [
+            canonicalize_course_code(code)
+            for code in _normalize(row.get("required_courses")).split(";")
+            if code.strip() and canonicalize_course_code(code) not in completed_set
+        ]
+
+    ready_missing = _missing_from(ready_row)
+    if not ready_missing:
+        return {
+            "status": "ready",
+            "missing_foundations": [],
+            "notes": _normalize((ready_row or {}).get("notes")) or None,
+        }
+
+    nearly_ready_missing = _missing_from(nearly_ready_row)
+    if len(nearly_ready_missing) <= 1:
+        return {
+            "status": "nearly_ready",
+            "missing_foundations": nearly_ready_missing,
+            "notes": _normalize((nearly_ready_row or {}).get("notes")) or None,
+        }
+
+    return {
+        "status": "not_ready",
+        "missing_foundations": _missing_from(not_ready_row),
+        "notes": _normalize((not_ready_row or {}).get("notes")) or None,
+    }
+
+
+def get_degree_progress(
+    major: Optional[str],
+    completed_course_codes: Iterable[str],
+    planning_interest: Optional[str] = None,
+) -> dict[str, object]:
     completed = sorted(
         {canonicalize_course_code(code) for code in completed_course_codes if _normalize(code)}
     )
@@ -804,6 +946,8 @@ def get_degree_progress(major: Optional[str], completed_course_codes: Iterable[s
             "remaining_courses": [],
             "recommended_next_courses": [],
             "blocked_courses": [],
+            "pathway_recommendations": [],
+            "capstone_readiness": {"status": "unknown", "missing_foundations": [], "notes": None},
             "completion_percent": 0.0,
             "notes": None,
             "advising_tips": None,
@@ -827,6 +971,8 @@ def get_degree_progress(major: Optional[str], completed_course_codes: Iterable[s
             "remaining_courses": [],
             "recommended_next_courses": [],
             "blocked_courses": [],
+            "pathway_recommendations": [],
+            "capstone_readiness": {"status": "unknown", "missing_foundations": [], "notes": None},
             "completion_percent": 0.0,
             "notes": program_notes or None,
             "advising_tips": (
@@ -845,6 +991,16 @@ def get_degree_progress(major: Optional[str], completed_course_codes: Iterable[s
     remaining = [code for code in required if code not in completed]
     recommended_next_courses, blocked_courses = _recommend_next_courses(required, completed)
     completion_percent = round((len(required) - len(remaining)) / len(required) * 100, 1) if required else 0.0
+    pathway_recommendations: list[dict[str, object]] = []
+    capstone_readiness = {"status": "unknown", "missing_foundations": [], "notes": None}
+
+    if _is_computer_science_major(canonical_major):
+        pathway_recommendations = _build_cs_pathway_recommendations(
+            completed,
+            remaining,
+            question_hint=planning_interest,
+        )
+        capstone_readiness = _build_cs_capstone_readiness(completed)
 
     return {
         "major": _normalize(matching_row.get("major")) or major,
@@ -853,6 +1009,8 @@ def get_degree_progress(major: Optional[str], completed_course_codes: Iterable[s
         "remaining_courses": remaining,
         "recommended_next_courses": recommended_next_courses,
         "blocked_courses": blocked_courses,
+        "pathway_recommendations": pathway_recommendations,
+        "capstone_readiness": capstone_readiness,
         "completion_percent": completion_percent,
         "notes": _normalize(matching_row.get("notes")) or None,
         "advising_tips": _normalize(matching_row.get("advising_tips")) or None,

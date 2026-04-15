@@ -30,7 +30,9 @@ def override_get_db():
 
 @pytest.fixture(autouse=True)
 def fresh_db():
-    Base.metadata.drop_all(bind=engine)
+    engine.dispose()
+    if TEST_DB_PATH.exists():
+        TEST_DB_PATH.unlink()
     Base.metadata.create_all(bind=engine)
 
     try:
@@ -69,7 +71,9 @@ def fresh_db():
 
     yield
 
-    Base.metadata.drop_all(bind=engine)
+    engine.dispose()
+    if TEST_DB_PATH.exists():
+        TEST_DB_PATH.unlink()
 
 
 @pytest.fixture()

@@ -78,6 +78,19 @@ class NormalizedAcademicRecord(BaseModel):
     detected_document_type: Optional[str] = None
 
 
+class PathwayRecommendation(BaseModel):
+    pathway: str
+    recommended_courses: list[str] = Field(default_factory=list)
+    missing_foundations: list[str] = Field(default_factory=list)
+    notes: Optional[str] = None
+
+
+class CapstoneReadiness(BaseModel):
+    status: str = "unknown"
+    missing_foundations: list[str] = Field(default_factory=list)
+    notes: Optional[str] = None
+
+
 class DegreeProgressSummary(BaseModel):
     major: Optional[str] = None
     required_courses: list[str] = Field(default_factory=list)
@@ -85,6 +98,8 @@ class DegreeProgressSummary(BaseModel):
     remaining_courses: list[str] = Field(default_factory=list)
     recommended_next_courses: list[str] = Field(default_factory=list)
     blocked_courses: list[str] = Field(default_factory=list)
+    pathway_recommendations: list[PathwayRecommendation] = Field(default_factory=list)
+    capstone_readiness: CapstoneReadiness = Field(default_factory=CapstoneReadiness)
     completion_percent: float = 0.0
     notes: Optional[str] = None
     advising_tips: Optional[str] = None
@@ -192,6 +207,8 @@ class AdvisorInsights(BaseModel):
     matched_signals: list[str] = Field(default_factory=list)
     recommended_next_courses: list[str] = Field(default_factory=list)
     blocked_courses: list[str] = Field(default_factory=list)
+    pathway_recommendations: list[PathwayRecommendation] = Field(default_factory=list)
+    capstone_readiness: CapstoneReadiness = Field(default_factory=CapstoneReadiness)
     suggested_contacts: list[str] = Field(default_factory=list)
     retrieved_sources: list[str] = Field(default_factory=list)
     attachment_summary: Optional[str] = None

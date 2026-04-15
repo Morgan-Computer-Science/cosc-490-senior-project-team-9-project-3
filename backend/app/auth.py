@@ -150,6 +150,37 @@ def _build_import_preview_codes(
     return document_type, combined_candidates, completed, planned, remaining
 
 
+def _build_import_preview_summary(
+    detected_document_type: str,
+    completed_codes: list[str],
+    planned_codes: list[str],
+    remaining_codes: list[str],
+    matched_codes: list[str],
+) -> str:
+    document_label = detected_document_type.replace("_", " ")
+    if completed_codes:
+        return (
+            f"Recognized {len(completed_codes)} completed course"
+            f"{'' if len(completed_codes) == 1 else 's'} from this {document_label}."
+        )
+    if planned_codes:
+        return (
+            f"This {document_label} looks like a planning document with "
+            f"{len(planned_codes)} planned or current course signal"
+            f"{'' if len(planned_codes) == 1 else 's'}."
+        )
+    if remaining_codes:
+        return (
+            f"This {document_label} appears to emphasize remaining or needed coursework."
+        )
+    if matched_codes:
+        return (
+            f"Recognized {len(matched_codes)} Morgan course code"
+            f"{'' if len(matched_codes) == 1 else 's'} in this {document_label}."
+        )
+    return f"Processed this {document_label}, but no supported Morgan course codes were recognized."
+
+
 @router.get("/me", response_model=schemas.UserRead)
 def read_current_user(current_user: models.User = Depends(get_current_user)):
     return _serialize_user(current_user)
@@ -261,6 +292,25 @@ async def import_completed_courses_preview(
     return schemas.CompletedCoursesImportPreview(
         import_source=normalized_import_source,
         detected_document_type=detected_document_type,
+        extraction_method=(
+            attachment_context.extraction_method if attachment_context else "text_local"
+        ),
+        summary=(
+            attachment_context.summary
+            if attachment_context and attachment_context.summary
+            else _build_import_preview_summary(
+                detected_document_type,
+                [code for code in completed_codes if code in known_codes],
+                [code for code in planned_codes if code in known_codes],
+                [code for code in remaining_codes if code in known_codes],
+                matched,
+            )
+        ),
+        confidence_note=(
+            attachment_context.confidence_note
+            if attachment_context and attachment_context.confidence_note
+            else "Using the provided text directly for OCR-free course extraction."
+        ),
         matched_course_codes=matched,
         completed_course_codes=[code for code in completed_codes if code in known_codes],
         planned_course_codes=[code for code in planned_codes if code in known_codes],

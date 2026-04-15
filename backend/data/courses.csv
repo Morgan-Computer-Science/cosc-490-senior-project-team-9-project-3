@@ -104,3 +104,21 @@ NURS201,Foundations of Nursing Practice,Core principles of nursing assessment sa
 NURS220,Health Assessment,Techniques for patient assessment documentation and clinical judgment in nursing settings.,3,Nursing,200,Fall,Dr. Renee Coleman
 NURS301,Adult Health Nursing,Study of nursing care for adult patients across common medical-surgical conditions.,3,Nursing,300,Fall,Dr. Renee Coleman
 NURS320,Community and Population Health Nursing,Nursing approaches to community health prevention and population-based care.,3,Nursing,300,Spring,Dr. Renee Coleman
+CLDC101,Introduction to Cloud Computing,Overview of cloud service models deployment strategies and modern platform operations.,3,Cloud Computing,100,Fall/Spring,Dr. Elena Price
+CLDC220,Cloud Infrastructure and Virtualization,Hands-on study of virtualization compute storage networking and infrastructure deployment in cloud environments.,3,Cloud Computing,200,Fall/Spring,Dr. Elena Price
+CLDC310,Cloud Automation and DevOps,Automation pipelines infrastructure as code and DevOps practices for scalable cloud systems.,3,Cloud Computing,300,Spring,Dr. Malik Saunders
+CLDC340,Cloud Security,Security controls identity management compliance and resilient cloud architecture.,3,Cloud Computing,300,Fall,Dr. Malik Saunders
+CLDC420,Distributed Cloud Architecture,Advanced design of distributed cloud systems with scalability reliability and cost-awareness in mind.,3,Cloud Computing,400,Spring,Dr. Elena Price
+ARCH101,Architecture Design Studio I,Foundation studio introducing spatial thinking drawing iteration and introductory design methods.,4,Architecture,100,Fall,Dr. Camille Porter
+ARCH102,Architecture Design Studio II,Continuation studio focused on site response design process and presentation development.,4,Architecture,100,Spring,Dr. Camille Porter
+ARCH201,History of Architecture,Survey of architectural history major movements and cultural influence on the built environment.,3,Architecture,200,Fall,Dr. Camille Porter
+ARCH220,Architectural Graphics,Representation methods digital drafting and visual communication for architectural design.,3,Architecture,200,Fall/Spring,Dr. Aaron Bell
+ARCH310,Building Systems I,Introduction to environmental systems materials and technical integration in architectural projects.,3,Architecture,300,Fall,Dr. Aaron Bell
+ARCH320,Structures for Designers,Structural principles for architecture students with emphasis on load paths materials and building form.,3,Architecture,300,Spring,Dr. Aaron Bell
+ARCH401,Advanced Urban Design Studio,Upper-level studio focused on integrated design urban context and portfolio-ready project development.,4,Architecture,400,Fall,Dr. Camille Porter
+BIOL330,Microbiology,Study of microorganisms host interactions and laboratory methods relevant to health and research settings.,4,Biology,300,Fall/Spring,Dr. Jasmine Perry
+BIOL360,Ecology,Ecological systems population dynamics and environmental relationships across biological communities.,3,Biology,300,Spring,Dr. Jasmine Perry
+PSYC315,Abnormal Psychology,Survey of psychological disorders assessment approaches and evidence-based intervention concepts.,3,Psychology,300,Fall/Spring,Dr. Lauren Miles
+PSYC330,Cognitive Psychology,Study of attention memory language reasoning and information processing in human cognition.,3,Psychology,300,Spring,Dr. Lauren Miles
+MGMT330,Organizational Behavior,Analysis of leadership teamwork motivation and organizational decision-making in business settings.,3,Business Administration,300,Fall/Spring,Dr. Victor Holmes
+MGMT410,Strategic Management,Capstone-style study of competitive strategy execution ethics and long-range organizational planning.,3,Business Administration,400,Spring,Dr. Victor Holmes

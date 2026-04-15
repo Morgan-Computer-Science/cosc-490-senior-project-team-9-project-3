@@ -38,6 +38,14 @@ const ProfilePanel = ({
     generic_file: "File",
   };
 
+  const extractionMethodLabels = {
+    text_local: "Direct text parse",
+    pdf_local: "PDF text extraction",
+    pdf_gemini: "Gemini PDF analysis",
+    image_gemini: "Gemini image OCR",
+    none: "No extraction",
+  };
+
   useEffect(() => {
     if (!user) {
       return;
@@ -355,6 +363,22 @@ const ProfilePanel = ({
               <p className="panel-subtext">
                 {importPreview.source_summary} | {importPreview.matched_count} matched | Detected as {importDocumentLabels[importPreview.detected_document_type] || "Document"}
               </p>
+              <div className="ocr-preview-meta">
+                {importPreview.summary ? (
+                  <p className="ocr-summary">{importPreview.summary}</p>
+                ) : null}
+                <div className="ocr-meta-badges">
+                  <span className="ocr-meta-badge">
+                    {extractionMethodLabels[importPreview.extraction_method] || importPreview.extraction_method}
+                  </span>
+                  <span className="ocr-meta-badge">
+                    {importDocumentLabels[importPreview.detected_document_type] || "Document"}
+                  </span>
+                </div>
+                {importPreview.confidence_note ? (
+                  <p className="ocr-confidence-note">{importPreview.confidence_note}</p>
+                ) : null}
+              </div>
               <div className="import-preview-grid">
                 <div className="import-preview-block">
                   <span className="import-preview-label">Completed</span>

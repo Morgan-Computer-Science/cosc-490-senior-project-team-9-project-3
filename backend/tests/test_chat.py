@@ -1,5 +1,8 @@
 from io import BytesIO
 
+from app.attachments import AttachmentContext, DocumentCourseSignals
+from app.chat import _replace_attachment_document_type
+
 
 def test_chat_session_flow(client, auth_headers):
     created = client.post("/chat/sessions", headers=auth_headers, json={"title": "Planning"})
@@ -43,3 +46,25 @@ def test_chat_rate_limit_triggers(client, auth_headers, monkeypatch):
     client.post(f"/chat/sessions/{session_id}/messages", headers=auth_headers, data={"content": "Two"})
     limited = client.post(f"/chat/sessions/{session_id}/messages", headers=auth_headers, data={"content": "Three"})
     assert limited.status_code == 429
+
+
+def test_refined_attachment_document_type_preserves_ocr_metadata():
+    context = AttachmentContext(
+        filename="image.png",
+        content_type="image/png",
+        context_text="Uploaded image screenshot.",
+        summary="Screenshot review ready.",
+        extracted_text="Completed: COSC 111",
+        document_type="image_screenshot",
+        extraction_method="image_gemini",
+        confidence_note="Used OCR because the image did not contain machine-readable text.",
+        signals=DocumentCourseSignals(),
+    )
+
+    refined = _replace_attachment_document_type(context, "transcript")
+
+    assert refined.document_type == "transcript"
+    assert refined.extraction_method == "image_gemini"
+    assert refined.confidence_note == context.confidence_note
+    assert refined.summary != context.summary
+    assert refined.signals.completed_codes == ("COSC111",)

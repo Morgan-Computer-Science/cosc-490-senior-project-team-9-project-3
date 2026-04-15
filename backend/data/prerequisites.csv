@@ -50,3 +50,19 @@ NURS201,NURS101; BIOL101,Foundations of nursing practice follows early nursing o
 NURS220,NURS101; BIOL101,Health assessment follows introductory nursing and biology.
 NURS301,NURS201; NURS220; BIOL102,Adult health nursing should follow foundations health assessment and anatomy-related preparation.
 NURS320,NURS201; STAT302,Community health is stronger after nursing foundations and statistics.
+CLDC220,CLDC101; COSC111,Cloud infrastructure builds on introductory cloud concepts and programming comfort.
+CLDC310,CLDC220; COSC241,Automation and DevOps work is stronger after core cloud infrastructure and programming foundations.
+CLDC340,CLDC220,Cloud security assumes familiarity with cloud infrastructure and deployment models.
+CLDC420,CLDC310; CLDC340,Advanced architecture should follow both automation and cloud security preparation.
+ARCH102,ARCH101,Design Studio II follows the introductory studio sequence.
+ARCH201,ARCH101,Architectural history is most helpful once students have early studio context.
+ARCH220,ARCH101,Graphics and representation should follow the first studio experience.
+ARCH310,ARCH102; PHYS101,Building systems is stronger after studio foundations and introductory physics.
+ARCH320,ARCH102; MATH141,Structures for Designers should follow studio foundations and college mathematics.
+ARCH401,ARCH310; ARCH320,Advanced studio should come after building systems and structures.
+BIOL330,BIOL102,Microbiology follows the introductory biology sequence.
+BIOL360,BIOL102,Ecology is stronger after the full introductory biology sequence.
+PSYC315,PSYC101,Abnormal psychology follows introductory psychology.
+PSYC330,PSYC101,Cognitive psychology should build on the introductory survey course.
+MGMT330,MGMT220,Organizational behavior builds on lower-division management preparation.
+MGMT410,MGMT330; ACCT202,Strategic management is strongest after management and accounting foundations.

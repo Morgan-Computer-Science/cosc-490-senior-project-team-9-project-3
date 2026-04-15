@@ -93,3 +93,27 @@ def test_login_rate_limit_triggers(client, monkeypatch):
     client.post("/auth/login", data={"username": payload["email"], "password": payload["password"]})
     limited = client.post("/auth/login", data={"username": payload["email"], "password": payload["password"]})
     assert limited.status_code == 429
+
+def test_import_preview_returns_ocr_metadata(client, auth_headers):
+    response = client.post(
+        "/auth/me/completed-courses/import",
+        headers=auth_headers,
+        data={"import_source": "transcript_text", "source_text": "Completed: COSC 111"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert "detected_document_type" in payload
+    assert "extraction_method" in payload
+    assert "summary" in payload
+
+
+def test_degree_progress_supports_launch_visible_majors(client, auth_headers):
+    for major in ("Cloud Computing", "Architecture"):
+        updated = client.put("/auth/me", headers=auth_headers, json={"major": major})
+        assert updated.status_code == 200
+
+        progress = client.get("/auth/me/degree-progress", headers=auth_headers)
+        assert progress.status_code == 200
+        payload = progress.json()
+        assert payload["major"] == major
+        assert payload["required_courses"]

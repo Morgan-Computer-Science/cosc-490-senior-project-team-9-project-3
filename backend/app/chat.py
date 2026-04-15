@@ -1,3 +1,4 @@
+from dataclasses import replace
 from typing import List
 import os
 
@@ -5,17 +6,19 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Uplo
 from sqlalchemy.orm import Session
 
 from . import models, schemas
-from .attachments import extract_attachment_context
+from .attachments import (
+    AttachmentContext,
+    DocumentCourseSignals,
+    build_document_course_signals,
+    extract_attachment_context,
+)
 from .ai_client import generate_ai_reply
 from .auth import get_current_user
 from .db import get_db
 from .rag import (
-    AttachmentCourseSignals,
     RetrievedDocument,
     compare_degree_audit,
     evaluate_course_plan,
-    extract_attachment_course_signals,
-    extract_known_course_codes,
     format_retrieved_context,
     get_course_documents_by_code,
     get_degree_progress,
@@ -155,7 +158,7 @@ def _build_attachment_course_context(attachment_context) -> tuple[str, list[Retr
     if not attachment_context or not attachment_context.extracted_text:
         return "", []
 
-    matched_codes = extract_known_course_codes(attachment_context.extracted_text)
+    matched_codes = list(attachment_context.signals.matched_course_codes)
     if not matched_codes:
         return "", []
 
@@ -172,9 +175,40 @@ def _build_attachment_course_context(attachment_context) -> tuple[str, list[Retr
     return "\n".join(lines), matched_docs
 
 
+def _replace_attachment_document_type(
+    attachment_context: AttachmentContext,
+    document_type: str,
+) -> AttachmentContext:
+    if not attachment_context or attachment_context.document_type == document_type:
+        return attachment_context
+
+    updated_context_text = attachment_context.context_text.replace(
+        attachment_context.document_type.replace("_", " "),
+        document_type.replace("_", " "),
+    )
+    updated_summary = attachment_context.summary.replace(
+        attachment_context.document_type.replace("_", " ").title(),
+        document_type.replace("_", " ").title(),
+    )
+    if updated_summary == attachment_context.summary:
+        updated_summary = f"{document_type.replace('_', ' ').title()} review ready."
+    updated_signals = build_document_course_signals(
+        attachment_context.extracted_text,
+        document_type,
+    )
+
+    return replace(
+        attachment_context,
+        context_text=updated_context_text,
+        summary=updated_summary,
+        document_type=document_type,
+        signals=updated_signals,
+    )
+
+
 def _build_attachment_signal_context(
     attachment_context,
-    attachment_signals: AttachmentCourseSignals,
+    attachment_signals: DocumentCourseSignals,
     user: models.User,
     effective_completed_codes: list[str],
 ) -> str:
@@ -319,12 +353,7 @@ def _infer_completed_courses_from_attachment(attachment_context) -> list[str]:
         return []
     if attachment_context.document_type not in {"transcript", "degree_audit"}:
         return []
-    attachment_signals = extract_attachment_course_signals(
-        attachment_context.extracted_text,
-        attachment_context.document_type,
-        limit=20,
-    )
-    return list(attachment_signals.completed_codes)
+    return list(attachment_context.signals.completed_codes)
 
 
 def _get_user_session(db: Session, user_id: int, session_id: int) -> models.ChatSession:
@@ -448,28 +477,16 @@ async def send_message(
         top_k=6,
     )
     if attachment_context and effective_attachment_document_type:
-        attachment_context = attachment_context.__class__(
-            filename=attachment_context.filename,
-            content_type=attachment_context.content_type,
-            context_text=attachment_context.context_text.replace(
-                attachment_context.document_type.replace("_", " "),
-                effective_attachment_document_type.replace("_", " "),
-            ),
-            summary=attachment_context.summary.replace(
-                attachment_context.document_type.replace("_", " ").title(),
-                effective_attachment_document_type.replace("_", " ").title(),
-            ),
-            extracted_text=attachment_context.extracted_text,
-            temp_path=attachment_context.temp_path,
-            document_type=effective_attachment_document_type,
+        attachment_context = _replace_attachment_document_type(
+            attachment_context,
+            effective_attachment_document_type,
         )
 
     attachment_course_context, attachment_course_docs = _build_attachment_course_context(
         attachment_context
     )
-    attachment_signals = extract_attachment_course_signals(
-        attachment_context.extracted_text if attachment_context else None,
-        attachment_context.document_type if attachment_context else None,
+    attachment_signals = (
+        attachment_context.signals if attachment_context else DocumentCourseSignals()
     )
     inferred_completed_codes = _infer_completed_courses_from_attachment(attachment_context)
     effective_completed_codes = sorted(

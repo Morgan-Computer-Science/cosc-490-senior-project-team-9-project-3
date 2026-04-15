@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from io import BytesIO
 from pathlib import Path
 import re
@@ -9,6 +9,7 @@ from fastapi import HTTPException, UploadFile, status
 
 from .ai_client import extract_text_from_attachment
 from .config import MAX_ATTACHMENT_BYTES
+from .rag import extract_attachment_course_signals, extract_known_course_codes
 
 TEXT_MIME_PREFIXES = ("text/",)
 TEXT_MIME_TYPES = {
@@ -24,6 +25,15 @@ ALLOWED_ATTACHMENT_MIME_TYPES = TEXT_MIME_TYPES | {PDF_MIME_TYPE}
 
 
 @dataclass(frozen=True)
+class DocumentCourseSignals:
+    completed_codes: tuple[str, ...] = ()
+    planned_codes: tuple[str, ...] = ()
+    remaining_codes: tuple[str, ...] = ()
+    matched_course_codes: tuple[str, ...] = ()
+    unknown_course_codes: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
 class AttachmentContext:
     filename: str
     content_type: str
@@ -32,6 +42,13 @@ class AttachmentContext:
     extracted_text: Optional[str] = None
     temp_path: Optional[str] = None
     document_type: str = "generic_file"
+    extraction_method: str = "none"
+    confidence_note: Optional[str] = None
+    signals: DocumentCourseSignals = field(default_factory=DocumentCourseSignals)
+
+    @property
+    def detected_document_type(self) -> str:
+        return self.document_type
 
 
 def _write_temp_attachment(filename: str, file_bytes: bytes) -> str:
@@ -43,6 +60,36 @@ def _write_temp_attachment(filename: str, file_bytes: bytes) -> str:
 
 def _normalize_text(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
+
+
+def _build_confidence_note(extracted_text: Optional[str], extraction_method: str) -> Optional[str]:
+    if extraction_method == "none":
+        return "This file type could not be fully analyzed. Review it manually before making important academic decisions."
+    if not extracted_text or len(_normalize_text(extracted_text)) < 80:
+        return "Extraction was limited. Review the original document before making important academic decisions."
+    return None
+
+
+def build_document_course_signals(extracted_text: Optional[str], document_type: str) -> DocumentCourseSignals:
+    if not extracted_text:
+        return DocumentCourseSignals()
+
+    interpreted = extract_attachment_course_signals(extracted_text, document_type, limit=30)
+    matched = tuple(extract_known_course_codes(extracted_text, limit=30))
+
+    mentioned_candidates = {
+        prefix.upper() + number.upper()
+        for prefix, number in re.findall(r"\b([A-Za-z]{2,5})[-\s]*([0-9]{3}[A-Za-z]?)\b", extracted_text)
+    }
+    unknown = tuple(sorted(code for code in mentioned_candidates if code not in matched))
+
+    return DocumentCourseSignals(
+        completed_codes=tuple(sorted(interpreted.completed_codes)),
+        planned_codes=tuple(sorted(interpreted.planned_codes)),
+        remaining_codes=tuple(sorted(interpreted.remaining_codes)),
+        matched_course_codes=matched,
+        unknown_course_codes=unknown,
+    )
 
 
 def validate_attachment_upload(filename: str, content_type: str, file_bytes: bytes) -> None:
@@ -118,6 +165,31 @@ def _extract_gemini_text(
     )
 
 
+def _build_analysis(
+    *,
+    filename: str,
+    content_type: str,
+    document_type: str,
+    extraction_method: str,
+    extracted_text: Optional[str],
+    temp_path: Optional[str],
+    context_text: str,
+    summary: str,
+) -> AttachmentContext:
+    return AttachmentContext(
+        filename=filename,
+        content_type=content_type,
+        summary=summary,
+        context_text=context_text,
+        extracted_text=extracted_text,
+        temp_path=temp_path,
+        document_type=document_type,
+        extraction_method=extraction_method,
+        confidence_note=_build_confidence_note(extracted_text, extraction_method),
+        signals=build_document_course_signals(extracted_text, document_type),
+    )
+
+
 async def extract_attachment_context(attachment: Optional[UploadFile]) -> Optional[AttachmentContext]:
     if not attachment:
         return None
@@ -131,51 +203,58 @@ async def extract_attachment_context(attachment: Optional[UploadFile]) -> Option
     if content_type == PDF_MIME_TYPE or filename.lower().endswith(".pdf"):
         temp_path = _write_temp_attachment(filename, file_bytes)
         extracted_text = _extract_pdf_text(file_bytes)
+        extraction_method = "pdf_local"
         document_type = _infer_document_type(filename, content_type, extracted_text)
         if not extracted_text:
             extracted_text = _extract_gemini_text(temp_path, content_type, document_type, filename)
+            extraction_method = "pdf_gemini"
             document_type = _infer_document_type(filename, content_type, extracted_text)
         if extracted_text:
             excerpt = extracted_text[:4000]
-            return AttachmentContext(
+            return _build_analysis(
                 filename=filename,
                 content_type=content_type,
+                document_type=document_type,
+                extraction_method=extraction_method,
+                extracted_text=extracted_text,
+                temp_path=temp_path,
                 summary=f"{document_type.replace('_', ' ').title()} uploaded: {filename}",
                 context_text=(
                     f"Student uploaded a {document_type.replace('_', ' ')} PDF named {filename}. "
                     f"Extracted document text excerpt: {excerpt}"
                 ),
-                extracted_text=extracted_text,
-                temp_path=temp_path,
-                document_type=document_type,
             )
-        return AttachmentContext(
+        return _build_analysis(
             filename=filename,
             content_type=content_type,
+            document_type=document_type,
+            extraction_method=extraction_method,
+            extracted_text=None,
+            temp_path=temp_path,
             summary=f"{document_type.replace('_', ' ').title()} uploaded: {filename}",
             context_text=(
                 f"Student uploaded a {document_type.replace('_', ' ')} PDF named {filename}. "
                 "The local parser could not extract readable text from this file. "
                 "Use the student's question, filename, and any available advising context carefully."
             ),
-            temp_path=temp_path,
-            document_type=document_type,
         )
 
     if content_type.startswith(TEXT_MIME_PREFIXES) or content_type in TEXT_MIME_TYPES:
         decoded_text = file_bytes.decode("utf-8", errors="ignore")
         excerpt = _normalize_text(decoded_text)[:4000]
         document_type = _infer_document_type(filename, content_type, decoded_text)
-        return AttachmentContext(
+        return _build_analysis(
             filename=filename,
             content_type=content_type,
+            document_type=document_type,
+            extraction_method="text_local",
+            extracted_text=decoded_text,
+            temp_path=None,
             summary=f"{document_type.replace('_', ' ').title()} uploaded: {filename}",
             context_text=(
                 f"Student uploaded a {document_type.replace('_', ' ')} text document named {filename}. "
                 f"Extracted content excerpt: {excerpt or 'No readable text found.'}"
             ),
-            extracted_text=decoded_text,
-            document_type=document_type,
         )
 
     if content_type.startswith(IMAGE_MIME_PREFIXES):
@@ -188,28 +267,32 @@ async def extract_attachment_context(attachment: Optional[UploadFile]) -> Option
             if extracted_text else
             ""
         )
-        return AttachmentContext(
+        return _build_analysis(
             filename=filename,
             content_type=content_type,
+            document_type=document_type,
+            extraction_method="image_gemini",
+            extracted_text=extracted_text,
+            temp_path=temp_path,
             summary=f"{document_type.replace('_', ' ').title()} uploaded: {filename}",
             context_text=(
                 f"Student uploaded a {document_type.replace('_', ' ')} image named {filename} with content type {content_type}. "
                 "Use the image itself along with the advising context to answer questions about schedules, screenshots, forms, transcripts, or planning materials."
                 f"{excerpt_text}"
             ),
-            temp_path=temp_path,
-            extracted_text=extracted_text,
-            document_type=document_type,
         )
 
     document_type = _infer_document_type(filename, content_type)
-    return AttachmentContext(
+    return _build_analysis(
         filename=filename,
         content_type=content_type,
+        document_type=document_type,
+        extraction_method="none",
+        extracted_text=None,
+        temp_path=None,
         summary=f"{document_type.replace('_', ' ').title()} uploaded: {filename}",
         context_text=(
             f"Student uploaded a file named {filename} with content type {content_type}. "
             "Treat it as supporting context, but note that no specialized parser exists yet for this file type."
         ),
-        document_type=document_type,
     )

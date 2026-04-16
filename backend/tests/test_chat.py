@@ -148,7 +148,7 @@ def test_chat_context_includes_business_guidance_for_marketing_student(client, a
     )
 
     assert response.status_code == 200
-    assert "Business planning guidance:" in captured_context["extra_context"]
+    assert "Program guidance:" in captured_context["extra_context"]
 
 def test_chat_context_includes_business_guidance_for_finance_student(client, auth_headers, monkeypatch):
     captured_context = {}
@@ -177,5 +177,67 @@ def test_chat_context_includes_business_guidance_for_finance_student(client, aut
     )
 
     assert response.status_code == 200
-    assert "Business planning guidance:" in captured_context["extra_context"]
+    assert "Program guidance:" in captured_context["extra_context"]
     assert "FINA300" in captured_context["extra_context"]
+
+
+def test_chat_context_includes_program_guidance_for_cloud_computing_student(client, auth_headers, monkeypatch):
+    captured_context = {}
+
+    def fake_generate_ai_reply(**kwargs):
+        captured_context["extra_context"] = kwargs["extra_context"]
+        return "Test advisor reply"
+
+    monkeypatch.setattr("app.chat.generate_ai_reply", fake_generate_ai_reply)
+    client.put(
+        "/auth/me",
+        headers=auth_headers,
+        json={"major": "Cloud Computing"},
+    )
+    client.put(
+        "/auth/me/completed-courses",
+        headers=auth_headers,
+        json={"course_codes": ["CLDC101", "COSC111", "ENGL101", "ENGL102"]},
+    )
+    session = client.post("/chat/sessions", headers=auth_headers, json={"title": "Cloud Path"}).json()
+
+    response = client.post(
+        f"/chat/sessions/{session['id']}/messages",
+        headers=auth_headers,
+        data={"content": "What should I take next in cloud computing?"},
+    )
+
+    assert response.status_code == 200
+    assert "Program guidance:" in captured_context["extra_context"]
+    assert "Cloud Computing" in captured_context["extra_context"]
+
+
+def test_chat_context_includes_program_guidance_for_psychology_student(client, auth_headers, monkeypatch):
+    captured_context = {}
+
+    def fake_generate_ai_reply(**kwargs):
+        captured_context["extra_context"] = kwargs["extra_context"]
+        return "Test advisor reply"
+
+    monkeypatch.setattr("app.chat.generate_ai_reply", fake_generate_ai_reply)
+    client.put(
+        "/auth/me",
+        headers=auth_headers,
+        json={"major": "Psychology"},
+    )
+    client.put(
+        "/auth/me/completed-courses",
+        headers=auth_headers,
+        json={"course_codes": ["PSYC101", "ENGL101", "ENGL102"]},
+    )
+    session = client.post("/chat/sessions", headers=auth_headers, json={"title": "Psych Path"}).json()
+
+    response = client.post(
+        f"/chat/sessions/{session['id']}/messages",
+        headers=auth_headers,
+        data={"content": "What should I take next in psychology?"},
+    )
+
+    assert response.status_code == 200
+    assert "Program guidance:" in captured_context["extra_context"]
+    assert "Psychology" in captured_context["extra_context"]

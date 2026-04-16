@@ -96,7 +96,7 @@ def _build_degree_progress_context(
         )
     if summary.get("program_guidance"):
         lines.append(
-            f"- Business planning guidance: {' '.join(summary['program_guidance'][:3])}"
+            f"- Program guidance: {' '.join(summary['program_guidance'][:3])}"
         )
     if summary.get("pathway_recommendations"):
         lines.append("- Computer Science pathway suggestions:")

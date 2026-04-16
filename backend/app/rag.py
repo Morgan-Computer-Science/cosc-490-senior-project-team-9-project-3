@@ -8,6 +8,7 @@ from typing import Iterable, List, Optional
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 COURSE_ALIAS_PATH = DATA_DIR / "course_aliases.csv"
 BUSINESS_PATHWAYS_PATH = DATA_DIR / "business_pathways.csv"
+TECH_HEALTH_PATHWAYS_PATH = DATA_DIR / "tech_health_pathways.csv"
 CS_PATHWAYS_PATH = DATA_DIR / "cs_pathways.csv"
 CS_CAPSTONE_RULES_PATH = DATA_DIR / "cs_capstone_rules.csv"
 CS_FOCUS_AREAS_PATH = DATA_DIR / "cs_focus_areas.csv"
@@ -793,6 +794,15 @@ def load_business_pathway_rows() -> tuple[dict[str, str], ...]:
 
 
 @lru_cache(maxsize=1)
+def load_tech_health_pathway_rows() -> tuple[dict[str, str], ...]:
+    if not TECH_HEALTH_PATHWAYS_PATH.exists():
+        return tuple()
+
+    with TECH_HEALTH_PATHWAYS_PATH.open(newline="", encoding="utf-8") as file:
+        return tuple(csv.DictReader(file))
+
+
+@lru_cache(maxsize=1)
 def load_cs_pathway_rows() -> tuple[dict[str, str], ...]:
     if not CS_PATHWAYS_PATH.exists():
         return tuple()
@@ -855,6 +865,17 @@ def _is_business_depth_major(major: Optional[str]) -> bool:
     }
 
 
+def _is_tech_health_depth_major(major: Optional[str]) -> bool:
+    return _normalize(major) in {
+        "Information Systems",
+        "Information Science",
+        "Cloud Computing",
+        "Nursing",
+        "Biology",
+        "Psychology",
+    }
+
+
 def _is_computer_science_major(major: Optional[str]) -> bool:
     return _normalize(major).lower() == "computer science"
 
@@ -906,6 +927,23 @@ def _build_business_priority_map(major: Optional[str]) -> dict[str, int]:
     return priority_map
 
 
+def _build_tech_health_priority_map(major: Optional[str]) -> dict[str, int]:
+    normalized_major = _normalize(major)
+    if not normalized_major:
+        return {}
+
+    priority_map: dict[str, int] = {}
+    for row in load_tech_health_pathway_rows():
+        if _normalize(row.get("major")) != normalized_major:
+            continue
+        course_code = canonicalize_course_code(row.get("required_course"))
+        priority_value = _normalize(row.get("priority"))
+        if not course_code or not priority_value.isdigit():
+            continue
+        priority_map[course_code] = int(priority_value)
+    return priority_map
+
+
 def _recommend_business_next_courses(
     major: Optional[str],
     required: list[str],
@@ -935,6 +973,39 @@ def _recommend_business_next_courses(
 
     ready.sort(key=_business_sort_key)
     blocked.sort(key=_business_sort_key)
+    recommendations = ready[:3] if ready else blocked[:3]
+    return recommendations, blocked
+
+
+def _recommend_tech_health_next_courses(
+    major: Optional[str],
+    required: list[str],
+    completed: list[str],
+) -> tuple[list[str], list[str]]:
+    completed_set = set(completed)
+    course_map = {
+        canonicalize_course_code(row.get("code")): row
+        for row in load_course_rows()
+    }
+    prereq_map = _prerequisite_map()
+    priority_map = _build_tech_health_priority_map(major)
+
+    def _tech_health_sort_key(code: str) -> tuple[int, int, int, str]:
+        level, semester_bonus, course_code = _course_sort_key(code, course_map)
+        return (priority_map.get(code, 999), level, semester_bonus, course_code)
+
+    remaining = [code for code in required if code not in completed_set]
+    ready: list[str] = []
+    blocked: list[str] = []
+    for code in remaining:
+        prerequisites = prereq_map.get(code, [])
+        if all(prereq in completed_set for prereq in prerequisites):
+            ready.append(code)
+        else:
+            blocked.append(code)
+
+    ready.sort(key=_tech_health_sort_key)
+    blocked.sort(key=_tech_health_sort_key)
     recommendations = ready[:3] if ready else blocked[:3]
     return recommendations, blocked
 
@@ -1016,6 +1087,68 @@ def _build_business_program_guidance(
         guidance.append(
             "Human Resource Management builds on management and organizational foundations, so lower-division business preparation should lead into upper-level people and organizational planning."
         )
+
+    return guidance
+
+
+def _build_tech_health_program_guidance(
+    major: Optional[str],
+    completed: list[str],
+    remaining: list[str],
+) -> list[str]:
+    normalized_major = _normalize(major)
+    completed_set = set(completed)
+    guidance: list[str] = []
+
+    if normalized_major in {"Information Systems", "Information Science"}:
+        if {"INSS201", "INSS220"}.issubset(completed_set):
+            guidance.append(
+                "Your Information Science foundation is in place, so you can start moving toward more advanced systems, analytics, and information-flow coursework."
+            )
+        else:
+            guidance.append(
+                "Information Science should move through the early INSS sequence before upper-level systems and data-oriented planning."
+            )
+
+    if normalized_major == "Cloud Computing":
+        if {"CLDC101", "CLDC220"}.issubset(completed_set):
+            guidance.append(
+                "Your cloud foundation is underway, so upper cloud, platform, and automation planning is starting to make sense."
+            )
+        else:
+            guidance.append(
+                "Cloud Computing should stay grounded in lower-division cloud and technical foundations before upper-level platform work."
+            )
+
+    if normalized_major == "Nursing":
+        if {"NURS101", "NURS201", "NURS220"}.issubset(completed_set):
+            guidance.append(
+                "Your lower-division nursing progression is underway, so the next nursing step can be planned more confidently."
+            )
+        else:
+            guidance.append(
+                "Nursing should stay orderly and foundation-first so upper nursing coursework is not recommended too early."
+            )
+
+    if normalized_major == "Biology":
+        if {"BIOL101", "BIOL102"}.issubset(completed_set):
+            guidance.append(
+                "Your introductory biology foundation is in place, so upper biology planning can begin more naturally."
+            )
+        else:
+            guidance.append(
+                "Biology should complete the intro science sequence before upper-level biology recommendations take priority."
+            )
+
+    if normalized_major == "Psychology":
+        if "PSYC101" in completed_set and ("STAT302" in completed_set or "PSYC210" in completed_set):
+            guidance.append(
+                "Your psychology foundation is taking shape, so more advanced psychology planning is starting to make sense."
+            )
+        else:
+            guidance.append(
+                "Psychology should build through intro and methods-oriented preparation before more advanced psychology planning."
+            )
 
     return guidance
 
@@ -1311,6 +1444,12 @@ def get_degree_progress(
             required,
             completed,
         )
+    elif _is_tech_health_depth_major(canonical_major):
+        recommended_next_courses, blocked_courses = _recommend_tech_health_next_courses(
+            canonical_major,
+            required,
+            completed,
+        )
     else:
         recommended_next_courses, blocked_courses = _recommend_next_courses(required, completed)
     completion_percent = round((len(required) - len(remaining)) / len(required) * 100, 1) if required else 0.0
@@ -1321,6 +1460,12 @@ def get_degree_progress(
 
     if _is_business_depth_major(canonical_major):
         program_guidance = _build_business_program_guidance(
+            canonical_major,
+            completed,
+            remaining,
+        )
+    elif _is_tech_health_depth_major(canonical_major):
+        program_guidance = _build_tech_health_program_guidance(
             canonical_major,
             completed,
             remaining,

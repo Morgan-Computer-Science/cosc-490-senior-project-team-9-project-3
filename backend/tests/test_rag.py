@@ -231,3 +231,21 @@ def test_retrieve_relevant_documents_prefers_major_docs_for_hrm_questions():
 
     titles = [doc.title for doc in docs[:3]]
     assert any("Human Resource Management" in title for title in titles)
+
+
+def test_retrieve_relevant_documents_prefers_information_science_docs_for_short_query():
+    docs = retrieve_relevant_documents(
+        "What should I take next?",
+        user_major="Information Science",
+    )
+
+    assert any("Information Systems" in doc.title for doc in docs[:3])
+
+
+def test_retrieve_relevant_documents_prefers_psychology_docs_for_short_query():
+    docs = retrieve_relevant_documents(
+        "What should I take next?",
+        user_major="Psychology",
+    )
+
+    assert any("Psychology" in doc.title for doc in docs[:3])

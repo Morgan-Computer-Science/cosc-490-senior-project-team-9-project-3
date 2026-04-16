@@ -605,6 +605,9 @@ async def send_message(
             attachment_summary=attachment_context.summary if attachment_context else None,
             attachment_document_type=attachment_context.document_type if attachment_context else None,
         )
+    except RuntimeError as exc:
+        logger.warning("Live AI unavailable, using grounded fallback: %s", exc)
+        ai_text = _fallback_advising_reply(current_user, clean_content, combined_docs, student_state)
     except Exception as exc:
         logger.exception("AI error in generate_ai_reply: %r", exc)
         ai_text = _fallback_advising_reply(current_user, clean_content, combined_docs, student_state)

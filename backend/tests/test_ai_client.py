@@ -36,3 +36,25 @@ def test_generate_ai_reply_uses_runtime_api_key(monkeypatch):
 
     assert reply == "live reply"
     assert configure_calls[-1] == "runtime-key"
+
+def test_generate_ai_reply_raises_runtime_error_when_gemini_import_fails(monkeypatch):
+    from app import ai_client
+
+    ai_client = importlib.reload(ai_client)
+    monkeypatch.setattr(
+        ai_client,
+        "import_module",
+        lambda name: (_ for _ in ()).throw(TypeError("Metaclasses with custom tp_new are not supported.")),
+    )
+    ai_client.genai = None
+    monkeypatch.setenv("GEMINI_API_KEY", "runtime-key")
+
+    try:
+        ai_client.generate_ai_reply(
+            [{"role": "user", "content": "Say hello in one sentence."}],
+            extra_context="Morgan State advising context test",
+        )
+    except RuntimeError as exc:
+        assert "Gemini client is unavailable" in str(exc)
+    else:
+        raise AssertionError("Expected RuntimeError when Gemini import fails")

@@ -16,7 +16,12 @@ genai = None
 def _get_genai_module():
     global genai
     if genai is None:
-        genai = import_module("google.generativeai")
+        try:
+            genai = import_module("google.generativeai")
+        except Exception as exc:
+            raise RuntimeError(
+                "Gemini client is unavailable in the current backend environment."
+            ) from exc
     return genai
 
 

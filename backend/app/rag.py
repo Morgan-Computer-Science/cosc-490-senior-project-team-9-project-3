@@ -666,10 +666,21 @@ def _score_document(query_tokens: set[str], query: str, user_major: Optional[str
     haystack = f"{doc.title} {doc.content}".lower()
     doc_tokens = _tokenize(haystack)
     overlap = query_tokens & doc_tokens
-    if not overlap:
+    user_major_tokens = _tokenize(user_major or "")
+    major_overlap = user_major_tokens & doc_tokens
+    exact_major_match = bool(
+        user_major
+        and doc.major
+        and _normalize(user_major).lower() == _normalize(doc.major).lower()
+    )
+
+    if not overlap and not major_overlap and not exact_major_match:
         return 0.0
 
     score = float(len(overlap))
+    score += float(len(major_overlap)) * 1.5
+    if exact_major_match:
+        score += 4.0
     lowered_query = query.lower()
 
     if lowered_query in haystack:

@@ -222,3 +222,12 @@ def test_finance_student_with_foundations_gets_fina300_next():
 
     assert progress["recommended_next_courses"][0] == "FINA300"
     assert any("finance" in note.lower() for note in progress.get("program_guidance", []))
+
+def test_retrieve_relevant_documents_prefers_major_docs_for_hrm_questions():
+    docs = retrieve_relevant_documents(
+        "What should I take next for HRM?",
+        user_major="Human Resource Management",
+    )
+
+    titles = [doc.title for doc in docs[:3]]
+    assert any("Human Resource Management" in title for title in titles)

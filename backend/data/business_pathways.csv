@@ -15,3 +15,19 @@ Entrepreneurship,core,business_foundation,MGMT220,3,Management foundations suppo
 Entrepreneurship,core,business_foundation,MKTG210,4,Marketing foundations make customer and venture planning more useful.
 Entrepreneurship,upper,venture_progression,ENTR300,5,Venture creation should follow enough business foundation to be useful.
 Entrepreneurship,upper,venture_progression,ENTR410,6,Small-business strategy should come after the earlier venture and business core sequence.
+Accounting,core,accounting_foundation,ACCT201,1,Accounting students should begin with Principles of Accounting I.
+Accounting,core,accounting_foundation,ACCT202,2,Accounting II should follow the first accounting course before intermediate work.
+Accounting,upper,accounting_progression,ACCT301,3,Intermediate Accounting I should wait until the lower accounting sequence is complete.
+Accounting,upper,accounting_progression,ACCT302,4,Intermediate Accounting II should follow Intermediate Accounting I.
+Finance,core,finance_foundation,ACCT201,1,Finance students should build accounting literacy before finance-heavy work.
+Finance,core,finance_foundation,ECON201,2,Finance students should build economics foundations early.
+Finance,core,finance_foundation,ECON202,3,Finance students should complete the introductory economics sequence.
+Finance,upper,finance_progression,FINA300,4,Corporate finance should follow accounting and economics foundations.
+Hospitality Management,core,hospitality_foundation,ACCT201,1,Hospitality students benefit from the shared business core before upper-level operations planning.
+Hospitality Management,core,hospitality_foundation,ECON201,2,Hospitality students should build economics context before deeper operations planning.
+Hospitality Management,core,hospitality_foundation,MGMT220,3,Management foundations should come before upper-level hospitality planning.
+Hospitality Management,core,hospitality_foundation,MKTG210,4,Marketing foundations help hospitality students understand service, customer, and brand planning.
+Human Resource Management,core,hrm_foundation,MGMT220,1,HRM students need management foundations before upper-level organizational work.
+Human Resource Management,core,hrm_foundation,ACCT201,2,HRM students still benefit from shared business literacy in the Graves core.
+Human Resource Management,core,hrm_foundation,ECON201,3,HRM students benefit from economics context when planning broader business-school progression.
+Human Resource Management,upper,hrm_progression,MGMT330,4,Organizational behavior is a natural bridge into HR-focused planning.

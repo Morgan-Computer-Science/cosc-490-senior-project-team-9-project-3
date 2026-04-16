@@ -833,7 +833,15 @@ def _recommend_next_courses(required: list[str], completed: list[str]) -> tuple[
 
 
 def _is_business_depth_major(major: Optional[str]) -> bool:
-    return _normalize(major) in {"Business Administration", "Marketing", "Entrepreneurship"}
+    return _normalize(major) in {
+        "Business Administration",
+        "Marketing",
+        "Entrepreneurship",
+        "Accounting",
+        "Finance",
+        "Hospitality Management",
+        "Human Resource Management",
+    }
 
 
 def _is_computer_science_major(major: Optional[str]) -> bool:
@@ -967,6 +975,36 @@ def _build_business_program_guidance(
             guidance.append(
                 "Entrepreneurship works best after accounting, economics, management, marketing, and quantitative foundations are in place."
             )
+
+    if normalized_major == "Accounting":
+        if {"ACCT201", "ACCT202"}.issubset(completed_set):
+            guidance.append(
+                "You have the lower accounting sequence in place, so intermediate accounting and stronger internship planning are starting to make sense."
+            )
+        else:
+            guidance.append(
+                "Accounting should move in sequence from ACCT201 to ACCT202 before intermediate accounting work."
+            )
+
+    if normalized_major == "Finance":
+        if {"ACCT201", "ECON201", "ECON202"}.issubset(completed_set):
+            guidance.append(
+                "Your accounting and economics foundation is in place, so finance planning can start moving toward upper-level finance coursework."
+            )
+        else:
+            guidance.append(
+                "Finance advising should stay grounded in accounting and economics first, so upper-level finance courses are not taken too early."
+            )
+
+    if normalized_major == "Hospitality Management":
+        guidance.append(
+            "Hospitality Management works best after the shared business core is underway, so operations and service-focused planning stays grounded in business fundamentals."
+        )
+
+    if normalized_major == "Human Resource Management":
+        guidance.append(
+            "Human Resource Management builds on management and organizational foundations, so lower-division business preparation should lead into upper-level people and organizational planning."
+        )
 
     return guidance
 

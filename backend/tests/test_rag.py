@@ -203,3 +203,22 @@ def test_marketing_student_with_foundations_gets_upper_level_marketing_next():
 
     assert progress["recommended_next_courses"][0] == "MKTG331"
     assert "MKTG210" not in progress["remaining_courses"]
+
+def test_accounting_student_keeps_intermediate_work_blocked_until_lower_sequence_is_complete():
+    progress = get_degree_progress(
+        "Accounting",
+        ["ACCT201", "ECON201", "STAT302", "ENGL101", "ENGL102"],
+    )
+
+    assert "ACCT202" in progress["recommended_next_courses"]
+    assert "ACCT301" in progress["blocked_courses"]
+
+
+def test_finance_student_with_foundations_gets_fina300_next():
+    progress = get_degree_progress(
+        "Finance",
+        ["ACCT201", "ACCT202", "ECON201", "ECON202", "STAT302", "ENGL101", "ENGL102"],
+    )
+
+    assert progress["recommended_next_courses"][0] == "FINA300"
+    assert any("finance" in note.lower() for note in progress.get("program_guidance", []))

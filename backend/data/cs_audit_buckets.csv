@@ -1,9 +1,13 @@
 course_code,bucket,role,notes
 COSC111,foundation,intro_programming,Intro programming foundation
 COSC112,foundation,intro_programming,Second programming foundation
+COSC220,core,systems_foundation,Assembly language and computer organization support for systems-heavy progression
+COSC238,core,software_foundation,Object-oriented programming support for software progression
 COSC241,core,systems_foundation,Computer systems and digital logic
 COSC242,core,data_structures,Data structures and algorithms backbone
+COSC243,core,systems_core,Computer architecture progression support
 COSC310,core,software_foundation,Upper-level core before capstone
+COSC320,upper_level,systems_elective,Upper-level computer organization signal for systems-heavy records
 COSC331,core,systems_core,Core systems sequence
 COSC332,core,software_core,Core software sequence
 COSC350,core,theory_core,Core theory sequence

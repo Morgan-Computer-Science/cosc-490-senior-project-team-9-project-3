@@ -43,6 +43,10 @@ ECON401,ECON301; STAT302,Econometrics is strongest after intermediate economics 
 ECON410,ECON301; ECON302,Senior economics seminar should follow the intermediate theory sequence.
 MKTG331,MKTG210,Marketing management should follow principles of marketing.
 FINA300,ACCT201; ECON201,Finance is stronger after accounting and economics.
+MGMT330,MGMT220,Organizational behavior should follow the lower-division management core.
+MGMT410,MGMT330; ACCT201; ECON201,Strategic management should follow the core business progression.
+ENTR300,MGMT220; MKTG210,Entrepreneurship and venture creation should follow foundational management and marketing.
+ENTR410,ENTR300,Small business strategy should follow earlier venture creation work.
 POSC201,POSC101,International relations builds on the introductory political science survey.
 POSC307,POSC101,Research methods follows an initial political science foundation.
 POSC314,POSC101,Political theory follows the introductory political science survey.

@@ -1,0 +1,17 @@
+major,stage,focus_area,required_course,priority,notes
+Business Administration,core,business_foundation,ACCT201,1,Accounting foundation should come before upper-level management strategy work.
+Business Administration,core,business_foundation,ECON201,2,Economics foundation should come before upper-level management strategy work.
+Business Administration,core,business_foundation,STAT302,3,Quantitative preparation should precede advanced business decision and strategy work.
+Business Administration,core,business_foundation,MKTG210,4,Principles of Marketing helps Business Administration students choose an informed direction before upper-level work.
+Business Administration,upper,management_progression,MGMT330,5,Organizational behavior is a better upper-level next step than strategic management.
+Business Administration,upper,management_progression,MGMT410,6,Strategic management should wait until the broader business core is in place.
+Marketing,core,business_foundation,ACCT201,1,Marketing students should complete the shared business core first.
+Marketing,core,business_foundation,ECON201,2,Marketing students benefit from economics before advanced marketing strategy.
+Marketing,core,marketing_progression,MKTG210,3,Principles of Marketing is the main transition into upper-level marketing.
+Marketing,upper,marketing_progression,MKTG331,4,Marketing Management should follow MKTG210 plus enough business-core context.
+Entrepreneurship,core,business_foundation,ACCT201,1,Entrepreneurship students need accounting context before venture-heavy planning.
+Entrepreneurship,core,business_foundation,ECON201,2,Entrepreneurship students need economics context before venture-heavy planning.
+Entrepreneurship,core,business_foundation,MGMT220,3,Management foundations support later venture design and strategy work.
+Entrepreneurship,core,business_foundation,MKTG210,4,Marketing foundations make customer and venture planning more useful.
+Entrepreneurship,upper,venture_progression,ENTR300,5,Venture creation should follow enough business foundation to be useful.
+Entrepreneurship,upper,venture_progression,ENTR410,6,Small-business strategy should come after the earlier venture and business core sequence.

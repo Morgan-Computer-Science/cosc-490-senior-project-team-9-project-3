@@ -1,15 +1,23 @@
 import logging
 import os
+from importlib import import_module
 from pathlib import Path
 from typing import Dict, List, Optional
 
-import google.generativeai as genai
 from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
 _BACKEND_ENV_PATH = Path(__file__).resolve().parents[1] / ".env"
 
 _MODEL_NAME = "models/gemini-2.5-flash"
+genai = None
+
+
+def _get_genai_module():
+    global genai
+    if genai is None:
+        genai = import_module("google.generativeai")
+    return genai
 
 
 def _get_runtime_api_key() -> str:
@@ -21,8 +29,9 @@ def _get_runtime_api_key() -> str:
 
 
 def _build_model():
-    genai.configure(api_key=_get_runtime_api_key())
-    return genai.GenerativeModel(_MODEL_NAME)
+    genai_module = _get_genai_module()
+    genai_module.configure(api_key=_get_runtime_api_key())
+    return genai_module.GenerativeModel(_MODEL_NAME)
 
 
 def _system_prompt() -> str:
@@ -89,9 +98,13 @@ def extract_text_from_attachment(
         model = _build_model()
     except RuntimeError:
         return None
+    except Exception:
+        logger.exception("Gemini client initialization failed for OCR extraction.")
+        return None
     uploaded_file = None
+    genai_module = _get_genai_module()
     try:
-        uploaded_file = genai.upload_file(
+        uploaded_file = genai_module.upload_file(
             attachment_path,
             mime_type=attachment_mime_type,
             display_name=attachment_summary,
@@ -119,7 +132,7 @@ def extract_text_from_attachment(
     finally:
         if uploaded_file is not None:
             try:
-                genai.delete_file(uploaded_file.name)
+                genai_module.delete_file(uploaded_file.name)
             except Exception:
                 pass
 
@@ -147,9 +160,10 @@ def generate_ai_reply(
         contents.append({"role": role, "parts": [msg["content"]]})
 
     model = _build_model()
+    genai_module = _get_genai_module()
     uploaded_file = None
     if attachment_path:
-        uploaded_file = genai.upload_file(
+        uploaded_file = genai_module.upload_file(
             attachment_path,
             mime_type=attachment_mime_type,
             display_name=attachment_summary,
@@ -169,7 +183,7 @@ def generate_ai_reply(
     finally:
         if uploaded_file is not None:
             try:
-                genai.delete_file(uploaded_file.name)
+                genai_module.delete_file(uploaded_file.name)
             except Exception:
                 pass
     text = getattr(response, "text", None)

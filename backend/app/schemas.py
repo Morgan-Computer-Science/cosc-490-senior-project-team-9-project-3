@@ -123,6 +123,7 @@ class DegreeProgressSummary(BaseModel):
     remaining_courses: list[str] = Field(default_factory=list)
     recommended_next_courses: list[str] = Field(default_factory=list)
     blocked_courses: list[str] = Field(default_factory=list)
+    program_guidance: list[str] = Field(default_factory=list)
     pathway_recommendations: list[PathwayRecommendation] = Field(default_factory=list)
     capstone_readiness: CapstoneReadiness = Field(default_factory=CapstoneReadiness)
     cs_audit_summary: Optional[CSAuditSummary] = None

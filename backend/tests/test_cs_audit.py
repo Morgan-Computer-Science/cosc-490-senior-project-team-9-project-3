@@ -37,3 +37,19 @@ def test_interpret_cs_audit_preserves_unknown_cs_codes():
     )
 
     assert "COSC499" in summary["unmapped_courses"]
+
+
+def test_interpret_cs_audit_maps_real_morgan_cs_support_courses():
+    summary = interpret_computer_science_audit(
+        completed_codes=["COSC111", "COSC112", "COSC220", "COSC238", "COSC241", "COSC243", "COSC320"],
+        in_progress_codes=[],
+        remaining_codes=["COSC490"],
+        planning_interest="I want a realistic read on my systems-heavy CS record.",
+    )
+
+    assert "COSC220" in summary["core_progress"]["completed"]
+    assert "COSC238" in summary["core_progress"]["completed"]
+    assert "COSC243" in summary["core_progress"]["completed"]
+    assert "COSC320" in summary["upper_level_progress"]["completed"]
+    assert "COSC220" not in summary["unmapped_courses"]
+    assert "COSC243" not in summary["unmapped_courses"]

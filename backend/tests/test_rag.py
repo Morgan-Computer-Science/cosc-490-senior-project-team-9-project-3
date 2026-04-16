@@ -182,3 +182,24 @@ def test_cs_degree_progress_surfaces_audit_summary():
 
     assert progress["cs_audit_summary"]["capstone_readiness"]["status"] == "not_ready"
     assert "COSC241" in progress["cs_audit_summary"]["core_progress"]["completed"]
+
+
+def test_cs_degree_progress_does_not_recommend_math141_after_higher_math_completion():
+    progress = get_degree_progress(
+        "Computer Science",
+        ["COSC111", "COSC112", "COSC241", "MATH241", "MATH242"],
+        planning_interest="What should I take next for Computer Science?",
+    )
+
+    assert "MATH141" not in progress["recommended_next_courses"]
+    assert "MATH141" not in progress["remaining_courses"]
+
+
+def test_marketing_student_with_foundations_gets_upper_level_marketing_next():
+    progress = get_degree_progress(
+        "Marketing",
+        ["ACCT201", "ECON201", "ECON202", "MGMT220", "MKTG210", "STAT302", "ENGL101", "ENGL102"],
+    )
+
+    assert progress["recommended_next_courses"][0] == "MKTG331"
+    assert "MKTG210" not in progress["remaining_courses"]

@@ -119,3 +119,33 @@ def test_chat_uses_cs_audit_summary_for_capstone_question(client, auth_headers, 
     assert response.status_code == 200
     assert response.json()["advisor_insights"]["capstone_readiness"]["status"] == "not_ready"
     assert "Computer Science audit interpretation" in captured_context["extra_context"]
+
+
+def test_chat_context_includes_business_guidance_for_marketing_student(client, auth_headers, monkeypatch):
+    captured_context = {}
+
+    def fake_generate_ai_reply(**kwargs):
+        captured_context["extra_context"] = kwargs["extra_context"]
+        return "Test advisor reply"
+
+    monkeypatch.setattr("app.chat.generate_ai_reply", fake_generate_ai_reply)
+    client.put(
+        "/auth/me",
+        headers=auth_headers,
+        json={"major": "Marketing"},
+    )
+    client.put(
+        "/auth/me/completed-courses",
+        headers=auth_headers,
+        json={"course_codes": ["ACCT201", "ECON201", "MGMT220", "STAT302", "ENGL101", "ENGL102"]},
+    )
+    session = client.post("/chat/sessions", headers=auth_headers, json={"title": "Marketing Path"}).json()
+
+    response = client.post(
+        f"/chat/sessions/{session['id']}/messages",
+        headers=auth_headers,
+        data={"content": "What should I take next for marketing?"},
+    )
+
+    assert response.status_code == 200
+    assert "Business planning guidance:" in captured_context["extra_context"]

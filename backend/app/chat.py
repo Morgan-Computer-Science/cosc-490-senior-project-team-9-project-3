@@ -94,6 +94,10 @@ def _build_degree_progress_context(
         lines.append(
             f"- Courses Still Blocked By Prerequisites: {', '.join(summary['blocked_courses'][:6])}"
         )
+    if summary.get("program_guidance"):
+        lines.append(
+            f"- Business planning guidance: {' '.join(summary['program_guidance'][:3])}"
+        )
     if summary.get("pathway_recommendations"):
         lines.append("- Computer Science pathway suggestions:")
         for pathway in summary["pathway_recommendations"][:2]:

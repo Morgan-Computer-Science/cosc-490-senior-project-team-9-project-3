@@ -7,6 +7,7 @@ from typing import Iterable, List, Optional
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 COURSE_ALIAS_PATH = DATA_DIR / "course_aliases.csv"
+BUSINESS_PATHWAYS_PATH = DATA_DIR / "business_pathways.csv"
 CS_PATHWAYS_PATH = DATA_DIR / "cs_pathways.csv"
 CS_CAPSTONE_RULES_PATH = DATA_DIR / "cs_capstone_rules.csv"
 CS_FOCUS_AREAS_PATH = DATA_DIR / "cs_focus_areas.csv"
@@ -772,6 +773,15 @@ def _prerequisite_map() -> dict[str, list[str]]:
 
 
 @lru_cache(maxsize=1)
+def load_business_pathway_rows() -> tuple[dict[str, str], ...]:
+    if not BUSINESS_PATHWAYS_PATH.exists():
+        return tuple()
+
+    with BUSINESS_PATHWAYS_PATH.open(newline="", encoding="utf-8") as file:
+        return tuple(csv.DictReader(file))
+
+
+@lru_cache(maxsize=1)
 def load_cs_pathway_rows() -> tuple[dict[str, str], ...]:
     if not CS_PATHWAYS_PATH.exists():
         return tuple()
@@ -822,6 +832,10 @@ def _recommend_next_courses(required: list[str], completed: list[str]) -> tuple[
     return recommendations, blocked
 
 
+def _is_business_depth_major(major: Optional[str]) -> bool:
+    return _normalize(major) in {"Business Administration", "Marketing", "Entrepreneurship"}
+
+
 def _is_computer_science_major(major: Optional[str]) -> bool:
     return _normalize(major).lower() == "computer science"
 
@@ -835,6 +849,126 @@ def _unique_preserve_order(values: Iterable[str]) -> list[str]:
         seen.add(value)
         ordered.append(value)
     return ordered
+
+
+def _apply_implied_completed_courses(
+    major: Optional[str],
+    completed_course_codes: Iterable[str],
+) -> list[str]:
+    completed = {
+        canonicalize_course_code(code)
+        for code in completed_course_codes
+        if _normalize(code)
+    }
+
+    if _is_computer_science_major(major):
+        if "MATH241" in completed or "MATH242" in completed:
+            completed.add("MATH141")
+        if "MATH242" in completed:
+            completed.add("MATH241")
+
+    return sorted(completed)
+
+
+def _build_business_priority_map(major: Optional[str]) -> dict[str, int]:
+    normalized_major = _normalize(major)
+    if not normalized_major:
+        return {}
+
+    priority_map: dict[str, int] = {}
+    for row in load_business_pathway_rows():
+        if _normalize(row.get("major")) != normalized_major:
+            continue
+        course_code = canonicalize_course_code(row.get("required_course"))
+        priority_value = _normalize(row.get("priority"))
+        if not course_code or not priority_value.isdigit():
+            continue
+        priority_map[course_code] = int(priority_value)
+    return priority_map
+
+
+def _recommend_business_next_courses(
+    major: Optional[str],
+    required: list[str],
+    completed: list[str],
+) -> tuple[list[str], list[str]]:
+    completed_set = set(completed)
+    course_map = {
+        canonicalize_course_code(row.get("code")): row
+        for row in load_course_rows()
+    }
+    prereq_map = _prerequisite_map()
+    priority_map = _build_business_priority_map(major)
+
+    def _business_sort_key(code: str) -> tuple[int, int, int, str]:
+        level, semester_bonus, course_code = _course_sort_key(code, course_map)
+        return (priority_map.get(code, 999), level, semester_bonus, course_code)
+
+    remaining = [code for code in required if code not in completed_set]
+    ready: list[str] = []
+    blocked: list[str] = []
+    for code in remaining:
+        prerequisites = prereq_map.get(code, [])
+        if all(prereq in completed_set for prereq in prerequisites):
+            ready.append(code)
+        else:
+            blocked.append(code)
+
+    ready.sort(key=_business_sort_key)
+    blocked.sort(key=_business_sort_key)
+    recommendations = ready[:3] if ready else blocked[:3]
+    return recommendations, blocked
+
+
+def _build_business_program_guidance(
+    major: Optional[str],
+    completed: list[str],
+    remaining: list[str],
+) -> list[str]:
+    normalized_major = _normalize(major)
+    completed_set = set(completed)
+    remaining_set = set(remaining)
+    guidance: list[str] = []
+
+    shared_core = {"ACCT201", "ECON201", "MGMT220", "STAT302"}
+    marketing_transition = {"MKTG210"}
+    entrepreneurship_ready = {"ACCT201", "ECON201", "MGMT220", "MKTG210", "STAT302"}
+
+    if normalized_major == "Business Administration":
+        if shared_core.issubset(completed_set):
+            guidance.append(
+                "Your shared business core is in place, so upper-level management and strategy planning is starting to make sense."
+            )
+        else:
+            guidance.append(
+                "You are still building the shared business core, so accounting, economics, statistics, and management foundations should stay ahead of upper-level strategy choices."
+            )
+
+    if normalized_major == "Marketing":
+        if marketing_transition.issubset(completed_set):
+            guidance.append(
+                "You have the principles-level marketing foundation needed to start moving into upper-level marketing strategy work."
+            )
+        else:
+            guidance.append(
+                "Marketing students should use MKTG210 as the transition point into upper-level marketing work."
+            )
+        if "MKTG331" in remaining_set:
+            guidance.append(
+                "Once your shared business core and MKTG210 are in place, upper-level marketing should move ahead of supporting electives."
+            )
+
+    if normalized_major == "Entrepreneurship":
+        if entrepreneurship_ready.issubset(completed_set):
+            guidance.append(
+                "You now have enough shared business context for venture-focused coursework to be useful and well-timed."
+            )
+        else:
+            guidance.append(
+                "Entrepreneurship works best after accounting, economics, management, marketing, and quantitative foundations are in place."
+            )
+
+    return guidance
 
 
 def _cs_focus_area_to_pathway(focus_area: str) -> str:
@@ -1066,9 +1200,7 @@ def get_degree_progress(
     completed_course_codes: Iterable[str],
     planning_interest: Optional[str] = None,
 ) -> dict[str, object]:
-    completed = sorted(
-        {canonicalize_course_code(code) for code in completed_course_codes if _normalize(code)}
-    )
+    completed = _apply_implied_completed_courses(major, completed_course_codes)
     if not major:
         return {
             "major": None,
@@ -1077,6 +1209,7 @@ def get_degree_progress(
             "remaining_courses": [],
             "recommended_next_courses": [],
             "blocked_courses": [],
+            "program_guidance": [],
             "pathway_recommendations": [],
             "capstone_readiness": {"status": "unknown", "missing_foundations": [], "notes": None},
             "cs_audit_summary": None,
@@ -1103,6 +1236,7 @@ def get_degree_progress(
             "remaining_courses": [],
             "recommended_next_courses": [],
             "blocked_courses": [],
+            "program_guidance": [],
             "pathway_recommendations": [],
             "capstone_readiness": {"status": "unknown", "missing_foundations": [], "notes": None},
             "cs_audit_summary": None,
@@ -1122,11 +1256,26 @@ def get_degree_progress(
         if code.strip()
     ]
     remaining = [code for code in required if code not in completed]
-    recommended_next_courses, blocked_courses = _recommend_next_courses(required, completed)
+    if _is_business_depth_major(canonical_major):
+        recommended_next_courses, blocked_courses = _recommend_business_next_courses(
+            canonical_major,
+            required,
+            completed,
+        )
+    else:
+        recommended_next_courses, blocked_courses = _recommend_next_courses(required, completed)
     completion_percent = round((len(required) - len(remaining)) / len(required) * 100, 1) if required else 0.0
+    program_guidance: list[str] = []
     pathway_recommendations: list[dict[str, object]] = []
     capstone_readiness = {"status": "unknown", "missing_foundations": [], "notes": None}
     cs_audit_summary = None
+
+    if _is_business_depth_major(canonical_major):
+        program_guidance = _build_business_program_guidance(
+            canonical_major,
+            completed,
+            remaining,
+        )
 
     if _is_computer_science_major(canonical_major):
         pathway_recommendations = _build_cs_pathway_recommendations(
@@ -1149,6 +1298,7 @@ def get_degree_progress(
         "remaining_courses": remaining,
         "recommended_next_courses": recommended_next_courses,
         "blocked_courses": blocked_courses,
+        "program_guidance": program_guidance,
         "pathway_recommendations": pathway_recommendations,
         "capstone_readiness": capstone_readiness,
         "cs_audit_summary": cs_audit_summary,

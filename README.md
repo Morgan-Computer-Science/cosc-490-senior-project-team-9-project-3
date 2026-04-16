@@ -1,21 +1,21 @@
 # Morgan State AI Faculty Advisor
 
 **Interface**
-![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white)
-![Vite](https://img.shields.io/badge/Vite-7-646CFF?style=for-the-badge&logo=vite&logoColor=white)
-![React Router](https://img.shields.io/badge/React%20Router-7-CA4245?style=for-the-badge&logo=reactrouter&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white&labelColor=0F172A)
+![Vite](https://img.shields.io/badge/Vite-7-7C3AED?style=for-the-badge&logo=vite&logoColor=white&labelColor=4C1D95)
+![React Router](https://img.shields.io/badge/React%20Router-7-E11D48?style=for-the-badge&logo=reactrouter&logoColor=white&labelColor=881337)
 
 **Backend**
-![Python](https://img.shields.io/badge/Python-3-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.133-009688?style=for-the-badge&logo=fastapi&logoColor=white)
-![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2-D71F00?style=for-the-badge&logo=sqlalchemy&logoColor=white)
-![SQLite](https://img.shields.io/badge/SQLite-Database-003B57?style=for-the-badge&logo=sqlite&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3-3776AB?style=for-the-badge&logo=python&logoColor=white&labelColor=1D4ED8)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.133-10B981?style=for-the-badge&logo=fastapi&logoColor=white&labelColor=065F46)
+![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2-F97316?style=for-the-badge&logo=sqlalchemy&logoColor=white&labelColor=9A3412)
+![SQLite](https://img.shields.io/badge/SQLite-Database-0F4C81?style=for-the-badge&logo=sqlite&logoColor=white&labelColor=082F49)
 
 **AI and Document Understanding**
-![Gemini](https://img.shields.io/badge/Gemini-Live%20AI-4285F4?style=for-the-badge&logo=google&logoColor=white)
-![PDF Parsing](https://img.shields.io/badge/PDF-Parsing-B30B00?style=for-the-badge&logo=adobeacrobatreader&logoColor=white)
-![OCR](https://img.shields.io/badge/OCR-Images%20%26%20Scans-5C6BC0?style=for-the-badge)
-![Morgan State](https://img.shields.io/badge/Morgan%20State-University%20Advising-002D62?style=for-the-badge)
+![Gemini](https://img.shields.io/badge/Gemini-Live%20AI-3B82F6?style=for-the-badge&logo=google&logoColor=white&labelColor=1E3A8A)
+![PDF Parsing](https://img.shields.io/badge/PDF-Parsing-DC2626?style=for-the-badge&logo=adobeacrobatreader&logoColor=white&labelColor=7F1D1D)
+![OCR](https://img.shields.io/badge/OCR-Images%20%26%20Scans-6366F1?style=for-the-badge&labelColor=3730A3)
+![Morgan State](https://img.shields.io/badge/Morgan%20State-University%20Advising-002D62?style=for-the-badge&labelColor=7C2D12)
 
 Morgan State AI Faculty Advisor is a full-stack student advising system built for a university-wide advising experience. It combines authentication, degree-progress tracking, retrieval-augmented advising, student-state analysis, and multimodal chat features into one launch-oriented application.
 

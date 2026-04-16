@@ -249,3 +249,20 @@ def test_retrieve_relevant_documents_prefers_psychology_docs_for_short_query():
     )
 
     assert any("Psychology" in doc.title for doc in docs[:3])
+
+
+def test_retrieve_relevant_documents_respects_explicit_cross_major_question_context():
+    docs = retrieve_relevant_documents(
+        "Who is the Dean of Computer Science at Morgan State University?",
+        user_major="Nursing",
+        top_k=6,
+    )
+
+    top_docs = docs[:4]
+    assert any(doc.source_type == "faculty" for doc in top_docs)
+    assert any(
+        (doc.department or "") == "Computer Science"
+        and any(token in doc.title.lower() for token in ("chair", "director"))
+        for doc in top_docs
+    )
+    assert all("Nursing" not in doc.title for doc in top_docs)

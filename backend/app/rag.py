@@ -627,6 +627,51 @@ def find_program_row(major: Optional[str]) -> Optional[dict[str, str]]:
     return _program_lookup().get(_normalize(major).lower())
 
 
+@lru_cache(maxsize=1)
+def _known_major_department_names() -> tuple[str, ...]:
+    names: set[str] = set()
+
+    for row in load_program_rows():
+        for value in (
+            row.get("major"),
+            row.get("canonical_major"),
+            row.get("department"),
+        ):
+            normalized = _normalize(value).lower()
+            if normalized:
+                names.add(normalized)
+        aliases = _normalize(row.get("aliases"))
+        if aliases:
+            for alias in aliases.split(";"):
+                normalized = _normalize(alias).lower()
+                if normalized:
+                    names.add(normalized)
+
+    for row in load_department_rows():
+        for value in (row.get("department"), row.get("major")):
+            normalized = _normalize(value).lower()
+            if normalized:
+                names.add(normalized)
+
+    return tuple(sorted(names))
+
+
+def _query_mentions_other_named_unit(query: str, user_major: Optional[str]) -> bool:
+    lowered_query = query.lower()
+    normalized_major = _normalize(user_major).lower()
+    if not normalized_major:
+        return False
+
+    for unit_name in _known_major_department_names():
+        if unit_name == normalized_major:
+            continue
+        if normalized_major in unit_name:
+            continue
+        if unit_name in lowered_query:
+            return True
+    return False
+
+
 def _support_documents() -> List[RetrievedDocument]:
     path = DATA_DIR / "support_resources.csv"
     if not path.exists():
@@ -669,25 +714,34 @@ def _score_document(query_tokens: set[str], query: str, user_major: Optional[str
     overlap = query_tokens & doc_tokens
     user_major_tokens = _tokenize(user_major or "")
     major_overlap = user_major_tokens & doc_tokens
+    lowered_query = query.lower()
+    explicit_doc_match = any(
+        candidate and candidate.lower() in lowered_query
+        for candidate in (doc.major, doc.department)
+    )
     exact_major_match = bool(
         user_major
         and doc.major
         and _normalize(user_major).lower() == _normalize(doc.major).lower()
     )
 
-    if not overlap and not major_overlap and not exact_major_match:
+    if not overlap and not major_overlap and not exact_major_match and not explicit_doc_match:
         return 0.0
 
+    explicit_other_unit_query = _query_mentions_other_named_unit(query, user_major)
     score = float(len(overlap))
-    score += float(len(major_overlap)) * 1.5
+    if not explicit_other_unit_query:
+        score += float(len(major_overlap)) * 1.5
     if exact_major_match:
-        score += 4.0
-    lowered_query = query.lower()
+        score += 2.0 if explicit_other_unit_query else 4.0
 
     if lowered_query in haystack:
         score += 5.0
 
-    if user_major:
+    if explicit_doc_match:
+        score += 8.0
+
+    if user_major and not explicit_other_unit_query:
         user_major_lower = user_major.lower()
         if doc.major and user_major_lower in doc.major.lower():
             score += 3.0
@@ -696,8 +750,19 @@ def _score_document(query_tokens: set[str], query: str, user_major: Optional[str
 
     if doc.source_type == "degree_requirements" and any(token in query_tokens for token in {"requirement", "required", "need", "graduate"}):
         score += 2.5
-    if doc.source_type == "faculty" and any(token in query_tokens for token in {"faculty", "professor", "teacher", "instructor"}):
+    leadership_query = any(token in query_tokens for token in {"dean", "chair", "director", "head"})
+    if doc.source_type == "faculty" and any(token in query_tokens for token in {"faculty", "professor", "teacher", "instructor", "dean", "chair", "director", "head"}):
         score += 2.5
+        if leadership_query:
+            leadership_title = doc.title.lower()
+            if any(token in leadership_title for token in {"dean", "chair", "director", "head"}):
+                score += 6.0
+            if "dean" in query_tokens and "dean" in leadership_title:
+                score += 5.0
+            if "chair" in query_tokens and "chair" in leadership_title:
+                score += 5.0
+            if "director" in query_tokens and "director" in leadership_title:
+                score += 4.0
     if doc.source_type == "department" and any(token in query_tokens for token in {"department", "office", "advisor", "contact"}):
         score += 2.0
     if doc.source_type == "program" and any(token in query_tokens for token in {"program", "major", "school", "college", "path"}):

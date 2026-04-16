@@ -1,6 +1,7 @@
 from dataclasses import replace
 import logging
 import os
+import re
 from typing import List
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
@@ -31,6 +32,18 @@ from .rate_limit import limit_chat
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 logger = logging.getLogger(__name__)
+SMALL_TALK_PATTERNS = (
+    r"\bhello\b",
+    r"\bhi\b",
+    r"\bhey\b",
+    r"\bhow are you\b",
+    r"\bhow's it going\b",
+    r"\bwhats up\b",
+    r"\bwhat's up\b",
+    r"\bgood morning\b",
+    r"\bgood afternoon\b",
+    r"\bgood evening\b",
+)
 
 
 def _refine_attachment_document_type(question: str, attachment_context) -> str | None:
@@ -361,19 +374,85 @@ def _build_attachment_signal_context(
     return "Attachment planning signals:\n" + "\n".join(lines)
 
 
+def _build_attachment_summary_context(attachment_context) -> str:
+    if not attachment_context:
+        return ""
+
+    summary = attachment_context.transcript_summary
+    if not any([summary.gpa, summary.earned_credits, summary.standing]):
+        return ""
+
+    lines = ["Attachment summary fields:"]
+    if summary.gpa:
+        lines.append(f"- GPA shown in the uploaded document: {summary.gpa}")
+    if summary.earned_credits:
+        lines.append(f"- Earned credits shown in the uploaded document: {summary.earned_credits}")
+    if summary.standing:
+        lines.append(f"- Standing shown in the uploaded document: {summary.standing}")
+    return "\n".join(lines)
+
+
+def _answer_from_attachment_summary(question: str, attachment_context) -> str | None:
+    if not attachment_context:
+        return None
+
+    lowered = (question or "").lower()
+    summary = attachment_context.transcript_summary
+    if "gpa" in lowered and summary.gpa:
+        return f"Your uploaded document shows a GPA of {summary.gpa}."
+    if "earned credit" in lowered or "earned credits" in lowered:
+        if summary.earned_credits:
+            return f"Your uploaded document shows {summary.earned_credits} earned credits."
+    if "standing" in lowered and summary.standing:
+        return f"Your uploaded document lists your standing as {summary.standing}."
+    return None
+
+
+def _small_talk_reply(question: str, user: models.User, attachment_context=None) -> str | None:
+    if attachment_context:
+        return None
+
+    cleaned = re.sub(r"[^\w\s']", " ", (question or "").lower()).strip()
+    if not cleaned:
+        return None
+
+    word_count = len(cleaned.split())
+    if word_count > 8:
+        return None
+
+    if not any(re.search(pattern, cleaned) for pattern in SMALL_TALK_PATTERNS):
+        return None
+
+    if "how are you" in cleaned or "how's it going" in cleaned:
+        return (
+            "Hey, I'm doing well. I'm your Morgan State advisor whenever you're ready. "
+            "What would you like help with today?"
+        )
+
+    return (
+        f"Hey{f' {user.full_name.split()[0]}' if user.full_name else ''}, I'm here and ready to help. "
+        "What would you like to work on today?"
+    )
+
+
 def _fallback_advising_reply(
     user: models.User,
     question: str,
     documents: List[RetrievedDocument],
     student_state: dict[str, object],
-    ) -> str:
+    attachment_context=None,
+) -> str:
+    summary_answer = _answer_from_attachment_summary(question, attachment_context)
+    if summary_answer:
+        return summary_answer
+
     relevant = documents[:3]
     opening = (
-        f"I could not reach the live AI service, but I can still help with grounded Morgan State info for a {user.year or 'current'} {user.major or 'student'}."
+        f"Live AI is unavailable right now, so here is a grounded Morgan State answer for a {user.year or 'current'} {user.major or 'student'}."
     )
     if student_state["needs_support"]:
         opening = (
-            "I could not reach the live AI service, but I do want to respond carefully. "
+            "Live AI is unavailable right now, but I do want to respond carefully. "
             "It sounds like this may involve stress or personal support as well as academics."
         )
     lines = [opening]
@@ -535,6 +614,31 @@ async def send_message(
         for message in history[-12:]
     ]
 
+    small_talk_response = _small_talk_reply(clean_content, current_user, attachment_context)
+    if small_talk_response:
+        student_state_context, student_state = _build_student_state_context(clean_content, current_user)
+        advisor_insights = schemas.AdvisorInsights(
+            intent="small_talk",
+            emotional_tone=str(student_state["emotional_tone"]),
+            needs_support=bool(student_state["needs_support"]),
+            matched_signals=[str(signal) for signal in student_state.get("matched_signals", [])],
+            attachment_summary=attachment_context.summary if attachment_context else None,
+        )
+        ai_msg = models.ChatMessage(
+            session_id=session.id,
+            sender="assistant",
+            content=small_talk_response,
+        )
+        db.add(ai_msg)
+        db.commit()
+        db.refresh(user_msg)
+        db.refresh(ai_msg)
+        return schemas.ChatSendResponse(
+            user_message=user_msg,
+            ai_message=ai_msg,
+            advisor_insights=advisor_insights,
+        )
+
     retrieved_docs = retrieve_relevant_documents(
         clean_content,
         user_major=current_user.major,
@@ -565,6 +669,7 @@ async def send_message(
         current_user,
         effective_completed_codes,
     )
+    attachment_summary_context = _build_attachment_summary_context(attachment_context)
     combined_docs = _merge_retrieved_documents(retrieved_docs, attachment_course_docs)
     retrieved_context = format_retrieved_context(combined_docs)
     student_context = _build_student_context(current_user, effective_completed_codes)
@@ -591,6 +696,7 @@ async def send_message(
             attachment_context.context_text if attachment_context else "",
             attachment_course_context,
             attachment_signal_context,
+            attachment_summary_context,
             retrieved_context,
         ]
         if part
@@ -607,10 +713,22 @@ async def send_message(
         )
     except RuntimeError as exc:
         logger.warning("Live AI unavailable, using grounded fallback: %s", exc)
-        ai_text = _fallback_advising_reply(current_user, clean_content, combined_docs, student_state)
+        ai_text = _fallback_advising_reply(
+            current_user,
+            clean_content,
+            combined_docs,
+            student_state,
+            attachment_context,
+        )
     except Exception as exc:
         logger.exception("AI error in generate_ai_reply: %r", exc)
-        ai_text = _fallback_advising_reply(current_user, clean_content, combined_docs, student_state)
+        ai_text = _fallback_advising_reply(
+            current_user,
+            clean_content,
+            combined_docs,
+            student_state,
+            attachment_context,
+        )
     finally:
         if attachment_context and attachment_context.temp_path:
             try:

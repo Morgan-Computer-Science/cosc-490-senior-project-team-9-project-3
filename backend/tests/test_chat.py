@@ -26,6 +26,23 @@ def test_chat_session_flow(client, auth_headers):
     assert len(history.json()) == 2
 
 
+def test_chat_handles_small_talk_without_triggering_advising_dump(client, auth_headers):
+    session_id = client.post("/chat/sessions", headers=auth_headers, json={"title": "Small Talk"}).json()["id"]
+
+    response = client.post(
+        f"/chat/sessions/{session_id}/messages",
+        headers=auth_headers,
+        data={"content": "Hello how are you?"},
+    )
+
+    assert response.status_code == 200
+    reply = response.json()["ai_message"]["content"]
+    assert "Morgan State" in reply
+    assert "recommended next courses" not in reply.lower()
+    assert "completion is" not in reply.lower()
+    assert "what would you like help with" in reply.lower()
+
+
 def test_chat_rejects_unsupported_attachment(client, auth_headers):
     session_id = client.post("/chat/sessions", headers=auth_headers, json={"title": "Uploads"}).json()["id"]
     response = client.post(
@@ -241,3 +258,29 @@ def test_chat_context_includes_program_guidance_for_psychology_student(client, a
     assert response.status_code == 200
     assert "Program guidance:" in captured_context["extra_context"]
     assert "Psychology" in captured_context["extra_context"]
+
+
+def test_chat_fallback_uses_uploaded_transcript_summary_for_gpa_questions(client, auth_headers, monkeypatch):
+    monkeypatch.setattr(
+        "app.chat.generate_ai_reply",
+        lambda **_: (_ for _ in ()).throw(RuntimeError("Gemini unavailable")),
+    )
+    session_id = client.post("/chat/sessions", headers=auth_headers, json={"title": "Transcript GPA"}).json()["id"]
+
+    response = client.post(
+        f"/chat/sessions/{session_id}/messages",
+        headers=auth_headers,
+        data={"content": "What's my current GPA?"},
+        files={
+            "attachment": (
+                "transcript.txt",
+                BytesIO(
+                    b"Morgan State transcript\nCurrent GPA: 3.42\nEarned Credits: 87\nCompleted: COSC 111, MATH 141"
+                ),
+                "text/plain",
+            )
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["ai_message"]["content"] == "Your uploaded document shows a GPA of 3.42."

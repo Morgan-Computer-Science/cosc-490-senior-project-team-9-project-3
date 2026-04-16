@@ -113,6 +113,9 @@ export async function fetchCourses(token, filters = {}) {
   if (filters.level?.trim()) {
     params.set("level", filters.level.trim());
   }
+  if (filters.major?.trim()) {
+    params.set("major", filters.major.trim());
+  }
 
   const query = params.toString();
   const response = await fetch(

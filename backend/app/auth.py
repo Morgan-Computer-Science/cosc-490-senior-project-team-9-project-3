@@ -1,11 +1,12 @@
 from datetime import timedelta
+from dataclasses import asdict
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from . import models, schemas, security
-from .attachments import extract_attachment_context
+from .attachments import extract_attachment_context, extract_transcript_summary
 from .db import get_db
 from .rag import (
     canonicalize_course_code,
@@ -399,7 +400,7 @@ async def import_completed_courses_preview(
 
     cs_audit_summary = None
     if (current_user.major or "").strip().lower() == "computer science" or any(
-        code.startswith("COSC") for code in combined_candidates
+        code.startswith("COSC") for code in candidates
     ):
         cs_audit_summary = get_computer_science_audit_summary(
             completed_codes=normalized_completed_codes,
@@ -437,6 +438,13 @@ async def import_completed_courses_preview(
         unknown_course_codes=unknown,
         matched_count=len(matched),
         source_summary=source_summary,
+        transcript_summary=schemas.TranscriptSummary.model_validate(
+            asdict(
+                attachment_context.transcript_summary
+                if attachment_context
+                else extract_transcript_summary(import_text, detected_document_type)
+            )
+        ),
         cs_audit_summary=cs_audit_summary,
     )
 

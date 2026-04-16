@@ -38,6 +38,12 @@ class CompletedCoursesUpdate(BaseModel):
     course_codes: list[str] = Field(default_factory=list)
 
 
+class TranscriptSummary(BaseModel):
+    gpa: Optional[str] = None
+    earned_credits: Optional[str] = None
+    standing: Optional[str] = None
+
+
 class CompletedCoursesImportPreview(BaseModel):
     import_source: str = "manual"
     detected_document_type: str = "text_document"
@@ -51,6 +57,7 @@ class CompletedCoursesImportPreview(BaseModel):
     unknown_course_codes: list[str] = Field(default_factory=list)
     matched_count: int = 0
     source_summary: Optional[str] = None
+    transcript_summary: Optional[TranscriptSummary] = None
     cs_audit_summary: Optional["CSAuditSummary"] = None
 
 

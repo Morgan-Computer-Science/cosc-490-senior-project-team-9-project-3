@@ -1,3 +1,4 @@
+import csv
 from pathlib import Path
 import sys
 
@@ -15,9 +16,32 @@ from app.db import Base, get_db
 from app.main import app
 
 TEST_DB_PATH = BACKEND_DIR / "test_morgan_ai.db"
+COURSE_CSV_PATH = BACKEND_DIR / "data" / "courses.csv"
 SQLALCHEMY_DATABASE_URL = f"sqlite:///{TEST_DB_PATH.as_posix()}"
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+def seed_course_rows(db, course_codes):
+    target_codes = {code.upper() for code in course_codes}
+    with COURSE_CSV_PATH.open(newline="", encoding="utf-8") as file:
+        for row in csv.DictReader(file):
+            code = (row.get("code") or "").strip().upper()
+            if code not in target_codes:
+                continue
+            credits = (row.get("credits") or "").strip()
+            db.add(
+                models.Course(
+                    code=code,
+                    title=(row.get("title") or "").strip(),
+                    description=(row.get("description") or "").strip(),
+                    credits=int(credits) if credits.isdigit() else None,
+                    department=(row.get("department") or "").strip() or None,
+                    level=(row.get("level") or "").strip() or None,
+                    semester_offered=(row.get("semester_offered") or "").strip() or None,
+                    instructor=(row.get("instructor") or "").strip() or None,
+                )
+            )
 
 
 def override_get_db():
@@ -42,29 +66,51 @@ def fresh_db():
         pass
 
     db = TestingSessionLocal()
-    db.add(
-        models.Course(
-            code="COSC111",
-            title="Computer Science I",
-            description="Intro programming.",
-            credits=3,
-            department="Computer Science",
-            level="100",
-            semester_offered="Fall/Spring",
-            instructor="Dr. Wang",
-        )
-    )
-    db.add(
-        models.Course(
-            code="MATH141",
-            title="Calculus I",
-            description="Differential calculus.",
-            credits=4,
-            department="Mathematics",
-            level="100",
-            semester_offered="Fall/Spring",
-            instructor="Dr. Smith",
-        )
+    seed_course_rows(
+        db,
+        [
+            "COSC111",
+            "COSC241",
+            "COSC242",
+            "COSC310",
+            "COSC331",
+            "COSC332",
+            "COSC350",
+            "COSC490",
+            "MATH141",
+            "MATH241",
+            "MATH242",
+            "STAT302",
+            "INSS201",
+            "INSS220",
+            "INSS310",
+            "INSS340",
+            "CLDC101",
+            "CLDC220",
+            "CLDC310",
+            "CLDC340",
+            "CLDC420",
+            "BIOL101",
+            "BIOL102",
+            "BIOL320",
+            "BIOL330",
+            "BIOL360",
+            "BIOL410",
+            "NURS101",
+            "NURS201",
+            "NURS220",
+            "NURS301",
+            "NURS320",
+            "PSYC101",
+            "PSYC210",
+            "PSYC301",
+            "PSYC302",
+            "PSYC315",
+            "PSYC320",
+            "PSYC330",
+            "ACCT201",
+            "ECON201",
+        ],
     )
     db.commit()
     db.close()

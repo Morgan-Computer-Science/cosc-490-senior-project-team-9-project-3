@@ -34,6 +34,13 @@ class DocumentCourseSignals:
 
 
 @dataclass(frozen=True)
+class TranscriptSummary:
+    gpa: Optional[str] = None
+    earned_credits: Optional[str] = None
+    standing: Optional[str] = None
+
+
+@dataclass(frozen=True)
 class AttachmentContext:
     filename: str
     content_type: str
@@ -45,6 +52,7 @@ class AttachmentContext:
     extraction_method: str = "none"
     confidence_note: Optional[str] = None
     signals: DocumentCourseSignals = field(default_factory=DocumentCourseSignals)
+    transcript_summary: TranscriptSummary = field(default_factory=TranscriptSummary)
 
     @property
     def detected_document_type(self) -> str:
@@ -91,6 +99,37 @@ def build_document_course_signals(extracted_text: Optional[str], document_type: 
         remaining_codes=tuple(sorted(interpreted.remaining_codes)),
         matched_course_codes=matched,
         unknown_course_codes=unknown,
+    )
+
+
+def extract_transcript_summary(extracted_text: Optional[str], document_type: str) -> TranscriptSummary:
+    if not extracted_text or document_type not in {"transcript", "degree_audit", "pdf_document"}:
+        return TranscriptSummary()
+
+    normalized = _normalize_multiline_text(extracted_text)
+
+    gpa_match = re.search(
+        r"(?i)(?:current|cumulative|overall)?\s*gpa\s*[:=]?\s*([0-4]\.\d{1,3})"
+        r"|gpa\s+([0-4]\.\d{1,3})",
+        normalized,
+    )
+    earned_credits_match = re.search(
+        r"(?i)(?:earned|completed)\s+credits?\s*[:=]?\s*(\d+(?:\.\d+)?)",
+        normalized,
+    )
+    standing_match = re.search(
+        r"(?i)(?:academic\s+standing|class\s+standing|student\s+standing)\s*[:=]?\s*([A-Za-z ]{3,40})",
+        normalized,
+    )
+
+    gpa = next((group for group in (gpa_match.group(1), gpa_match.group(2)) if group), None) if gpa_match else None
+    earned_credits = earned_credits_match.group(1) if earned_credits_match else None
+    standing = standing_match.group(1).strip(" .") if standing_match else None
+
+    return TranscriptSummary(
+        gpa=gpa,
+        earned_credits=earned_credits,
+        standing=standing,
     )
 
 
@@ -178,6 +217,7 @@ def _build_analysis(
     context_text: str,
     summary: str,
 ) -> AttachmentContext:
+    transcript_summary = extract_transcript_summary(extracted_text, document_type)
     return AttachmentContext(
         filename=filename,
         content_type=content_type,
@@ -189,6 +229,7 @@ def _build_analysis(
         extraction_method=extraction_method,
         confidence_note=_build_confidence_note(extracted_text, extraction_method),
         signals=build_document_course_signals(extracted_text, document_type),
+        transcript_summary=transcript_summary,
     )
 
 

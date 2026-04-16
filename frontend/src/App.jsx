@@ -17,6 +17,7 @@ import Chatbot from "./components/Chatbot.jsx";
 import DegreeProgressView from "./components/DegreeProgressView.jsx";
 import DepartmentsView from "./components/DepartmentsView.jsx";
 import Login from "./components/Login.jsx";
+import { majorOptions } from "./majors";
 import ProfilePanel from "./components/ProfilePanel.jsx";
 import SettingsView from "./components/SettingsView.jsx";
 import Signup from "./components/Signup.jsx";
@@ -123,6 +124,7 @@ const App = () => {
   const [connectors, setConnectors] = useState([]);
   const [searchText, setSearchText] = useState("");
   const [selectedLevel, setSelectedLevel] = useState("");
+  const [selectedMajor, setSelectedMajor] = useState("");
   const [loadingCourses, setLoadingCourses] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
@@ -222,6 +224,7 @@ const App = () => {
         const nextCourses = await fetchCourses(token, {
           search: deferredSearch,
           level: selectedLevel,
+          major: selectedMajor,
         });
         startTransition(() => setCourses(nextCourses));
       } catch (err) {
@@ -232,7 +235,7 @@ const App = () => {
     };
 
     loadCourses();
-  }, [token, deferredSearch, selectedLevel]);
+  }, [token, deferredSearch, selectedLevel, selectedMajor]);
 
   const filteredDepartments = useMemo(() => {
     if (!searchText.trim()) {
@@ -264,6 +267,9 @@ const App = () => {
     );
   }, [supportResources, searchText]);
 
+  const featuredCourses = useMemo(() => courses.slice(0, 6), [courses]);
+  const compactCourses = useMemo(() => courses.slice(6), [courses]);
+
   const handleSignOut = () => {
     localStorage.removeItem("token");
     setToken(null);
@@ -274,6 +280,7 @@ const App = () => {
     setSupportResources([]);
     setSearchText("");
     setSelectedLevel("");
+    setSelectedMajor("");
     setActiveTab("advisor");
     setAuthView("login");
     setError("");
@@ -379,6 +386,9 @@ const App = () => {
               <span>{user?.major || "Major not set"}{user?.year ? `, ${user.year}` : ""}</span>
             </div>
           </button>
+          <button type="button" className="sidebar-logout-button" onClick={handleSignOut}>
+            Log out
+          </button>
         </div>
       </aside>
 
@@ -432,24 +442,43 @@ const App = () => {
                   <h2>Explore Morgan State courses</h2>
                   <p>Search by course title, code, or level while keeping the advisor connected to the same data.</p>
                 </div>
-                <div className="catalog-toolbar">
-                  <select value={selectedLevel} onChange={(event) => setSelectedLevel(event.target.value)}>
-                    {levels.map((level) => (
-                      <option key={level.value || "all"} value={level.value}>{level.label}</option>
-                    ))}
-                  </select>
-                  <span className="meta-pill">{loadingCourses ? "Loading..." : `${courses.length} courses`}</span>
+                <div className="catalog-toolbar polished-toolbar">
+                  <div className="catalog-toolbar-copy">
+                    <strong>{loadingCourses ? "Refreshing catalog..." : `${courses.length} matching courses`}</strong>
+                    <span>Browse by level without getting buried in one giant wall of cards.</span>
+                  </div>
+                  <div className="catalog-toolbar-controls">
+                    <select value={selectedMajor} onChange={(event) => setSelectedMajor(event.target.value)}>
+                      <option value="">All majors</option>
+                      {majorOptions.map((major) => (
+                        <option key={major} value={major}>{major}</option>
+                      ))}
+                    </select>
+                    <select value={selectedLevel} onChange={(event) => setSelectedLevel(event.target.value)}>
+                      {levels.map((level) => (
+                        <option key={level.value || "all"} value={level.value}>{level.label}</option>
+                      ))}
+                    </select>
+                    <span className="meta-pill">{selectedMajor || "All majors"}</span>
+                    <span className="meta-pill">{selectedLevel ? `${selectedLevel}00 level` : "All levels"}</span>
+                  </div>
                 </div>
-                <div className="catalog-grid-light">
-                  {courses.map((course) => (
+                {!courses.length ? (
+                  <div className="catalog-empty-state">
+                    <strong>No courses matched that filter.</strong>
+                    <p>Try a different major core, clear the search, or switch back to all course levels.</p>
+                  </div>
+                ) : null}
+                <div className="catalog-grid-light catalog-featured-grid">
+                  {featuredCourses.map((course) => (
                     <article key={course.id} className="course-card-light">
                       <div className="course-card-top">
                         <span className="course-code-light">{course.code}</span>
                         <span className="meta-pill">{course.credits || "TBD"} credits</span>
                       </div>
                       <h3>{course.title}</h3>
-                      <p>{course.description || "No description available yet."}</p>
-                      <div className="info-meta-list">
+                      <p className="course-card-summary">{course.description || "No description available yet."}</p>
+                      <div className="info-meta-list course-card-footer">
                         <span>{course.department || "Department TBD"}</span>
                         <span>{course.semester_offered || "Semester TBD"}</span>
                         <span>{course.instructor || "Instructor TBD"}</span>
@@ -457,6 +486,34 @@ const App = () => {
                     </article>
                   ))}
                 </div>
+                {compactCourses.length ? (
+                  <section className="catalog-list-section">
+                    <div className="section-heading compact-heading">
+                      <div>
+                        <p className="section-kicker">More Courses</p>
+                        <h3>Keep browsing without the clutter</h3>
+                      </div>
+                    </div>
+                    <div className="catalog-compact-list">
+                      {compactCourses.map((course) => (
+                        <article key={`compact-${course.id}`} className="catalog-compact-card">
+                          <div className="catalog-compact-main">
+                            <div className="catalog-compact-title">
+                              <span className="course-code-light">{course.code}</span>
+                              <strong>{course.title}</strong>
+                            </div>
+                            <p>{course.description || "No description available yet."}</p>
+                          </div>
+                          <div className="catalog-compact-meta">
+                            <span>{course.credits || "TBD"} credits</span>
+                            <span>{course.department || "Department TBD"}</span>
+                            <span>{course.semester_offered || "Semester TBD"}</span>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  </section>
+                ) : null}
               </section>
             </section>
           )}
@@ -470,7 +527,13 @@ const App = () => {
           )}
 
           {activeTab === "progress" && (
-            <DegreeProgressView user={user} degreeProgress={degreeProgress} />
+            <DegreeProgressView
+              user={user}
+              degreeProgress={degreeProgress}
+              onImportCompletedCourses={handleImportCompletedCourses}
+              onSaveCompletedCourses={handleSaveCompletedCourses}
+              saving={savingProfile}
+            />
           )}
 
           {activeTab === "profile" && (
@@ -482,6 +545,7 @@ const App = () => {
               onSave={handleSaveProfile}
               onSaveCompletedCourses={handleSaveCompletedCourses}
               onImportCompletedCourses={handleImportCompletedCourses}
+              onSignOut={handleSignOut}
               saving={savingProfile}
             />
           )}

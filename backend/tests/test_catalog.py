@@ -28,6 +28,86 @@ def test_course_search_filters_results(client, auth_headers):
     assert all("COSC" in (course["code"] + course["title"]) for course in response.json())
 
 
+def test_course_level_filter_returns_matching_hundreds_level_courses(client, auth_headers):
+    response = client.get("/catalog/courses?level=1", headers=auth_headers)
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload
+    assert all(course["level"] == "100" for course in payload)
+
+
+def test_course_major_filter_returns_only_modeled_major_core_courses(client, auth_headers):
+    response = client.get("/catalog/courses?major=Computer Science", headers=auth_headers)
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload
+    expected_codes = {
+        "COSC111",
+        "COSC241",
+        "COSC242",
+        "COSC310",
+        "COSC331",
+        "COSC332",
+        "COSC350",
+        "COSC490",
+    }
+    assert {course["code"] for course in payload} == expected_codes
+
+
+def test_course_major_and_level_filter_returns_only_matching_major_core_level_courses(client, auth_headers):
+    response = client.get("/catalog/courses?major=Computer Science&level=3", headers=auth_headers)
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload
+    assert {course["code"] for course in payload} == {"COSC310", "COSC331", "COSC332", "COSC350"}
+    assert all(course["level"] == "300" for course in payload)
+
+
+def test_course_major_filter_supports_program_aliases(client, auth_headers):
+    response = client.get("/catalog/courses?major=Information Science", headers=auth_headers)
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload
+    assert {course["code"] for course in payload} == {
+        "INSS201",
+        "INSS220",
+        "INSS310",
+        "INSS340",
+    }
+
+
+def test_course_major_filter_returns_non_empty_cloud_computing_family(client, auth_headers):
+    response = client.get("/catalog/courses?major=Cloud Computing", headers=auth_headers)
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload
+    assert all(course["code"].startswith("CLDC") for course in payload)
+
+
+def test_course_major_filter_returns_biology_family_courses(client, auth_headers):
+    response = client.get("/catalog/courses?major=Biology", headers=auth_headers)
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload
+    assert all(course["code"].startswith("BIOL") for course in payload)
+
+
+def test_course_major_filter_returns_nursing_family_courses(client, auth_headers):
+    response = client.get("/catalog/courses?major=Nursing", headers=auth_headers)
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload
+    assert all(course["code"].startswith("NURS") for course in payload)
+
+
+def test_course_major_filter_returns_psychology_family_courses(client, auth_headers):
+    response = client.get("/catalog/courses?major=Psychology", headers=auth_headers)
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload
+    assert all(course["code"].startswith("PSYC") for course in payload)
+
+
 def test_catalog_includes_launch_visible_departments_and_faculty(client, auth_headers):
     departments = client.get("/catalog/departments", headers=auth_headers)
     assert departments.status_code == 200

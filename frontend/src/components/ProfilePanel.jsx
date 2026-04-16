@@ -11,6 +11,7 @@ const ProfilePanel = ({
   onSave,
   onSaveCompletedCourses,
   onImportCompletedCourses,
+  onSignOut,
   saving,
 }) => {
   const [formData, setFormData] = useState({
@@ -225,6 +226,9 @@ const ProfilePanel = ({
           <p className="eyebrow">Student Profile</p>
           <h2>Keep the advisor grounded in your situation</h2>
         </div>
+        <button type="button" className="secondary-button" onClick={onSignOut}>
+          Log out
+        </button>
       </div>
 
       <div className="profile-summary">

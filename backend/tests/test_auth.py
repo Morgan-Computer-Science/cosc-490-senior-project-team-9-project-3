@@ -107,6 +107,29 @@ def test_import_preview_returns_ocr_metadata(client, auth_headers):
     assert "summary" in payload
 
 
+def test_import_preview_extracts_transcript_summary_fields(client, auth_headers):
+    response = client.post(
+        "/auth/me/completed-courses/import",
+        headers=auth_headers,
+        data={
+            "import_source": "transcript_text",
+            "source_text": (
+                "Morgan State transcript\n"
+                "Current GPA: 3.42\n"
+                "Earned Credits: 87\n"
+                "Academic Standing: Good Standing\n"
+                "Completed: COSC 111, MATH 141\n"
+            ),
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["transcript_summary"]["gpa"] == "3.42"
+    assert payload["transcript_summary"]["earned_credits"] == "87"
+    assert payload["transcript_summary"]["standing"] == "Good Standing"
+
+
 def test_degree_progress_supports_launch_visible_majors(client, auth_headers):
     for major in ("Cloud Computing", "Architecture"):
         updated = client.put("/auth/me", headers=auth_headers, json={"major": major})
@@ -247,3 +270,29 @@ def test_cs_import_preview_returns_cs_specific_audit_summary(client, auth_header
     payload = response.json()
     assert payload["cs_audit_summary"]["capstone_readiness"]["status"] == "not_ready"
     assert payload["cs_audit_summary"]["summary_lines"]
+
+
+def test_import_preview_recognizes_real_demo_transcript_codes_without_confirmation_noise(client, auth_headers):
+    response = client.post(
+        "/auth/me/completed-courses/import",
+        headers=auth_headers,
+        data={
+            "import_source": "websis_export",
+            "source_text": (
+                "Degree Audit for Computer Science\n"
+                "Current GPA: 3.090\n"
+                "Completed: BIOL 101, COSC 111, COSC 112, COSC 220, COSC 241, COSC 243, COSC 320, ENGL 101, ENGL 102, HIST 101, MATH 241, MATH 242, MATH 312\n"
+                "Planned / Current: COSC 470, COSC 459, COSC 490, MATH 331\n"
+                "Remaining / Needed: COSC 238, ORNS 106, PSYC 101\n"
+                "Additional Transcript Codes: COSC 001, COSC 251, COSC 281, COSC 323, COSC 338, COSC 349, COSC 351, COSC 352, COSC 354, COSC 385, COSC 458, COSC 460, COSC 472, "
+                "EASC 102, FIN 101, HIST 350, HLTH 203, HUMA 201, MATH 113, MATH 114, MHTC 103, MHTC 340, OF 120, ORLA 101U, ORNS 106D, RELG 305, SOCI 110, SOSC 101\n"
+            ),
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["transcript_summary"]["gpa"] == "3.090"
+    assert {"COSC470", "COSC459", "COSC490", "MATH331"}.issubset(set(payload["planned_course_codes"]))
+    assert {"COSC238", "ORNS106", "PSYC101"}.issubset(set(payload["remaining_course_codes"]))
+    assert payload["unknown_course_codes"] == []

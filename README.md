@@ -70,6 +70,13 @@ Morgan State AI Faculty Advisor is a full-stack student advising system built fo
 
 ## Run locally
 
+### Prerequisites
+
+- Git
+- Python 3.12 or 3.13 recommended
+- Node.js 18+ and npm
+- A Gemini API key for live AI responses
+
 ### 1. Clone the project
 
 #### Git Bash
@@ -84,6 +91,13 @@ cd cosc-490-senior-project-team-9-project-3
 ```powershell
 git clone https://github.com/Morgan-Computer-Science/cosc-490-senior-project-team-9-project-3.git
 cd .\cosc-490-senior-project-team-9-project-3
+```
+
+#### macOS / Linux
+
+```bash
+git clone https://github.com/Morgan-Computer-Science/cosc-490-senior-project-team-9-project-3.git
+cd cosc-490-senior-project-team-9-project-3
 ```
 
 ### 2. Set up the backend
@@ -106,13 +120,22 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
+#### macOS / Linux
+
+```bash
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
 Create `backend/.env` and add your Gemini key:
 
 ```env
 GEMINI_API_KEY=your_api_key_here
 ```
 
-Then start the backend:
+Then start the backend in its own terminal:
 
 #### Git Bash
 
@@ -130,7 +153,17 @@ cd .\backend
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
+#### macOS / Linux
+
+```bash
+cd backend
+source .venv/bin/activate
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
 ### 3. Set up the frontend
+
+Open a second terminal, then run:
 
 #### Git Bash
 
@@ -148,11 +181,27 @@ npm install
 npm run dev
 ```
 
+#### macOS / Linux
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
 ### 4. Open the app
 
 - Frontend: `http://127.0.0.1:5173`
 - Backend: `http://127.0.0.1:8000`
 - Health check: `http://127.0.0.1:8000/health`
+
+### Quick launch checklist for another computer
+
+1. Pull the latest `main`.
+2. Create `backend/.env` with a valid `GEMINI_API_KEY`.
+3. Start the backend in one terminal.
+4. Start the frontend in a second terminal.
+5. Open `http://127.0.0.1:5173`.
 
 ## Environment notes
 

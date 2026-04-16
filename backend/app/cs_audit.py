@@ -107,6 +107,14 @@ def _build_cs_capstone_readiness_with_in_progress(
     completed_codes: list[str],
     in_progress_codes: list[str],
 ) -> dict[str, object]:
+    normalized_in_progress = {canonicalize_course_code(code) for code in in_progress_codes}
+    if "COSC490" in normalized_in_progress:
+        return {
+            "status": "in_progress",
+            "missing_foundations": [],
+            "notes": "Your record shows COSC490 is already underway, so capstone appears to be in progress.",
+        }
+
     completed_ready = _build_cs_capstone_readiness(completed_codes)
     if completed_ready["status"] == "ready":
         return completed_ready
@@ -288,6 +296,10 @@ def interpret_computer_science_audit(
     elif capstone_readiness["status"] == "nearly_ready":
         summary_lines.append(
             "You appear close to capstone readiness, but the remaining core gaps still matter."
+        )
+    elif capstone_readiness["status"] == "in_progress":
+        summary_lines.append(
+            "Your record shows COSC490 is already underway, so capstone appears to be in progress."
         )
     elif capstone_readiness["status"] == "ready":
         summary_lines.append(

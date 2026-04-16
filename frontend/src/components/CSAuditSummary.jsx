@@ -23,6 +23,7 @@ const renderCourseGroup = (title, values = [], tone = "neutral") => {
 const readinessLabel = {
   ready: "Ready for COSC490",
   nearly_ready: "Nearly ready for COSC490",
+  in_progress: "COSC490 underway",
   not_ready: "Not ready for COSC490",
   unknown: "Capstone readiness unavailable",
 };

@@ -284,3 +284,62 @@ def test_chat_fallback_uses_uploaded_transcript_summary_for_gpa_questions(client
 
     assert response.status_code == 200
     assert response.json()["ai_message"]["content"] == "Your uploaded document shows a GPA of 3.42."
+
+
+def test_chat_uses_saved_import_snapshot_context_after_degree_progress_apply(client, auth_headers, monkeypatch):
+    captured_context = {}
+
+    def fake_generate_ai_reply(**kwargs):
+        captured_context["extra_context"] = kwargs["extra_context"]
+        return "Test advisor reply"
+
+    monkeypatch.setattr("app.chat.generate_ai_reply", fake_generate_ai_reply)
+
+    preview = client.post(
+        "/auth/me/completed-courses/import",
+        headers=auth_headers,
+        data={
+            "import_source": "websis_export",
+            "source_text": (
+                "Degree Audit for Computer Science\n"
+                "Current GPA: 3.090\n"
+                "Completed: BIOL 101, COSC 111, COSC 112, COSC 220, COSC 241, COSC 243, COSC 320, ENGL 101, ENGL 102, HIST 101, MATH 241, MATH 242, MATH 312\n"
+                "Planned / Current: COSC 470, COSC 459, COSC 490, MATH 331\n"
+                "Remaining / Needed: COSC 238, ORNS 106, PSYC 101\n"
+            ),
+        },
+    )
+    assert preview.status_code == 200
+    preview_payload = preview.json()
+
+    applied = client.put(
+        "/auth/me/completed-courses",
+        headers=auth_headers,
+        json={
+            "course_codes": preview_payload["completed_course_codes"],
+            "import_preview": preview_payload,
+        },
+    )
+    assert applied.status_code == 200
+
+    session_id = client.post("/chat/sessions", headers=auth_headers, json={"title": "Degree Works"}).json()["id"]
+    response = client.post(
+        f"/chat/sessions/{session_id}/messages",
+        headers=auth_headers,
+        data={"content": "What do you think of my degree works?"},
+    )
+
+    effective_done = {
+        *preview_payload["completed_course_codes"],
+        *preview_payload["planned_course_codes"],
+    }
+    total_recognized = {
+        *effective_done,
+        *preview_payload["remaining_course_codes"],
+    }
+    expected_completion = round((len(effective_done) / len(total_recognized)) * 100, 1)
+
+    assert response.status_code == 200
+    assert f"Completion: {expected_completion}%" in captured_context["extra_context"]
+    assert "COSC490 Readiness: in progress" in captured_context["extra_context"]
+    assert "GPA shown in the uploaded document: 3.090" in captured_context["extra_context"]

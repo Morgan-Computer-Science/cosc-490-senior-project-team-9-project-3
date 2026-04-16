@@ -799,6 +799,25 @@ textarea::placeholder {
   margin-top: 10px;
 }
 
+.message-bubble a {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.assistant-bubble a {
+  color: var(--msu-blue);
+}
+
+.assistant-bubble a:hover {
+  color: var(--msu-blue-hover);
+}
+
+.user-bubble a {
+  color: #ffffff;
+}
+
 .message-spacer {
   margin-top: 10px;
 }
@@ -1193,6 +1212,11 @@ textarea::placeholder {
 .cs-audit-pill.status-nearly_ready {
   color: #9a3412;
   background: #ffedd5;
+}
+
+.cs-audit-pill.status-in_progress {
+  color: #1d4ed8;
+  background: #dbeafe;
 }
 
 .cs-audit-pill.status-not_ready {

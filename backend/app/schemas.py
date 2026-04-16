@@ -36,6 +36,7 @@ class CompletedCourseOut(BaseModel):
 
 class CompletedCoursesUpdate(BaseModel):
     course_codes: list[str] = Field(default_factory=list)
+    import_preview: Optional[dict] = None
 
 
 class TranscriptSummary(BaseModel):

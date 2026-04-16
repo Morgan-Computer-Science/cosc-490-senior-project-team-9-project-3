@@ -21,6 +21,42 @@ const extractionMethodLabels = {
   none: "No extraction",
 };
 
+const normalizeCourseCode = (value) => (value || "").trim().toUpperCase();
+
+const buildImportDrivenSnapshot = (preview, fallbackDegreeProgress) => {
+  if (!preview) {
+    return null;
+  }
+
+  const completed = new Set((preview.completed_course_codes || []).map(normalizeCourseCode));
+  const inProgress = new Set((preview.planned_course_codes || []).map(normalizeCourseCode));
+  const remaining = new Set((preview.remaining_course_codes || []).map(normalizeCourseCode));
+
+  const effectiveDone = new Set([...completed, ...inProgress]);
+  const totalRecognized = new Set([...effectiveDone, ...remaining]);
+  const completionPercent = totalRecognized.size
+    ? Number(((effectiveDone.size / totalRecognized.size) * 100).toFixed(1))
+    : (fallbackDegreeProgress?.completion_percent ?? 0);
+
+  const blockedCourses = (preview.cs_audit_summary?.capstone_readiness?.status === "in_progress")
+    ? (fallbackDegreeProgress?.blocked_courses || []).filter((code) => normalizeCourseCode(code) !== "COSC490")
+    : (fallbackDegreeProgress?.blocked_courses || []);
+
+  const recommendedNext = Array.from(remaining).slice(0, 4);
+
+  return {
+    completion_percent: completionPercent,
+    tracked_courses: effectiveDone.size,
+    ready_next_count: recommendedNext.length,
+    blocked_count: blockedCourses.length,
+    recommended_next_courses: recommendedNext,
+    blocked_courses: blockedCourses,
+    remaining_courses: Array.from(remaining),
+    cs_audit_summary: preview.cs_audit_summary || fallbackDegreeProgress?.cs_audit_summary || null,
+    notes: fallbackDegreeProgress?.notes || null,
+  };
+};
+
 const importSourceOptions = {
   websis_export: {
     title: "Degree audit or WebSIS export",
@@ -50,13 +86,19 @@ const DegreeProgressView = ({
   const [importText, setImportText] = useState("");
   const [importFile, setImportFile] = useState(null);
   const [importPreview, setImportPreview] = useState(null);
+  const [appliedImportSnapshot, setAppliedImportSnapshot] = useState(null);
   const [applying, setApplying] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [error, setError] = useState("");
 
-  const recommended = degreeProgress?.recommended_next_courses ?? [];
-  const blocked = degreeProgress?.blocked_courses ?? [];
-  const remaining = degreeProgress?.remaining_courses ?? [];
+  const importDrivenSnapshot = useMemo(
+    () => buildImportDrivenSnapshot(importPreview || appliedImportSnapshot, degreeProgress),
+    [importPreview, appliedImportSnapshot, degreeProgress],
+  );
+  const effectiveDegreeProgress = importDrivenSnapshot || degreeProgress;
+  const recommended = effectiveDegreeProgress?.recommended_next_courses ?? [];
+  const blocked = effectiveDegreeProgress?.blocked_courses ?? [];
+  const remaining = effectiveDegreeProgress?.remaining_courses ?? [];
   const selectedSource = importSourceOptions[importSource] || importSourceOptions.websis_export;
 
   const completionSnapshot = useMemo(() => {
@@ -95,8 +137,9 @@ const DegreeProgressView = ({
     try {
       const existingCodes = (user?.completed_courses ?? []).map((course) => course.course_code);
       const merged = Array.from(new Set([...existingCodes, ...importPreview.completed_course_codes])).sort();
-      await onSaveCompletedCourses(merged);
+      await onSaveCompletedCourses(merged, importPreview);
       setFeedback(`Applied ${importPreview.completed_course_codes.length} completed courses to degree progress.`);
+      setAppliedImportSnapshot(importPreview);
       setImportPreview(null);
       setImportText("");
       setImportFile(null);
@@ -109,6 +152,7 @@ const DegreeProgressView = ({
 
   const handleClear = () => {
     setImportPreview(null);
+    setAppliedImportSnapshot(null);
     setImportText("");
     setImportFile(null);
     setFeedback("Import preview cleared.");
@@ -135,19 +179,19 @@ const DegreeProgressView = ({
         <div className="stat-grid">
           <article className="stat-card">
             <span className="stat-label">Completion</span>
-            <strong>{degreeProgress?.completion_percent ?? 0}%</strong>
+            <strong>{effectiveDegreeProgress?.completion_percent ?? 0}%</strong>
           </article>
           <article className="stat-card">
             <span className="stat-label">Ready Next</span>
-            <strong>{recommended.length}</strong>
+            <strong>{importDrivenSnapshot?.ready_next_count ?? recommended.length}</strong>
           </article>
           <article className="stat-card">
             <span className="stat-label">Blocked</span>
-            <strong>{blocked.length}</strong>
+            <strong>{importDrivenSnapshot?.blocked_count ?? blocked.length}</strong>
           </article>
           <article className="stat-card">
             <span className="stat-label">Tracked Courses</span>
-            <strong>{completionSnapshot.completedCount}</strong>
+            <strong>{importDrivenSnapshot?.tracked_courses ?? completionSnapshot.completedCount}</strong>
           </article>
         </div>
       </section>
@@ -343,8 +387,8 @@ const DegreeProgressView = ({
             <span key={code} className="tag-chip">{code}</span>
           )) : <p className="empty-note">No remaining requirements listed yet.</p>}
         </div>
-        {degreeProgress?.cs_audit_summary ? (
-          <CSAuditSummary summary={degreeProgress.cs_audit_summary} title="Your Computer Science standing" />
+        {effectiveDegreeProgress?.cs_audit_summary ? (
+          <CSAuditSummary summary={effectiveDegreeProgress.cs_audit_summary} title="Your Computer Science standing" />
         ) : null}
       </section>
     </section>

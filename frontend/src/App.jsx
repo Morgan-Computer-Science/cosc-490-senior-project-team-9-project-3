@@ -302,13 +302,13 @@ const App = () => {
     }
   };
 
-  const handleSaveCompletedCourses = async (courseCodes) => {
+  const handleSaveCompletedCourses = async (courseCodes, importPreview = null) => {
     if (!token || !user) {
       throw new Error("You are signed out.");
     }
     setSavingProfile(true);
     try {
-      const completedCourses = await updateCompletedCourses(token, courseCodes);
+      const completedCourses = await updateCompletedCourses(token, courseCodes, importPreview);
       setUser((current) => (current ? { ...current, completed_courses: completedCourses } : current));
       const nextSummary = await fetchDegreeProgress(token);
       setDegreeProgress(nextSummary);

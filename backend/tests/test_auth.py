@@ -268,7 +268,7 @@ def test_cs_import_preview_returns_cs_specific_audit_summary(client, auth_header
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["cs_audit_summary"]["capstone_readiness"]["status"] == "not_ready"
+    assert payload["cs_audit_summary"]["capstone_readiness"]["status"] == "in_progress"
     assert payload["cs_audit_summary"]["summary_lines"]
 
 
@@ -296,3 +296,51 @@ def test_import_preview_recognizes_real_demo_transcript_codes_without_confirmati
     assert {"COSC470", "COSC459", "COSC490", "MATH331"}.issubset(set(payload["planned_course_codes"]))
     assert {"COSC238", "ORNS106", "PSYC101"}.issubset(set(payload["remaining_course_codes"]))
     assert payload["unknown_course_codes"] == []
+
+
+def test_applied_import_snapshot_persists_into_degree_progress(client, auth_headers):
+    preview = client.post(
+        "/auth/me/completed-courses/import",
+        headers=auth_headers,
+        data={
+            "import_source": "websis_export",
+            "source_text": (
+                "Degree Audit for Computer Science\n"
+                "Current GPA: 3.090\n"
+                "Completed: BIOL 101, COSC 111, COSC 112, COSC 220, COSC 241, COSC 243, COSC 320, ENGL 101, ENGL 102, HIST 101, MATH 241, MATH 242, MATH 312\n"
+                "Planned / Current: COSC 470, COSC 459, COSC 490, MATH 331\n"
+                "Remaining / Needed: COSC 238, ORNS 106, PSYC 101\n"
+            ),
+        },
+    )
+    assert preview.status_code == 200
+    preview_payload = preview.json()
+
+    applied = client.put(
+        "/auth/me/completed-courses",
+        headers=auth_headers,
+        json={
+            "course_codes": preview_payload["completed_course_codes"],
+            "import_preview": preview_payload,
+        },
+    )
+    assert applied.status_code == 200
+
+    progress = client.get("/auth/me/degree-progress", headers=auth_headers)
+    assert progress.status_code == 200
+    payload = progress.json()
+
+    effective_done = {
+        *preview_payload["completed_course_codes"],
+        *preview_payload["planned_course_codes"],
+    }
+    total_recognized = {
+        *effective_done,
+        *preview_payload["remaining_course_codes"],
+    }
+    expected_completion = round((len(effective_done) / len(total_recognized)) * 100, 1)
+
+    assert payload["completion_percent"] == expected_completion
+    assert payload["capstone_readiness"]["status"] == "in_progress"
+    assert "COSC490" in payload["completed_courses"]
+    assert payload["cs_audit_summary"]["capstone_readiness"]["status"] == "in_progress"

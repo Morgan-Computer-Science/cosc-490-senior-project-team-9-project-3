@@ -16,6 +16,18 @@ def test_interpret_cs_audit_groups_foundations_core_and_capstone():
     assert "COSC310" in summary["capstone_readiness"]["missing_foundations"]
 
 
+def test_interpret_cs_audit_marks_capstone_as_underway_when_cosc490_is_in_progress():
+    summary = interpret_computer_science_audit(
+        completed_codes=["COSC111", "COSC112", "COSC220", "COSC241", "COSC243", "COSC320", "MATH141", "MATH241", "MATH242"],
+        in_progress_codes=["COSC459", "COSC470", "COSC490"],
+        remaining_codes=["COSC310", "COSC331", "COSC332", "COSC350", "STAT302"],
+        planning_interest="I am already in capstone.",
+    )
+
+    assert summary["capstone_readiness"]["status"] == "in_progress"
+    assert summary["capstone_readiness"]["missing_foundations"] == []
+
+
 def test_interpret_cs_audit_infers_ai_direction_from_upper_level_work():
     summary = interpret_computer_science_audit(
         completed_codes=["COSC111", "COSC112", "COSC241", "COSC242", "MATH141", "MATH241", "STAT302"],

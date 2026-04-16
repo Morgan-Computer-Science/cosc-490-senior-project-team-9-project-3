@@ -61,14 +61,14 @@ export async function updateCurrentUser(token, updates) {
   return parseResponse(response, "Failed to update profile.");
 }
 
-export async function updateCompletedCourses(token, courseCodes) {
+export async function updateCompletedCourses(token, courseCodes, importPreview = null) {
   const response = await fetch(`${API_BASE_URL}/auth/me/completed-courses`, {
     method: "PUT",
     headers: {
       ...authHeaders(token),
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ course_codes: courseCodes }),
+    body: JSON.stringify({ course_codes: courseCodes, import_preview: importPreview }),
   });
 
   return parseResponse(response, "Failed to update completed courses.");

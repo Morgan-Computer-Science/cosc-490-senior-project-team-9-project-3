@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from . import models, schemas, security
 from .attachments import extract_attachment_context, extract_transcript_summary
 from .db import get_db
+from .import_snapshot import load_saved_import_preview, merge_degree_progress_with_import_preview, save_import_preview
 from .rag import (
     canonicalize_course_code,
     extract_all_course_codes,
@@ -308,6 +309,10 @@ def update_completed_courses(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
+    import_preview = None
+    if payload.import_preview:
+        import_preview = schemas.CompletedCoursesImportPreview.model_validate(payload.import_preview)
+
     normalized_codes = sorted(
         {
             canonicalize_course_code(course_code)
@@ -328,6 +333,7 @@ def update_completed_courses(
             )
         )
 
+    save_import_preview(db, current_user, import_preview)
     db.commit()
     db.refresh(current_user)
     return current_user.completed_courses
@@ -454,7 +460,10 @@ def get_current_user_degree_progress(
     current_user: models.User = Depends(get_current_user),
 ):
     completed_codes = [course.course_code for course in current_user.completed_courses]
+    saved_import_preview = load_saved_import_preview(current_user)
+    summary = get_degree_progress(current_user.major, completed_codes)
+    summary = merge_degree_progress_with_import_preview(summary, saved_import_preview)
     return schemas.DegreeProgressSummary(
-        **get_degree_progress(current_user.major, completed_codes)
+        **summary
     )
 

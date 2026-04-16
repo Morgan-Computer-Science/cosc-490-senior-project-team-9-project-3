@@ -14,12 +14,65 @@ const starterPrompts = [
   "Find the right advising office",
 ];
 
+const LINK_PATTERN = /(https?:\/\/[^\s]+|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/gi;
+
 const formatMessageContent = (content) =>
   (content || "")
     .replace(/\*\*(.*?)\*\*/g, "$1")
     .replace(/^\s*[\*-]\s+/gm, "")
     .replace(/`/g, "")
     .trim();
+
+const splitTrailingPunctuation = (value) => {
+  let clean = value;
+  let trailing = "";
+  while (/[),.;!?]$/.test(clean)) {
+    trailing = `${clean.slice(-1)}${trailing}`;
+    clean = clean.slice(0, -1);
+  }
+  return { clean, trailing };
+};
+
+const renderLinkedLine = (line, keyPrefix) => {
+  const parts = [];
+  let lastIndex = 0;
+  let matchIndex = 0;
+
+  for (const match of line.matchAll(LINK_PATTERN)) {
+    const token = match[0];
+    const start = match.index ?? 0;
+    if (start > lastIndex) {
+      parts.push(line.slice(lastIndex, start));
+    }
+
+    const { clean, trailing } = splitTrailingPunctuation(token);
+    const isEmail = clean.includes("@") && !clean.startsWith("http");
+    const href = isEmail ? `mailto:${clean}` : clean;
+
+    parts.push(
+      <a
+        key={`${keyPrefix}-link-${matchIndex}`}
+        href={href}
+        {...(isEmail ? {} : { target: "_blank", rel: "noreferrer" })}
+      >
+        {clean}
+      </a>,
+    );
+
+    if (trailing) {
+      parts.push(trailing);
+    }
+
+    lastIndex = start + token.length;
+    matchIndex += 1;
+  }
+
+  if (lastIndex < line.length) {
+    parts.push(line.slice(lastIndex));
+  }
+
+  return <p key={keyPrefix}>{parts.length ? parts : line}</p>;
+};
 
 const inferAttachmentPreview = (file, draftQuestion = "") => {
   if (!file) {
@@ -372,9 +425,10 @@ const Chatbot = ({ token, user }) => {
                     {formatMessageTime(message.created_at) ? <span>{formatMessageTime(message.created_at)}</span> : null}
                   </div>
                   <div className={`message-bubble ${isAssistant ? "assistant-bubble" : "user-bubble"}`}>
-                    {formatMessageContent(message.content).split("\n").filter(Boolean).map((line) => (
-                      <p key={`${message.id}-${line}`}>{line}</p>
-                    ))}
+                    {formatMessageContent(message.content)
+                      .split("\n")
+                      .filter(Boolean)
+                      .map((line, index) => renderLinkedLine(line, `${message.id}-${index}`))}
                     {isAssistant && speechSupported ? (
                       <button
                         type="button"

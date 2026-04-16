@@ -17,6 +17,12 @@ from .attachments import (
 from .ai_client import generate_ai_reply
 from .auth import get_current_user
 from .db import get_db
+from .import_snapshot import (
+    answer_from_saved_import_summary,
+    build_saved_import_summary_context,
+    load_saved_import_preview,
+    merge_degree_progress_with_import_preview,
+)
 from .rag import (
     RetrievedDocument,
     compare_degree_audit,
@@ -84,12 +90,14 @@ def _build_degree_progress_context(
     user: models.User,
     effective_completed_codes: list[str] | None = None,
     planning_interest: str | None = None,
+    saved_import_preview=None,
 ) -> str:
     summary = get_degree_progress(
         user.major,
         effective_completed_codes or [course.course_code for course in user.completed_courses],
         planning_interest=planning_interest,
     )
+    summary = merge_degree_progress_with_import_preview(summary, saved_import_preview)
     if not summary["required_courses"]:
         return ""
 
@@ -174,12 +182,14 @@ def _build_advisor_insights(
     attachment_summary: str | None = None,
     effective_completed_codes: list[str] | None = None,
     planning_interest: str | None = None,
+    saved_import_preview=None,
 ) -> schemas.AdvisorInsights:
     degree_progress = get_degree_progress(
         user.major,
         effective_completed_codes or [course.course_code for course in user.completed_courses],
         planning_interest=planning_interest,
     )
+    degree_progress = merge_degree_progress_with_import_preview(degree_progress, saved_import_preview)
     contact_candidates: list[str] = []
     source_titles: list[str] = []
     for doc in retrieved_docs[:4]:
@@ -392,9 +402,9 @@ def _build_attachment_summary_context(attachment_context) -> str:
     return "\n".join(lines)
 
 
-def _answer_from_attachment_summary(question: str, attachment_context) -> str | None:
+def _answer_from_attachment_summary(question: str, attachment_context, saved_import_preview=None) -> str | None:
     if not attachment_context:
-        return None
+        return answer_from_saved_import_summary(question, saved_import_preview)
 
     lowered = (question or "").lower()
     summary = attachment_context.transcript_summary
@@ -405,7 +415,7 @@ def _answer_from_attachment_summary(question: str, attachment_context) -> str | 
             return f"Your uploaded document shows {summary.earned_credits} earned credits."
     if "standing" in lowered and summary.standing:
         return f"Your uploaded document lists your standing as {summary.standing}."
-    return None
+    return answer_from_saved_import_summary(question, saved_import_preview)
 
 
 def _small_talk_reply(question: str, user: models.User, attachment_context=None) -> str | None:
@@ -441,8 +451,9 @@ def _fallback_advising_reply(
     documents: List[RetrievedDocument],
     student_state: dict[str, object],
     attachment_context=None,
+    saved_import_preview=None,
 ) -> str:
-    summary_answer = _answer_from_attachment_summary(question, attachment_context)
+    summary_answer = _answer_from_attachment_summary(question, attachment_context, saved_import_preview)
     if summary_answer:
         return summary_answer
 
@@ -653,6 +664,7 @@ async def send_message(
     attachment_course_context, attachment_course_docs = _build_attachment_course_context(
         attachment_context
     )
+    saved_import_preview = load_saved_import_preview(current_user)
     attachment_signals = (
         attachment_context.signals if attachment_context else DocumentCourseSignals()
     )
@@ -677,6 +689,7 @@ async def send_message(
         current_user,
         effective_completed_codes,
         planning_interest=clean_content,
+        saved_import_preview=saved_import_preview,
     )
     student_state_context, student_state = _build_student_state_context(clean_content, current_user)
     advisor_insights = _build_advisor_insights(
@@ -686,7 +699,9 @@ async def send_message(
         attachment_context.summary if attachment_context else None,
         effective_completed_codes,
         clean_content,
+        saved_import_preview=saved_import_preview,
     )
+    saved_import_summary_context = build_saved_import_summary_context(saved_import_preview)
     extra_context = "\n\n".join(
         part
         for part in [
@@ -697,6 +712,7 @@ async def send_message(
             attachment_course_context,
             attachment_signal_context,
             attachment_summary_context,
+            saved_import_summary_context,
             retrieved_context,
         ]
         if part
@@ -719,6 +735,7 @@ async def send_message(
             combined_docs,
             student_state,
             attachment_context,
+            saved_import_preview,
         )
     except Exception as exc:
         logger.exception("AI error in generate_ai_reply: %r", exc)
@@ -728,6 +745,7 @@ async def send_message(
             combined_docs,
             student_state,
             attachment_context,
+            saved_import_preview,
         )
     finally:
         if attachment_context and attachment_context.temp_path:

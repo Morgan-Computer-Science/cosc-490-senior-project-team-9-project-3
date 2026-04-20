@@ -25,6 +25,7 @@ from .import_snapshot import (
 )
 from .rag import (
     RetrievedDocument,
+    classify_question_intent,
     compare_degree_audit,
     evaluate_course_plan,
     format_retrieved_context,
@@ -457,7 +458,28 @@ def _fallback_advising_reply(
     if summary_answer:
         return summary_answer
 
+    intent = classify_question_intent(question)
     relevant = documents[:3]
+    if intent in {"people_contact_leadership", "office_resource", "organization_team"} and relevant:
+        opening_map = {
+            "people_contact_leadership": "Here is the closest Morgan leadership or contact path I found.",
+            "office_resource": "Here is the best Morgan office path I found for that question.",
+            "organization_team": "Here is the closest Morgan organization or support path I found.",
+        }
+        lines = [opening_map[intent]]
+        for doc in relevant[:2]:
+            line = f"- {doc.title}"
+            if doc.contact:
+                line += f" | Contact: {doc.contact}"
+            lines.append(line)
+            lines.append(f"  {doc.content}")
+
+        if intent == "organization_team":
+            lines.append(
+                "If you need the current public lead for a team or organization, start with the contact path above and ask for the latest advisor or coordinator."
+            )
+        return "\n".join(lines)
+
     opening = (
         f"Live AI is unavailable right now, so here is a grounded Morgan State answer for a {user.year or 'current'} {user.major or 'student'}."
     )

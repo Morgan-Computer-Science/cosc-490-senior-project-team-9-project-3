@@ -343,3 +343,43 @@ def test_chat_uses_saved_import_snapshot_context_after_degree_progress_apply(cli
     assert f"Completion: {expected_completion}%" in captured_context["extra_context"]
     assert "COSC490 Readiness: in progress" in captured_context["extra_context"]
     assert "GPA shown in the uploaded document: 3.090" in captured_context["extra_context"]
+
+
+def test_chat_fallback_for_leadership_query_prefers_entity_context(client, auth_headers, monkeypatch):
+    monkeypatch.setattr(
+        "app.chat.generate_ai_reply",
+        lambda **_: (_ for _ in ()).throw(RuntimeError("Gemini unavailable")),
+    )
+    session_id = client.post("/chat/sessions", headers=auth_headers, json={"title": "Leadership"}).json()["id"]
+
+    response = client.post(
+        f"/chat/sessions/{session_id}/messages",
+        headers=auth_headers,
+        data={"content": "Who is the dean of Computer Science at Morgan State University?"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()["ai_message"]["content"]
+    assert "Paul Tchounwou" in body
+    assert "Dean" in body
+    assert "Most relevant retrieved information" not in body
+
+
+def test_chat_fallback_for_office_query_prefers_support_contact_language(client, auth_headers, monkeypatch):
+    monkeypatch.setattr(
+        "app.chat.generate_ai_reply",
+        lambda **_: (_ for _ in ()).throw(RuntimeError("Gemini unavailable")),
+    )
+    session_id = client.post("/chat/sessions", headers=auth_headers, json={"title": "Office"}).json()["id"]
+
+    response = client.post(
+        f"/chat/sessions/{session_id}/messages",
+        headers=auth_headers,
+        data={"content": "What office handles transfer advising?"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()["ai_message"]["content"]
+    assert "Transfer Evaluation Office" in body
+    assert "transfercredit@morgan.edu" in body
+    assert "Most relevant retrieved information" not in body

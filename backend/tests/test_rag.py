@@ -1,6 +1,7 @@
 import pytest
 
 from app.rag import (
+    classify_question_intent,
     extract_attachment_course_signals,
     get_degree_progress,
     load_department_rows,
@@ -62,6 +63,53 @@ def test_retrieval_has_major_contact_grounding(question, expected_text):
     docs = retrieve_relevant_documents(question, top_k=6)
     joined = "\n".join(f"{doc.title} {doc.content}" for doc in docs)
     assert expected_text in joined
+
+
+def test_entity_queries_have_structured_morgan_grounding():
+    docs = retrieve_relevant_documents(
+        "Who is the dean of Computer Science at Morgan State University?",
+        user_major="Nursing",
+        top_k=6,
+    )
+
+    joined = "\n".join(f"{doc.title} {doc.content}" for doc in docs)
+    assert "Dean" in joined
+    assert "Computer Science" in joined
+
+
+def test_office_queries_prefer_support_offices():
+    docs = retrieve_relevant_documents(
+        "What office handles transfer advising?",
+        top_k=6,
+    )
+
+    assert any(doc.source_type in {"office", "support_resource"} for doc in docs)
+
+
+def test_organization_queries_return_supported_team_or_contact_context():
+    docs = retrieve_relevant_documents(
+        "Who is in charge of the robotics team at Morgan?",
+        top_k=6,
+    )
+
+    assert docs
+    assert any(doc.source_type in {"organization", "faculty", "department"} for doc in docs[:4])
+
+
+@pytest.mark.parametrize(
+    "question,expected_intent",
+    [
+        ("What should I take next?", "degree_planning"),
+        ("What do I need before COSC242?", "course_prerequisite"),
+        ("Who is the dean of Computer Science?", "people_contact_leadership"),
+        ("What office handles transfer advising?", "office_resource"),
+        ("Who runs the robotics team?", "organization_team"),
+        ("What is my GPA?", "transcript_import"),
+        ("How are you?", "small_talk"),
+    ],
+)
+def test_classify_question_intent(question, expected_intent):
+    assert classify_question_intent(question) == expected_intent
 
 
 def test_retrieve_relevant_documents_supports_cloud_computing_queries():

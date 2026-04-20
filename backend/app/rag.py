@@ -12,6 +12,8 @@ TECH_HEALTH_PATHWAYS_PATH = DATA_DIR / "tech_health_pathways.csv"
 CS_PATHWAYS_PATH = DATA_DIR / "cs_pathways.csv"
 CS_CAPSTONE_RULES_PATH = DATA_DIR / "cs_capstone_rules.csv"
 CS_FOCUS_AREAS_PATH = DATA_DIR / "cs_focus_areas.csv"
+OFFICES_PATH = DATA_DIR / "offices.csv"
+ORGANIZATIONS_PATH = DATA_DIR / "organizations.csv"
 STOPWORDS = {
     "a",
     "an",
@@ -30,6 +32,69 @@ STOPWORDS = {
     "who",
 }
 SUPPORT_TOKENS = {"stress", "anxiety", "help", "support", "counseling", "mental", "overwhelmed"}
+GREETING_PATTERNS = (
+    "hello",
+    "hi",
+    "hey",
+    "how are you",
+    "how's it going",
+    "whats up",
+    "what's up",
+    "good morning",
+    "good afternoon",
+    "good evening",
+    "thanks",
+    "thank you",
+)
+LEADERSHIP_TOKENS = {"dean", "chair", "director", "head", "lead", "leader", "runs", "run", "in charge"}
+OFFICE_TOKENS = {
+    "office",
+    "contact",
+    "advising",
+    "advisor",
+    "registrar",
+    "transfer",
+    "support",
+    "tutoring",
+    "career",
+    "financial",
+    "aid",
+    "counseling",
+    "resource",
+}
+ORG_TOKENS = {
+    "organization",
+    "club",
+    "team",
+    "robotics",
+    "society",
+    "group",
+    "chapter",
+}
+TRANSCRIPT_TOKENS = {
+    "gpa",
+    "credits",
+    "earned",
+    "standing",
+    "transcript",
+    "degreeworks",
+    "degree",
+    "audit",
+    "import",
+    "pdf",
+}
+COURSE_PREREQ_TOKENS = {"prerequisite", "prereq", "before", "requires", "need before"}
+DEGREE_PLANNING_TOKENS = {
+    "take next",
+    "next semester",
+    "schedule",
+    "plan",
+    "degree requirements",
+    "graduate",
+    "remaining",
+    "capstone",
+    "ready",
+}
 COURSE_CODE_PATTERN = re.compile(r"\b([A-Za-z]{2,5})[\s-]?(\d{3}[A-Za-z]?)\b")
 GRADE_TOKEN_PATTERN = re.compile(r"\b(?:A|A-|A\+|B|B-|B\+|C|C-|C\+|D|D-|D\+|P|PS|CR|S)\b")
 
@@ -63,6 +128,30 @@ def _tokenize(text: str) -> set[str]:
 
 def _normalize(value: Optional[str]) -> str:
     return (value or "").strip()
+
+
+def classify_question_intent(question: str) -> str:
+    lowered = _normalize(question).lower()
+    if not lowered:
+        return "degree_planning"
+
+    if any(pattern in lowered for pattern in GREETING_PATTERNS):
+        return "small_talk"
+    if any(token in lowered for token in TRANSCRIPT_TOKENS):
+        return "transcript_import"
+    if any(token in lowered for token in ORG_TOKENS):
+        return "organization_team"
+    if any(token in lowered for token in OFFICE_TOKENS):
+        return "office_resource"
+    if any(token in lowered for token in LEADERSHIP_TOKENS) or any(
+        phrase in lowered for phrase in ("who is", "who should i contact", "who do i contact")
+    ):
+        return "people_contact_leadership"
+    if any(token in lowered for token in COURSE_PREREQ_TOKENS):
+        return "course_prerequisite"
+    if any(token in lowered for token in DEGREE_PLANNING_TOKENS):
+        return "degree_planning"
+    return "degree_planning"
 
 
 def _course_documents() -> List[RetrievedDocument]:
@@ -593,6 +682,24 @@ def load_support_resource_rows() -> tuple[dict[str, str], ...]:
 
 
 @lru_cache(maxsize=1)
+def load_office_rows() -> tuple[dict[str, str], ...]:
+    if not OFFICES_PATH.exists():
+        return tuple()
+
+    with OFFICES_PATH.open(newline="", encoding="utf-8") as file:
+        return tuple(csv.DictReader(file))
+
+
+@lru_cache(maxsize=1)
+def load_organization_rows() -> tuple[dict[str, str], ...]:
+    if not ORGANIZATIONS_PATH.exists():
+        return tuple()
+
+    with ORGANIZATIONS_PATH.open(newline="", encoding="utf-8") as file:
+        return tuple(csv.DictReader(file))
+
+
+@lru_cache(maxsize=1)
 def load_prerequisite_rows() -> tuple[dict[str, str], ...]:
     path = DATA_DIR / "prerequisites.csv"
     if not path.exists():
@@ -695,6 +802,49 @@ def _support_documents() -> List[RetrievedDocument]:
     return docs
 
 
+def _office_documents() -> List[RetrievedDocument]:
+    docs = []
+    for row in load_office_rows():
+        docs.append(
+            RetrievedDocument(
+                source_type="office",
+                title=f"{_normalize(row.get('office'))} ({_normalize(row.get('category'))})",
+                content=(
+                    f"Email: {_normalize(row.get('email'))}. "
+                    f"Phone: {_normalize(row.get('phone'))}. "
+                    f"Location: {_normalize(row.get('location'))}. "
+                    f"Overview: {_normalize(row.get('overview'))}. "
+                    f"Source URL: {_normalize(row.get('source_url'))}."
+                ),
+                contact=_normalize(row.get("email")) or _normalize(row.get("phone")) or None,
+            )
+        )
+    return docs
+
+
+def _organization_documents() -> List[RetrievedDocument]:
+    docs = []
+    for row in load_organization_rows():
+        department = _normalize(row.get("owner_department"))
+        docs.append(
+            RetrievedDocument(
+                source_type="organization",
+                title=f"{_normalize(row.get('name'))} ({_normalize(row.get('category'))})",
+                content=(
+                    f"Owner Department: {department}. "
+                    f"Email: {_normalize(row.get('contact_email'))}. "
+                    f"Phone: {_normalize(row.get('contact_phone'))}. "
+                    f"Overview: {_normalize(row.get('overview'))}. "
+                    f"Source URL: {_normalize(row.get('url'))}."
+                ),
+                department=department or None,
+                major=department or None,
+                contact=_normalize(row.get("contact_email")) or _normalize(row.get("contact_phone")) or None,
+            )
+        )
+    return docs
+
+
 @lru_cache(maxsize=1)
 def load_knowledge_documents() -> tuple[RetrievedDocument, ...]:
     docs = [
@@ -704,11 +854,19 @@ def load_knowledge_documents() -> tuple[RetrievedDocument, ...]:
         *_faculty_documents(),
         *_degree_documents(),
         *_support_documents(),
+        *_office_documents(),
+        *_organization_documents(),
     ]
     return tuple(docs)
 
 
-def _score_document(query_tokens: set[str], query: str, user_major: Optional[str], doc: RetrievedDocument) -> float:
+def _score_document(
+    query_tokens: set[str],
+    query: str,
+    user_major: Optional[str],
+    doc: RetrievedDocument,
+    intent: str,
+) -> float:
     haystack = f"{doc.title} {doc.content}".lower()
     doc_tokens = _tokenize(haystack)
     overlap = query_tokens & doc_tokens
@@ -733,7 +891,10 @@ def _score_document(query_tokens: set[str], query: str, user_major: Optional[str
     if not explicit_other_unit_query:
         score += float(len(major_overlap)) * 1.5
     if exact_major_match:
-        score += 2.0 if explicit_other_unit_query else 4.0
+        if intent == "people_contact_leadership":
+            score += 1.0
+        else:
+            score += 2.0 if explicit_other_unit_query else 4.0
 
     if lowered_query in haystack:
         score += 5.0
@@ -741,7 +902,7 @@ def _score_document(query_tokens: set[str], query: str, user_major: Optional[str
     if explicit_doc_match:
         score += 8.0
 
-    if user_major and not explicit_other_unit_query:
+    if user_major and not explicit_other_unit_query and intent != "people_contact_leadership":
         user_major_lower = user_major.lower()
         if doc.major and user_major_lower in doc.major.lower():
             score += 3.0
@@ -758,7 +919,7 @@ def _score_document(query_tokens: set[str], query: str, user_major: Optional[str
             if any(token in leadership_title for token in {"dean", "chair", "director", "head"}):
                 score += 6.0
             if "dean" in query_tokens and "dean" in leadership_title:
-                score += 5.0
+                score += 11.0
             if "chair" in query_tokens and "chair" in leadership_title:
                 score += 5.0
             if "director" in query_tokens and "director" in leadership_title:
@@ -769,8 +930,38 @@ def _score_document(query_tokens: set[str], query: str, user_major: Optional[str
         score += 2.5
     if doc.source_type == "support_resource" and any(token in query_tokens for token in SUPPORT_TOKENS):
         score += 8.0
+    if doc.source_type == "office" and any(token in query_tokens for token in OFFICE_TOKENS):
+        score += 8.0
+    if doc.source_type == "organization" and any(token in query_tokens for token in ORG_TOKENS):
+        score += 8.0
     if doc.source_type == "course" and any(token in query_tokens for token in {"course", "class", "take", "schedule", "prerequisite"}):
         score += 1.5
+
+    if intent == "people_contact_leadership":
+        if doc.source_type == "faculty":
+            score += 7.0
+        elif doc.source_type == "department":
+            score += 4.0
+        elif doc.source_type == "program":
+            score += 2.0
+    elif intent == "office_resource":
+        if doc.source_type in {"office", "support_resource"}:
+            score += 7.0
+        elif doc.source_type == "department":
+            score += 2.0
+    elif intent == "organization_team":
+        if doc.source_type == "organization":
+            score += 8.0
+        elif doc.source_type in {"faculty", "department"}:
+            score += 3.0
+    elif intent == "course_prerequisite":
+        if doc.source_type == "course":
+            score += 5.0
+        elif doc.source_type == "degree_requirements":
+            score += 1.5
+    elif intent == "transcript_import":
+        if doc.source_type in {"degree_requirements", "course", "department"}:
+            score += 1.0
 
     return score
 
@@ -784,9 +975,10 @@ def retrieve_relevant_documents(
     if not query_tokens:
         return []
 
+    intent = classify_question_intent(query)
     scored_docs = []
     for doc in load_knowledge_documents():
-        score = _score_document(query_tokens, query, user_major, doc)
+        score = _score_document(query_tokens, query, user_major, doc, intent)
         if score > 0:
             scored_docs.append(
                 RetrievedDocument(

@@ -43,6 +43,8 @@ ECON401,ECON301; STAT302,Econometrics is strongest after intermediate economics 
 ECON410,ECON301; ECON302,Senior economics seminar should follow the intermediate theory sequence.
 MKTG331,MKTG210,Marketing management should follow principles of marketing.
 FINA300,ACCT201; ECON201,Finance is stronger after accounting and economics.
+FINA320,FINA300,Investment analysis should follow the introductory corporate finance foundation.
+FINA410,FINA300; ECON202,Financial markets study is strongest after corporate finance and macroeconomic context.
 MGMT330,MGMT220,Organizational behavior should follow the lower-division management core.
 MGMT410,MGMT330; ACCT201; ECON201,Strategic management should follow the core business progression.
 ENTR300,MGMT220; MKTG210,Entrepreneurship and venture creation should follow foundational management and marketing.
@@ -114,3 +116,15 @@ PSYC315,PSYC101,Abnormal psychology follows introductory psychology.
 PSYC330,PSYC101,Cognitive psychology should build on the introductory survey course.
 MGMT330,MGMT220,Organizational behavior builds on lower-division management preparation.
 MGMT410,MGMT330; ACCT202,Strategic management is strongest after management and accounting foundations.
+MKTG350,MKTG210,Consumer behavior should follow the introductory marketing foundation.
+MKTG420,MKTG331; STAT302,Marketing research should follow marketing management and quantitative analysis preparation.
+CRJU210,CRJU101,Criminology follows introductory criminal justice foundations.
+CRJU305,CRJU210,Juvenile justice should follow the introductory criminal justice and criminology sequence.
+CRJU308,CRJU210,Criminal justice policy and society should follow the criminology foundation.
+CRJU331,CRJU305,Community-based corrections is stronger after earlier criminal justice systems study.
+CRJU408,CRJU308,Research methods in criminal justice should follow policy and systems grounding.
+EDUC220,EDUC200,Child development for teachers follows the education foundation course.
+EDUC310,EDUC200,Educational psychology should follow foundations of education.
+EDUC320,EDUC220; EDUC310,Reading methods should follow learner-development and educational-psychology preparation.
+EDUC330,EDUC310,Elementary curriculum and instruction should follow educational psychology.
+EDUC410,EDUC320; EDUC330,Internship seminar should follow the core elementary methods sequence.

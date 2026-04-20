@@ -1,4 +1,67 @@
-from app.rag import extract_attachment_course_signals, get_degree_progress, retrieve_relevant_documents
+import pytest
+
+from app.rag import (
+    extract_attachment_course_signals,
+    get_degree_progress,
+    load_department_rows,
+    load_program_rows,
+    retrieve_relevant_documents,
+)
+
+
+def test_priority_programs_have_clean_program_and_department_grounding():
+    rows = load_program_rows()
+    expected_programs = {
+        "Elementary Education",
+        "Accounting",
+        "Finance",
+        "Business Administration",
+        "Marketing",
+        "Biology",
+        "Psychology",
+        "Nursing",
+        "Computer Science",
+        "Information Science",
+        "Cloud Computing",
+    }
+    canonical_names = {row["canonical_major"] for row in rows}
+    assert expected_programs.issubset(canonical_names)
+
+    department_rows = load_department_rows()
+    assert any("Criminal Justice" in row.get("major", "") for row in department_rows)
+
+
+@pytest.mark.parametrize(
+    "major_name,expected_required_codes",
+    [
+        ("Criminal Justice", {"CRJU101"}),
+        ("Elementary Education", {"EDUC320"}),
+        ("Accounting", {"ACCT201", "ACCT202"}),
+        ("Finance", {"FINA300"}),
+        ("Biology", {"BIOL101"}),
+        ("Psychology", {"PSYC101"}),
+        ("Nursing", {"NURS101"}),
+    ],
+)
+def test_degree_progress_has_major_specific_remaining_courses(major_name, expected_required_codes):
+    progress = get_degree_progress(major_name, [])
+    remaining = set(progress["remaining_courses"])
+    assert expected_required_codes & remaining
+
+
+@pytest.mark.parametrize(
+    "question,expected_text",
+    [
+        ("Who should I contact about Nursing?", "nursingdept@morgan.edu"),
+        ("What department handles Biology?", "Department of Biology"),
+        ("Who should I contact about Criminal Justice?", "443-885-3518"),
+        ("What department is Elementary Education in?", "Teacher Education and Professional Development"),
+    ],
+)
+def test_retrieval_has_major_contact_grounding(question, expected_text):
+    docs = retrieve_relevant_documents(question, top_k=6)
+    joined = "\n".join(f"{doc.title} {doc.content}" for doc in docs)
+    assert expected_text in joined
 
 
 def test_retrieve_relevant_documents_supports_cloud_computing_queries():
@@ -239,7 +302,7 @@ def test_retrieve_relevant_documents_prefers_information_science_docs_for_short_
         user_major="Information Science",
     )
 
-    assert any("Information Systems" in doc.title for doc in docs[:3])
+    assert any("Information Science" in doc.title for doc in docs[:3])
 
 
 def test_retrieve_relevant_documents_prefers_psychology_docs_for_short_query():

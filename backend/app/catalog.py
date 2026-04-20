@@ -22,6 +22,20 @@ from app.rag import (
 router = APIRouter(prefix="/catalog", tags=["catalog"])
 COURSE_PREFIX_PATTERN = re.compile(r"^[A-Z]+")
 GENERAL_CATALOG_PREFIXES = {"ENGL", "COMM", "HIST", "HLTH", "EDUC"}
+MAJOR_PREFIX_FAMILIES: dict[str, set[str]] = {
+    "Computer Science": {"COSC"},
+    "Information Science": {"INSS"},
+    "Cloud Computing": {"CLDC"},
+    "Nursing": {"NURS"},
+    "Biology": {"BIOL"},
+    "Psychology": {"PSYC"},
+    "Criminal Justice": {"CRJU"},
+    "Elementary Education": {"EDUC"},
+    "Accounting": {"ACCT"},
+    "Finance": {"FINA"},
+    "Business Administration": {"BUSN", "MGMT"},
+    "Marketing": {"MKTG"},
+}
 
 
 def _normalize(value: Optional[str]) -> str:
@@ -63,7 +77,18 @@ def _course_prefix(code: str) -> str:
 
 
 def _catalog_prefixes_for_major(major: Optional[str]) -> list[str]:
-    required_codes = _required_course_codes_for_major(major)
+    normalized_major = _normalize(major)
+    if not normalized_major:
+        return []
+
+    program_row = find_program_row(normalized_major)
+    canonical_major = _normalize(program_row.get("canonical_major")) if program_row else normalized_major
+
+    explicit_prefixes = MAJOR_PREFIX_FAMILIES.get(canonical_major)
+    if explicit_prefixes:
+        return sorted(explicit_prefixes)
+
+    required_codes = _required_course_codes_for_major(canonical_major)
     if not required_codes:
         return []
 

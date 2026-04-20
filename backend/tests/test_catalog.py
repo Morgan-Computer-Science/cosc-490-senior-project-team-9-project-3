@@ -1,4 +1,7 @@
 
+import pytest
+
+
 def test_catalog_endpoints_return_data(client, auth_headers):
     courses = client.get("/catalog/courses", headers=auth_headers)
     assert courses.status_code == 200
@@ -36,30 +39,20 @@ def test_course_level_filter_returns_matching_hundreds_level_courses(client, aut
     assert all(course["level"] == "100" for course in payload)
 
 
-def test_course_major_filter_returns_only_modeled_major_core_courses(client, auth_headers):
+def test_course_major_filter_returns_only_computer_science_family_courses(client, auth_headers):
     response = client.get("/catalog/courses?major=Computer Science", headers=auth_headers)
     assert response.status_code == 200
     payload = response.json()
     assert payload
-    expected_codes = {
-        "COSC111",
-        "COSC241",
-        "COSC242",
-        "COSC310",
-        "COSC331",
-        "COSC332",
-        "COSC350",
-        "COSC490",
-    }
-    assert {course["code"] for course in payload} == expected_codes
+    assert all(course["code"].startswith("COSC") for course in payload)
 
 
-def test_course_major_and_level_filter_returns_only_matching_major_core_level_courses(client, auth_headers):
+def test_course_major_and_level_filter_returns_only_matching_computer_science_level_courses(client, auth_headers):
     response = client.get("/catalog/courses?major=Computer Science&level=3", headers=auth_headers)
     assert response.status_code == 200
     payload = response.json()
     assert payload
-    assert {course["code"] for course in payload} == {"COSC310", "COSC331", "COSC332", "COSC350"}
+    assert all(course["code"].startswith("COSC") for course in payload)
     assert all(course["level"] == "300" for course in payload)
 
 
@@ -68,12 +61,10 @@ def test_course_major_filter_supports_program_aliases(client, auth_headers):
     assert response.status_code == 200
     payload = response.json()
     assert payload
-    assert {course["code"] for course in payload} == {
-        "INSS201",
-        "INSS220",
-        "INSS310",
-        "INSS340",
-    }
+    assert all(course["code"].startswith("INSS") for course in payload)
+    assert {"INSS141", "INSS201", "INSS220", "INSS310", "INSS340"}.issubset(
+        {course["code"] for course in payload}
+    )
 
 
 def test_course_major_filter_returns_non_empty_cloud_computing_family(client, auth_headers):
@@ -106,6 +97,55 @@ def test_course_major_filter_returns_psychology_family_courses(client, auth_head
     payload = response.json()
     assert payload
     assert all(course["code"].startswith("PSYC") for course in payload)
+
+
+@pytest.mark.parametrize(
+    "major_name,min_count,prefix",
+    [
+        ("Finance", 3, "FINA"),
+        ("Marketing", 4, "MKTG"),
+    ],
+)
+def test_catalog_priority_business_filters_are_broad_enough_for_browsing(
+    client,
+    auth_headers,
+    major_name,
+    min_count,
+    prefix,
+):
+    response = client.get(f"/catalog/courses?major={major_name}", headers=auth_headers)
+    assert response.status_code == 200
+    payload = response.json()
+    assert len(payload) >= min_count
+    assert all(course["code"].startswith(prefix) for course in payload)
+
+
+@pytest.mark.parametrize(
+    "major_name,level,prefixes",
+    [
+        ("Computer Science", 3, {"COSC"}),
+        ("Information Science", None, {"INSS"}),
+        ("Cloud Computing", None, {"CLDC"}),
+        ("Nursing", None, {"NURS"}),
+        ("Biology", 1, {"BIOL"}),
+        ("Psychology", 3, {"PSYC"}),
+        ("Criminal Justice", None, {"CRJU"}),
+        ("Elementary Education", 3, {"EDUC"}),
+        ("Accounting", 3, {"ACCT"}),
+        ("Finance", 3, {"FINA"}),
+        ("Business Administration", None, {"BUSN", "MGMT"}),
+        ("Marketing", 3, {"MKTG"}),
+    ],
+)
+def test_catalog_major_filter_stays_inside_priority_major_family(client, auth_headers, major_name, level, prefixes):
+    params = [f"major={major_name}"]
+    if level is not None:
+        params.append(f"level={level}")
+    response = client.get(f"/catalog/courses?{'&'.join(params)}", headers=auth_headers)
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload
+    assert {course["code"][:4] for course in payload}.issubset(prefixes)
 
 
 def test_catalog_includes_launch_visible_departments_and_faculty(client, auth_headers):

@@ -70,6 +70,66 @@ Morgan State AI Faculty Advisor is a full-stack student advising system built fo
 
 ## Run locally
 
+### Recommended: Docker
+
+This is the recommended launch path if you want the app to behave the same way on another computer.
+
+#### Prerequisites
+
+- Git
+- Docker Desktop
+- A Gemini API key for live AI responses
+
+#### 1. Clone the project
+
+```bash
+git clone https://github.com/Morgan-Computer-Science/cosc-490-senior-project-team-9-project-3.git
+cd cosc-490-senior-project-team-9-project-3
+```
+
+#### 2. Create `backend/.env`
+
+Add at least:
+
+```env
+GEMINI_API_KEY=your_api_key_here
+```
+
+#### 3. Start the app
+
+```bash
+docker compose up --build
+```
+
+#### 4. Open the app
+
+- Frontend: `http://127.0.0.1:5173`
+- Backend: `http://127.0.0.1:8000`
+- Health check: `http://127.0.0.1:8000/health`
+
+#### Docker notes
+
+- The backend database is stored in a Docker volume so app data survives container restarts.
+- If you change Dockerfiles or dependencies, rebuild with:
+
+```bash
+docker compose up --build
+```
+
+- To stop the app:
+
+```bash
+docker compose down
+```
+
+- If you want to remove the persisted Docker database too:
+
+```bash
+docker compose down -v
+```
+
+### Fallback: Manual local setup
+
 ### Prerequisites
 
 - Git
@@ -196,6 +256,15 @@ npm run dev
 - Health check: `http://127.0.0.1:8000/health`
 
 ### Quick launch checklist for another computer
+
+#### Recommended path
+
+1. Pull the latest `main`.
+2. Create `backend/.env` with a valid `GEMINI_API_KEY`.
+3. Run `docker compose up --build`.
+4. Open `http://127.0.0.1:5173`.
+
+#### Manual fallback path
 
 1. Pull the latest `main`.
 2. Create `backend/.env` with a valid `GEMINI_API_KEY`.

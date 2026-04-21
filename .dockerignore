@@ -1,0 +1,16 @@
+.git
+.gitignore
+.pytest_cache
+**/.pytest_cache
+**/__pycache__
+**/*.pyc
+**/.venv
+**/venv
+**/node_modules
+backend/.env
+backend/morgan_ai.db
+backend/backend.dev.err.log
+backend/backend.dev.log
+backend/backend.dev.out.log
+backend/.tmp
+pytest-cache-files-*

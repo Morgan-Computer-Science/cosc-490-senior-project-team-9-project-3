@@ -31,7 +31,23 @@ STOPWORDS = {
     "what",
     "who",
 }
-SUPPORT_TOKENS = {"stress", "anxiety", "help", "support", "counseling", "mental", "overwhelmed"}
+SUPPORT_TOKENS = {
+    "stress",
+    "anxiety",
+    "help",
+    "support",
+    "counseling",
+    "mental",
+    "overwhelmed",
+    "tutoring",
+    "accessibility",
+    "accommodation",
+    "accommodations",
+    "internship",
+    "internships",
+    "career",
+    "research",
+}
 GREETING_PATTERNS = (
     "hello",
     "hi",
@@ -61,6 +77,13 @@ OFFICE_TOKENS = {
     "aid",
     "counseling",
     "resource",
+    "tutoring",
+    "accessibility",
+    "accommodation",
+    "accommodations",
+    "internship",
+    "internships",
+    "research",
 }
 ORG_TOKENS = {
     "organization",
@@ -70,6 +93,9 @@ ORG_TOKENS = {
     "society",
     "group",
     "chapter",
+    "lab",
+    "labs",
+    "research",
 }
 TRANSCRIPT_TOKENS = {
     "gpa",
@@ -891,7 +917,7 @@ def _score_document(
     if not explicit_other_unit_query:
         score += float(len(major_overlap)) * 1.5
     if exact_major_match:
-        if intent == "people_contact_leadership":
+        if intent in {"people_contact_leadership", "office_resource", "organization_team"}:
             score += 1.0
         else:
             score += 2.0 if explicit_other_unit_query else 4.0
@@ -902,7 +928,7 @@ def _score_document(
     if explicit_doc_match:
         score += 8.0
 
-    if user_major and not explicit_other_unit_query and intent != "people_contact_leadership":
+    if user_major and not explicit_other_unit_query and intent not in {"people_contact_leadership", "office_resource", "organization_team"}:
         user_major_lower = user_major.lower()
         if doc.major and user_major_lower in doc.major.lower():
             score += 3.0
@@ -937,6 +963,17 @@ def _score_document(
     if doc.source_type == "course" and any(token in query_tokens for token in {"course", "class", "take", "schedule", "prerequisite"}):
         score += 1.5
 
+    if "tutoring" in query_tokens and ("tutoring" in haystack or "academic success" in haystack):
+        score += 10.0
+    if {"accessibility", "accommodation", "accommodations"} & query_tokens and "accessibility" in haystack:
+        score += 10.0
+    if {"internship", "internships", "career"} & query_tokens and ("career" in haystack or "internship" in haystack):
+        score += 8.0
+    if "research" in query_tokens and ("research" in haystack or "lab" in haystack):
+        score += 8.0
+    if "robotics" in query_tokens and "robotics" in haystack:
+        score += 12.0
+
     if intent == "people_contact_leadership":
         if doc.source_type == "faculty":
             score += 7.0
@@ -946,9 +983,9 @@ def _score_document(
             score += 2.0
     elif intent == "office_resource":
         if doc.source_type in {"office", "support_resource"}:
-            score += 7.0
+            score += 9.0
         elif doc.source_type == "department":
-            score += 2.0
+            score += 1.0
     elif intent == "organization_team":
         if doc.source_type == "organization":
             score += 8.0

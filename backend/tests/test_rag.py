@@ -96,6 +96,41 @@ def test_organization_queries_return_supported_team_or_contact_context():
     assert any(doc.source_type in {"organization", "faculty", "department"} for doc in docs[:4])
 
 
+def test_retrieval_supports_undergraduate_research_contact_queries():
+    docs = retrieve_relevant_documents(
+        "Who should I contact about undergraduate research in Computer Science?",
+        top_k=6,
+    )
+
+    joined = "\n".join(f"{doc.title} {doc.content}" for doc in docs)
+    assert "Computer Science" in joined
+    assert "undergraduate" in joined.lower() or "research" in joined.lower()
+
+
+def test_retrieval_supports_tutoring_and_accessibility_questions():
+    tutoring_docs = retrieve_relevant_documents("What office helps with tutoring?", top_k=6)
+    accessibility_docs = retrieve_relevant_documents(
+        "Who helps with accessibility accommodations?",
+        top_k=6,
+    )
+
+    tutoring_joined = "\n".join(f"{doc.title} {doc.content}" for doc in tutoring_docs)
+    accessibility_joined = "\n".join(f"{doc.title} {doc.content}" for doc in accessibility_docs)
+
+    assert "Academic Success" in tutoring_joined or "tutoring" in tutoring_joined.lower()
+    assert "accessibility" in accessibility_joined.lower()
+
+
+def test_retrieval_supports_robotics_and_lab_adjacent_queries():
+    docs = retrieve_relevant_documents(
+        "Is there a robotics or AI lab contact at Morgan?",
+        top_k=6,
+    )
+
+    joined = "\n".join(f"{doc.title} {doc.content}" for doc in docs)
+    assert "robotics" in joined.lower() or "artificial intelligence" in joined.lower() or "Computer Science" in joined
+
+
 @pytest.mark.parametrize(
     "question,expected_intent",
     [

@@ -383,3 +383,41 @@ def test_chat_fallback_for_office_query_prefers_support_contact_language(client,
     assert "Transfer Evaluation Office" in body
     assert "transfercredit@morgan.edu" in body
     assert "Most relevant retrieved information" not in body
+
+
+def test_chat_fallback_returns_tutoring_contact_path(client, auth_headers, monkeypatch):
+    monkeypatch.setattr(
+        "app.chat.generate_ai_reply",
+        lambda **_: (_ for _ in ()).throw(RuntimeError("Gemini unavailable")),
+    )
+    session_id = client.post("/chat/sessions", headers=auth_headers, json={"title": "Tutoring"}).json()["id"]
+
+    response = client.post(
+        f"/chat/sessions/{session_id}/messages",
+        headers=auth_headers,
+        data={"content": "What office helps with tutoring?"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()["ai_message"]["content"]
+    assert "Center for Academic Success and Achievement" in body
+    assert "casa@morgan.edu" in body
+
+
+def test_chat_fallback_returns_research_or_robotics_support_path(client, auth_headers, monkeypatch):
+    monkeypatch.setattr(
+        "app.chat.generate_ai_reply",
+        lambda **_: (_ for _ in ()).throw(RuntimeError("Gemini unavailable")),
+    )
+    session_id = client.post("/chat/sessions", headers=auth_headers, json={"title": "Research"}).json()["id"]
+
+    response = client.post(
+        f"/chat/sessions/{session_id}/messages",
+        headers=auth_headers,
+        data={"content": "Who should I contact about undergraduate research or robotics in Computer Science?"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()["ai_message"]["content"]
+    assert "Computer Science" in body or "robotics" in body.lower()
+    assert "csdept@morgan.edu" in body or "ece@morgan.edu" in body or "radhouane.chouchane@morgan.edu" in body

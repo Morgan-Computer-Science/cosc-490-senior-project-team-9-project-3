@@ -420,4 +420,47 @@ def test_chat_fallback_returns_research_or_robotics_support_path(client, auth_he
     assert response.status_code == 200
     body = response.json()["ai_message"]["content"]
     assert "Computer Science" in body or "robotics" in body.lower()
-    assert "csdept@morgan.edu" in body or "ece@morgan.edu" in body or "radhouane.chouchane@morgan.edu" in body
+    assert (
+        "csdept@morgan.edu" in body
+        or "ece@morgan.edu" in body
+        or "radhouane.chouchane@morgan.edu" in body
+        or "kofi.nyarko@morgan.edu" in body
+        or "jamell.dacon@morgan.edu" in body
+    )
+
+
+def test_chat_fallback_returns_student_organizations_contact_path(client, auth_headers, monkeypatch):
+    monkeypatch.setattr(
+        "app.chat.generate_ai_reply",
+        lambda **_: (_ for _ in ()).throw(RuntimeError("Gemini unavailable")),
+    )
+    session_id = client.post("/chat/sessions", headers=auth_headers, json={"title": "Student Orgs"}).json()["id"]
+
+    response = client.post(
+        f"/chat/sessions/{session_id}/messages",
+        headers=auth_headers,
+        data={"content": "How do I get involved in student organizations at Morgan?"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()["ai_message"]["content"]
+    assert "Office of Student Life & Development" in body
+    assert "studentlife@morgan.edu" in body
+
+
+def test_chat_fallback_surfaces_named_lab_paths_when_available(client, auth_headers, monkeypatch):
+    monkeypatch.setattr(
+        "app.chat.generate_ai_reply",
+        lambda **_: (_ for _ in ()).throw(RuntimeError("Gemini unavailable")),
+    )
+    session_id = client.post("/chat/sessions", headers=auth_headers, json={"title": "Labs"}).json()["id"]
+
+    response = client.post(
+        f"/chat/sessions/{session_id}/messages",
+        headers=auth_headers,
+        data={"content": "Is there a robotics or AI lab at Morgan State University?"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()["ai_message"]["content"]
+    assert "RAIN" in body or "MINDS" in body or "CEAMLS" in body

@@ -84,11 +84,19 @@ OFFICE_TOKENS = {
     "internship",
     "internships",
     "research",
+    "center",
+    "centers",
+    "involved",
 }
 ORG_TOKENS = {
     "organization",
+    "organizations",
+    "org",
+    "orgs",
     "club",
+    "clubs",
     "team",
+    "teams",
     "robotics",
     "society",
     "group",
@@ -96,6 +104,8 @@ ORG_TOKENS = {
     "lab",
     "labs",
     "research",
+    "community",
+    "involved",
 }
 TRANSCRIPT_TOKENS = {
     "gpa",
@@ -915,7 +925,10 @@ def _score_document(
     explicit_other_unit_query = _query_mentions_other_named_unit(query, user_major)
     score = float(len(overlap))
     if not explicit_other_unit_query:
-        score += float(len(major_overlap)) * 1.5
+        if intent in {"people_contact_leadership", "office_resource", "organization_team"}:
+            score += float(len(major_overlap)) * 0.25
+        else:
+            score += float(len(major_overlap)) * 1.5
     if exact_major_match:
         if intent in {"people_contact_leadership", "office_resource", "organization_team"}:
             score += 1.0
@@ -972,6 +985,16 @@ def _score_document(
     if "research" in query_tokens and ("research" in haystack or "lab" in haystack):
         score += 8.0
     if "robotics" in query_tokens and "robotics" in haystack:
+        score += 12.0
+    if {"organization", "organizations", "org", "orgs", "club", "clubs", "community", "involved"} & query_tokens and (
+        "student organization" in haystack
+        or "student organizations" in haystack
+        or "student life" in haystack
+        or "get involved" in haystack
+        or "community" in haystack
+    ):
+        score += 10.0
+    if {"center", "research"} & query_tokens and "student research center" in haystack:
         score += 12.0
 
     if intent == "people_contact_leadership":

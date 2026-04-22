@@ -131,6 +131,26 @@ def test_retrieval_supports_robotics_and_lab_adjacent_queries():
     assert "robotics" in joined.lower() or "artificial intelligence" in joined.lower() or "Computer Science" in joined
 
 
+def test_retrieval_supports_student_organizations_and_get_involved_queries():
+    docs = retrieve_relevant_documents(
+        "How do I get involved in student organizations at Morgan?",
+        top_k=6,
+    )
+
+    joined = "\n".join(f"{doc.title} {doc.content}" for doc in docs)
+    assert "Student Life" in joined or "student organizations" in joined.lower()
+
+
+def test_retrieval_surfaces_named_ai_and_robotics_labs():
+    docs = retrieve_relevant_documents(
+        "Is there a robotics or AI lab at Morgan State University?",
+        top_k=8,
+    )
+
+    joined = "\n".join(f"{doc.title} {doc.content}" for doc in docs)
+    assert "RAIN" in joined or "MINDS" in joined or "CEAMLS" in joined
+
+
 @pytest.mark.parametrize(
     "question,expected_intent",
     [

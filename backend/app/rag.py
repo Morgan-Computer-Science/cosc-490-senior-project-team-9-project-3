@@ -14,6 +14,7 @@ CS_CAPSTONE_RULES_PATH = DATA_DIR / "cs_capstone_rules.csv"
 CS_FOCUS_AREAS_PATH = DATA_DIR / "cs_focus_areas.csv"
 OFFICES_PATH = DATA_DIR / "offices.csv"
 ORGANIZATIONS_PATH = DATA_DIR / "organizations.csv"
+OPPORTUNITIES_PATH = DATA_DIR / "opportunities.csv"
 STOPWORDS = {
     "a",
     "an",
@@ -47,6 +48,17 @@ SUPPORT_TOKENS = {
     "internships",
     "career",
     "research",
+    "scholarship",
+    "scholarships",
+    "funding",
+    "grant",
+    "grants",
+    "stipend",
+    "resume",
+    "resumes",
+    "job",
+    "jobs",
+    "success",
 }
 GREETING_PATTERNS = (
     "hello",
@@ -87,6 +99,17 @@ OFFICE_TOKENS = {
     "center",
     "centers",
     "involved",
+    "scholarship",
+    "scholarships",
+    "funding",
+    "grant",
+    "grants",
+    "stipend",
+    "resume",
+    "resumes",
+    "job",
+    "jobs",
+    "success",
 }
 ORG_TOKENS = {
     "organization",
@@ -106,6 +129,24 @@ ORG_TOKENS = {
     "research",
     "community",
     "involved",
+}
+OPPORTUNITY_TOKENS = {
+    "career",
+    "internship",
+    "internships",
+    "scholarship",
+    "scholarships",
+    "funding",
+    "grant",
+    "grants",
+    "stipend",
+    "research",
+    "resume",
+    "resumes",
+    "job",
+    "jobs",
+    "opportunity",
+    "opportunities",
 }
 TRANSCRIPT_TOKENS = {
     "gpa",
@@ -175,6 +216,29 @@ def classify_question_intent(question: str) -> str:
         return "small_talk"
     if any(token in lowered for token in TRANSCRIPT_TOKENS):
         return "transcript_import"
+    if (
+        any(token in lowered for token in {"program", "major"})
+        or any(token in lowered for token in DEGREE_PLANNING_TOKENS)
+    ) and not any(
+        token in lowered
+        for token in {
+            "office",
+            "contact",
+            "registrar",
+            "transfer",
+            "counseling",
+            "accessibility",
+            "accommodation",
+            "financial aid",
+            "scholarship",
+            "scholarships",
+            "internship",
+            "internships",
+            "career",
+            "tutoring",
+        }
+    ):
+        return "degree_planning"
     if any(token in lowered for token in ORG_TOKENS):
         return "organization_team"
     if any(token in lowered for token in OFFICE_TOKENS):
@@ -736,6 +800,15 @@ def load_organization_rows() -> tuple[dict[str, str], ...]:
 
 
 @lru_cache(maxsize=1)
+def load_opportunity_rows() -> tuple[dict[str, str], ...]:
+    if not OPPORTUNITIES_PATH.exists():
+        return tuple()
+
+    with OPPORTUNITIES_PATH.open(newline="", encoding="utf-8") as file:
+        return tuple(csv.DictReader(file))
+
+
+@lru_cache(maxsize=1)
 def load_prerequisite_rows() -> tuple[dict[str, str], ...]:
     path = DATA_DIR / "prerequisites.csv"
     if not path.exists():
@@ -881,6 +954,29 @@ def _organization_documents() -> List[RetrievedDocument]:
     return docs
 
 
+def _opportunity_documents() -> List[RetrievedDocument]:
+    docs = []
+    for row in load_opportunity_rows():
+        owner_office = _normalize(row.get("owner_office"))
+        docs.append(
+            RetrievedDocument(
+                source_type="opportunity",
+                title=f"{_normalize(row.get('name'))} ({_normalize(row.get('category'))})",
+                content=(
+                    f"Owner Office: {owner_office}. "
+                    f"Email: {_normalize(row.get('contact_email'))}. "
+                    f"Phone: {_normalize(row.get('contact_phone'))}. "
+                    f"Overview: {_normalize(row.get('overview'))}. "
+                    f"Source URL: {_normalize(row.get('url'))}."
+                ),
+                department=owner_office or None,
+                major=owner_office or None,
+                contact=_normalize(row.get("contact_email")) or _normalize(row.get("contact_phone")) or None,
+            )
+        )
+    return docs
+
+
 @lru_cache(maxsize=1)
 def load_knowledge_documents() -> tuple[RetrievedDocument, ...]:
     docs = [
@@ -892,6 +988,7 @@ def load_knowledge_documents() -> tuple[RetrievedDocument, ...]:
         *_support_documents(),
         *_office_documents(),
         *_organization_documents(),
+        *_opportunity_documents(),
     ]
     return tuple(docs)
 
@@ -973,6 +1070,8 @@ def _score_document(
         score += 8.0
     if doc.source_type == "organization" and any(token in query_tokens for token in ORG_TOKENS):
         score += 8.0
+    if doc.source_type == "opportunity" and any(token in query_tokens for token in OPPORTUNITY_TOKENS):
+        score += 9.0
     if doc.source_type == "course" and any(token in query_tokens for token in {"course", "class", "take", "schedule", "prerequisite"}):
         score += 1.5
 
@@ -982,8 +1081,22 @@ def _score_document(
         score += 10.0
     if {"internship", "internships", "career"} & query_tokens and ("career" in haystack or "internship" in haystack):
         score += 8.0
+    if {"scholarship", "scholarships", "funding", "grant", "grants", "stipend"} & query_tokens and (
+        "scholarship" in haystack or "grant" in haystack or "funding" in haystack or "stipend" in haystack
+    ):
+        score += 10.0
+    if {"resume", "resumes", "job", "jobs"} & query_tokens and (
+        "career" in haystack or "job" in haystack or "resume" in haystack or "handshake" in haystack
+    ):
+        score += 9.0
     if "research" in query_tokens and ("research" in haystack or "lab" in haystack):
         score += 8.0
+    if "success" in query_tokens and ("student success" in haystack or "retention" in haystack or "academic success" in haystack):
+        score += 10.0
+    if {"struggling", "academically", "academic", "support"} & query_tokens and (
+        "student success" in haystack or "retention" in haystack or "academic success" in haystack or "tutoring" in haystack
+    ):
+        score += 12.0
     if "robotics" in query_tokens and "robotics" in haystack:
         score += 12.0
     if {"organization", "organizations", "org", "orgs", "club", "clubs", "community", "involved"} & query_tokens and (
@@ -1007,6 +1120,8 @@ def _score_document(
     elif intent == "office_resource":
         if doc.source_type in {"office", "support_resource"}:
             score += 9.0
+        elif doc.source_type == "opportunity" and any(token in query_tokens for token in OPPORTUNITY_TOKENS):
+            score += 7.0
         elif doc.source_type == "department":
             score += 1.0
     elif intent == "organization_team":

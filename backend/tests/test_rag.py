@@ -151,6 +151,36 @@ def test_retrieval_surfaces_named_ai_and_robotics_labs():
     assert "RAIN" in joined or "MINDS" in joined or "CEAMLS" in joined
 
 
+def test_retrieval_supports_internship_and_career_questions():
+    docs = retrieve_relevant_documents(
+        "Where do I go for internships and career help at Morgan?",
+        top_k=8,
+    )
+
+    joined = "\n".join(f"{doc.title} {doc.content}" for doc in docs)
+    assert "Handshake" in joined or "Career Development" in joined or "internship" in joined.lower()
+
+
+def test_retrieval_supports_scholarship_and_funding_questions():
+    docs = retrieve_relevant_documents(
+        "Where should I start for scholarships or research funding at Morgan?",
+        top_k=8,
+    )
+
+    joined = "\n".join(f"{doc.title} {doc.content}" for doc in docs)
+    assert "ScholarshipUniverse" in joined or "CreativeEdge" in joined or "Financial Aid" in joined
+
+
+def test_retrieval_supports_student_success_questions():
+    docs = retrieve_relevant_documents(
+        "Who helps if I am struggling academically and need support?",
+        top_k=8,
+    )
+
+    joined = "\n".join(f"{doc.title} {doc.content}" for doc in docs)
+    assert "Student Success" in joined or "CASA" in joined or "tutoring" in joined.lower()
+
+
 @pytest.mark.parametrize(
     "question,expected_intent",
     [

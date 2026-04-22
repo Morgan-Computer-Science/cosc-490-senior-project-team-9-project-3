@@ -464,3 +464,59 @@ def test_chat_fallback_surfaces_named_lab_paths_when_available(client, auth_head
     assert response.status_code == 200
     body = response.json()["ai_message"]["content"]
     assert "RAIN" in body or "MINDS" in body or "CEAMLS" in body
+
+
+def test_chat_fallback_returns_internship_and_career_path(client, auth_headers, monkeypatch):
+    monkeypatch.setattr(
+        "app.chat.generate_ai_reply",
+        lambda **_: (_ for _ in ()).throw(RuntimeError("Gemini unavailable")),
+    )
+    session_id = client.post("/chat/sessions", headers=auth_headers, json={"title": "Internships"}).json()["id"]
+
+    response = client.post(
+        f"/chat/sessions/{session_id}/messages",
+        headers=auth_headers,
+        data={"content": "Where do I go for internships and career help at Morgan?"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()["ai_message"]["content"]
+    assert "Handshake" in body or "Center for Career Development" in body
+    assert "careers@morgan.edu" in body
+
+
+def test_chat_fallback_returns_scholarship_or_funding_path(client, auth_headers, monkeypatch):
+    monkeypatch.setattr(
+        "app.chat.generate_ai_reply",
+        lambda **_: (_ for _ in ()).throw(RuntimeError("Gemini unavailable")),
+    )
+    session_id = client.post("/chat/sessions", headers=auth_headers, json={"title": "Funding"}).json()["id"]
+
+    response = client.post(
+        f"/chat/sessions/{session_id}/messages",
+        headers=auth_headers,
+        data={"content": "Where should I start for scholarships or research funding at Morgan?"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()["ai_message"]["content"]
+    assert "ScholarshipUniverse" in body or "CreativeEdge" in body or "Financial Aid" in body
+    assert "finaid@morgan.edu" in body or "OUR@morgan.edu" in body
+
+
+def test_chat_fallback_returns_student_success_path(client, auth_headers, monkeypatch):
+    monkeypatch.setattr(
+        "app.chat.generate_ai_reply",
+        lambda **_: (_ for _ in ()).throw(RuntimeError("Gemini unavailable")),
+    )
+    session_id = client.post("/chat/sessions", headers=auth_headers, json={"title": "Support"}).json()["id"]
+
+    response = client.post(
+        f"/chat/sessions/{session_id}/messages",
+        headers=auth_headers,
+        data={"content": "Who helps if I am struggling academically and need support?"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()["ai_message"]["content"]
+    assert "Student Success" in body or "CASA" in body or "tutoring@morgan.edu" in body

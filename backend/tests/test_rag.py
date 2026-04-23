@@ -181,6 +181,46 @@ def test_retrieval_supports_student_success_questions():
     assert "Student Success" in joined or "CASA" in joined or "tutoring" in joined.lower()
 
 
+def test_retrieval_supports_registrar_and_process_questions():
+    transcript_docs = retrieve_relevant_documents(
+        "How do I get my transcript from Morgan?",
+        top_k=8,
+    )
+    withdrawal_docs = retrieve_relevant_documents(
+        "How do I withdraw from a class at Morgan?",
+        top_k=8,
+    )
+
+    transcript_joined = "\n".join(f"{doc.title} {doc.content}" for doc in transcript_docs)
+    withdrawal_joined = "\n".join(f"{doc.title} {doc.content}" for doc in withdrawal_docs)
+
+    assert "Registrar" in transcript_joined or "transcript" in transcript_joined.lower()
+    assert "withdraw" in withdrawal_joined.lower() or "Registrar" in withdrawal_joined
+
+
+def test_retrieval_supports_transfer_override_and_accommodations_processes():
+    transfer_docs = retrieve_relevant_documents(
+        "Who handles transfer credit evaluation at Morgan?",
+        top_k=8,
+    )
+    override_docs = retrieve_relevant_documents(
+        "Who do I contact for a registration override?",
+        top_k=8,
+    )
+    accommodations_docs = retrieve_relevant_documents(
+        "How do I request accommodations at Morgan?",
+        top_k=8,
+    )
+
+    transfer_joined = "\n".join(f"{doc.title} {doc.content}" for doc in transfer_docs)
+    override_joined = "\n".join(f"{doc.title} {doc.content}" for doc in override_docs)
+    accommodations_joined = "\n".join(f"{doc.title} {doc.content}" for doc in accommodations_docs)
+
+    assert "Transfer Evaluation" in transfer_joined or "transfercredit@morgan.edu" in transfer_joined
+    assert "override" in override_joined.lower() or "Registrar" in override_joined or "University Advising" in override_joined
+    assert "accessibility" in accommodations_joined.lower()
+
+
 @pytest.mark.parametrize(
     "question,expected_intent",
     [
@@ -188,6 +228,7 @@ def test_retrieval_supports_student_success_questions():
         ("What do I need before COSC242?", "course_prerequisite"),
         ("Who is the dean of Computer Science?", "people_contact_leadership"),
         ("What office handles transfer advising?", "office_resource"),
+        ("How do I withdraw from a class?", "policy_process"),
         ("Who runs the robotics team?", "organization_team"),
         ("What is my GPA?", "transcript_import"),
         ("How are you?", "small_talk"),

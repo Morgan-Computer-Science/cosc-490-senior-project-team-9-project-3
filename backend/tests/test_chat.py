@@ -520,3 +520,68 @@ def test_chat_fallback_returns_student_success_path(client, auth_headers, monkey
     assert response.status_code == 200
     body = response.json()["ai_message"]["content"]
     assert "Student Success" in body or "CASA" in body or "tutoring@morgan.edu" in body
+
+
+def test_chat_fallback_returns_registrar_process_path(client, auth_headers, monkeypatch):
+    monkeypatch.setattr(
+        "app.chat.generate_ai_reply",
+        lambda **_: (_ for _ in ()).throw(RuntimeError("Gemini unavailable")),
+    )
+    session_id = client.post("/chat/sessions", headers=auth_headers, json={"title": "Registrar"}).json()["id"]
+
+    response = client.post(
+        f"/chat/sessions/{session_id}/messages",
+        headers=auth_headers,
+        data={"content": "How do I get my transcript from Morgan?"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()["ai_message"]["content"]
+    assert "Registrar" in body or "transcript" in body.lower()
+    assert "registrar@morgan.edu" in body
+
+
+def test_chat_fallback_returns_transfer_or_override_process_path(client, auth_headers, monkeypatch):
+    monkeypatch.setattr(
+        "app.chat.generate_ai_reply",
+        lambda **_: (_ for _ in ()).throw(RuntimeError("Gemini unavailable")),
+    )
+    session_id = client.post("/chat/sessions", headers=auth_headers, json={"title": "Process"}).json()["id"]
+
+    transfer_response = client.post(
+        f"/chat/sessions/{session_id}/messages",
+        headers=auth_headers,
+        data={"content": "Who handles transfer credit evaluation at Morgan?"},
+    )
+    override_response = client.post(
+        f"/chat/sessions/{session_id}/messages",
+        headers=auth_headers,
+        data={"content": "Who do I contact for a registration override?"},
+    )
+
+    assert transfer_response.status_code == 200
+    assert override_response.status_code == 200
+
+    transfer_body = transfer_response.json()["ai_message"]["content"]
+    override_body = override_response.json()["ai_message"]["content"]
+
+    assert "Transfer Evaluation Office" in transfer_body or "transfercredit@morgan.edu" in transfer_body
+    assert "override" in override_body.lower() or "University Advising Center" in override_body or "registrar@morgan.edu" in override_body
+
+
+def test_chat_fallback_returns_accommodations_process_path(client, auth_headers, monkeypatch):
+    monkeypatch.setattr(
+        "app.chat.generate_ai_reply",
+        lambda **_: (_ for _ in ()).throw(RuntimeError("Gemini unavailable")),
+    )
+    session_id = client.post("/chat/sessions", headers=auth_headers, json={"title": "Accessibility"}).json()["id"]
+
+    response = client.post(
+        f"/chat/sessions/{session_id}/messages",
+        headers=auth_headers,
+        data={"content": "How do I request accommodations at Morgan?"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()["ai_message"]["content"]
+    assert "Accessibility Support Services" in body or "accessibility@morgan.edu" in body

@@ -15,6 +15,7 @@ CS_FOCUS_AREAS_PATH = DATA_DIR / "cs_focus_areas.csv"
 OFFICES_PATH = DATA_DIR / "offices.csv"
 ORGANIZATIONS_PATH = DATA_DIR / "organizations.csv"
 OPPORTUNITIES_PATH = DATA_DIR / "opportunities.csv"
+PROCESS_GUIDANCE_PATH = DATA_DIR / "process_guidance.csv"
 STOPWORDS = {
     "a",
     "an",
@@ -148,6 +149,25 @@ OPPORTUNITY_TOKENS = {
     "opportunity",
     "opportunities",
 }
+PROCESS_TOKENS = {
+    "transcript",
+    "transcripts",
+    "registrar",
+    "transfer",
+    "withdraw",
+    "withdrawal",
+    "drop",
+    "override",
+    "permission",
+    "clearance",
+    "graduation",
+    "verification",
+    "record",
+    "records",
+    "registration",
+    "accommodation",
+    "accommodations",
+}
 TRANSCRIPT_TOKENS = {
     "gpa",
     "credits",
@@ -214,6 +234,14 @@ def classify_question_intent(question: str) -> str:
 
     if any(pattern in lowered for pattern in GREETING_PATTERNS):
         return "small_talk"
+    if (
+        ("transcript" in lowered and any(token in lowered for token in {"get", "request", "order", "send"}))
+        or any(token in lowered for token in {"withdraw", "withdrawal", "override", "permission", "clearance", "verification"})
+        or ("transfer" in lowered and "credit" in lowered)
+        or ("registration" in lowered and any(token in lowered for token in {"problem", "issue", "override", "cannot", "can't"}))
+        or ("accommodation" in lowered or "accommodations" in lowered)
+    ):
+        return "policy_process"
     if any(token in lowered for token in TRANSCRIPT_TOKENS):
         return "transcript_import"
     if (
@@ -809,6 +837,15 @@ def load_opportunity_rows() -> tuple[dict[str, str], ...]:
 
 
 @lru_cache(maxsize=1)
+def load_process_guidance_rows() -> tuple[dict[str, str], ...]:
+    if not PROCESS_GUIDANCE_PATH.exists():
+        return tuple()
+
+    with PROCESS_GUIDANCE_PATH.open(newline="", encoding="utf-8") as file:
+        return tuple(csv.DictReader(file))
+
+
+@lru_cache(maxsize=1)
 def load_prerequisite_rows() -> tuple[dict[str, str], ...]:
     path = DATA_DIR / "prerequisites.csv"
     if not path.exists():
@@ -977,6 +1014,29 @@ def _opportunity_documents() -> List[RetrievedDocument]:
     return docs
 
 
+def _process_guidance_documents() -> List[RetrievedDocument]:
+    docs = []
+    for row in load_process_guidance_rows():
+        owner_office = _normalize(row.get("owner_office"))
+        docs.append(
+            RetrievedDocument(
+                source_type="process_guidance",
+                title=f"{_normalize(row.get('process'))} ({_normalize(row.get('category'))})",
+                content=(
+                    f"Owner Office: {owner_office}. "
+                    f"Email: {_normalize(row.get('contact_email'))}. "
+                    f"Phone: {_normalize(row.get('contact_phone'))}. "
+                    f"Overview: {_normalize(row.get('overview'))}. "
+                    f"Source URL: {_normalize(row.get('url'))}."
+                ),
+                department=owner_office or None,
+                major=owner_office or None,
+                contact=_normalize(row.get("contact_email")) or _normalize(row.get("contact_phone")) or None,
+            )
+        )
+    return docs
+
+
 @lru_cache(maxsize=1)
 def load_knowledge_documents() -> tuple[RetrievedDocument, ...]:
     docs = [
@@ -989,6 +1049,7 @@ def load_knowledge_documents() -> tuple[RetrievedDocument, ...]:
         *_office_documents(),
         *_organization_documents(),
         *_opportunity_documents(),
+        *_process_guidance_documents(),
     ]
     return tuple(docs)
 
@@ -1022,12 +1083,12 @@ def _score_document(
     explicit_other_unit_query = _query_mentions_other_named_unit(query, user_major)
     score = float(len(overlap))
     if not explicit_other_unit_query:
-        if intent in {"people_contact_leadership", "office_resource", "organization_team"}:
+        if intent in {"people_contact_leadership", "office_resource", "organization_team", "policy_process"}:
             score += float(len(major_overlap)) * 0.25
         else:
             score += float(len(major_overlap)) * 1.5
     if exact_major_match:
-        if intent in {"people_contact_leadership", "office_resource", "organization_team"}:
+        if intent in {"people_contact_leadership", "office_resource", "organization_team", "policy_process"}:
             score += 1.0
         else:
             score += 2.0 if explicit_other_unit_query else 4.0
@@ -1038,7 +1099,7 @@ def _score_document(
     if explicit_doc_match:
         score += 8.0
 
-    if user_major and not explicit_other_unit_query and intent not in {"people_contact_leadership", "office_resource", "organization_team"}:
+    if user_major and not explicit_other_unit_query and intent not in {"people_contact_leadership", "office_resource", "organization_team", "policy_process"}:
         user_major_lower = user_major.lower()
         if doc.major and user_major_lower in doc.major.lower():
             score += 3.0
@@ -1072,6 +1133,8 @@ def _score_document(
         score += 8.0
     if doc.source_type == "opportunity" and any(token in query_tokens for token in OPPORTUNITY_TOKENS):
         score += 9.0
+    if doc.source_type == "process_guidance" and any(token in query_tokens for token in PROCESS_TOKENS):
+        score += 10.0
     if doc.source_type == "course" and any(token in query_tokens for token in {"course", "class", "take", "schedule", "prerequisite"}):
         score += 1.5
 
@@ -1097,6 +1160,14 @@ def _score_document(
         "student success" in haystack or "retention" in haystack or "academic success" in haystack or "tutoring" in haystack
     ):
         score += 12.0
+    if {"transcript", "transcripts"} & query_tokens and ("registrar" in haystack or "transcript" in haystack):
+        score += 12.0
+    if {"withdraw", "withdrawal", "drop"} & query_tokens and ("withdraw" in haystack or "registration" in haystack):
+        score += 12.0
+    if {"override", "permission"} & query_tokens and ("override" in haystack or "advising" in haystack or "registration" in haystack):
+        score += 10.0
+    if {"verification", "graduation", "clearance"} & query_tokens and ("verification" in haystack or "graduation" in haystack or "registrar" in haystack):
+        score += 10.0
     if "robotics" in query_tokens and "robotics" in haystack:
         score += 12.0
     if {"organization", "organizations", "org", "orgs", "club", "clubs", "community", "involved"} & query_tokens and (
@@ -1122,6 +1193,13 @@ def _score_document(
             score += 9.0
         elif doc.source_type == "opportunity" and any(token in query_tokens for token in OPPORTUNITY_TOKENS):
             score += 7.0
+        elif doc.source_type == "department":
+            score += 1.0
+    elif intent == "policy_process":
+        if doc.source_type == "process_guidance":
+            score += 10.0
+        elif doc.source_type in {"office", "support_resource"}:
+            score += 5.0
         elif doc.source_type == "department":
             score += 1.0
     elif intent == "organization_team":

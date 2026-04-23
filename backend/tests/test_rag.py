@@ -221,6 +221,46 @@ def test_retrieval_supports_transfer_override_and_accommodations_processes():
     assert "accessibility" in accommodations_joined.lower()
 
 
+def test_retrieval_supports_workflow_entrypoint_questions():
+    transcript_docs = retrieve_relevant_documents(
+        "What page do I use for transcript requests at Morgan?",
+        top_k=8,
+    )
+    withdrawal_docs = retrieve_relevant_documents(
+        "Where is the withdrawal form at Morgan?",
+        top_k=8,
+    )
+    organization_docs = retrieve_relevant_documents(
+        "What page do I use to form a student organization at Morgan?",
+        top_k=8,
+    )
+
+    transcript_joined = "\n".join(f"{doc.title} {doc.content}" for doc in transcript_docs)
+    withdrawal_joined = "\n".join(f"{doc.title} {doc.content}" for doc in withdrawal_docs)
+    organization_joined = "\n".join(f"{doc.title} {doc.content}" for doc in organization_docs)
+
+    assert "Transcripts" in transcript_joined or "Official Transcript" in transcript_joined
+    assert "Service Request Forms" in withdrawal_joined or "withdrawal" in withdrawal_joined.lower()
+    assert "Forming a New Student Organization" in organization_joined or "new student organization" in organization_joined.lower()
+
+
+def test_retrieval_supports_research_and_accessibility_entrypoint_questions():
+    accommodations_docs = retrieve_relevant_documents(
+        "Where do I start the accommodations process at Morgan?",
+        top_k=8,
+    )
+    research_docs = retrieve_relevant_documents(
+        "Where should I start if I want undergraduate research at Morgan?",
+        top_k=8,
+    )
+
+    accommodations_joined = "\n".join(f"{doc.title} {doc.content}" for doc in accommodations_docs)
+    research_joined = "\n".join(f"{doc.title} {doc.content}" for doc in research_docs)
+
+    assert "Student Disability Support Services" in accommodations_joined or "sdss" in accommodations_joined.lower()
+    assert "Office of Undergraduate Research" in research_joined or "undergraduate research" in research_joined.lower()
+
+
 @pytest.mark.parametrize(
     "question,expected_intent",
     [
@@ -229,6 +269,7 @@ def test_retrieval_supports_transfer_override_and_accommodations_processes():
         ("Who is the dean of Computer Science?", "people_contact_leadership"),
         ("What office handles transfer advising?", "office_resource"),
         ("How do I withdraw from a class?", "policy_process"),
+        ("What page do I use for transcript requests?", "workflow_entrypoint"),
         ("Who runs the robotics team?", "organization_team"),
         ("What is my GPA?", "transcript_import"),
         ("How are you?", "small_talk"),

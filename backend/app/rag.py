@@ -16,6 +16,7 @@ OFFICES_PATH = DATA_DIR / "offices.csv"
 ORGANIZATIONS_PATH = DATA_DIR / "organizations.csv"
 OPPORTUNITIES_PATH = DATA_DIR / "opportunities.csv"
 PROCESS_GUIDANCE_PATH = DATA_DIR / "process_guidance.csv"
+WORKFLOW_ENTRYPOINTS_PATH = DATA_DIR / "workflow_entrypoints.csv"
 STOPWORDS = {
     "a",
     "an",
@@ -168,6 +169,23 @@ PROCESS_TOKENS = {
     "accommodation",
     "accommodations",
 }
+WORKFLOW_TOKENS = {
+    "form",
+    "forms",
+    "page",
+    "pages",
+    "start",
+    "begin",
+    "apply",
+    "application",
+    "request",
+    "requests",
+    "workflow",
+    "entry",
+    "entrypoint",
+    "entrypoints",
+    "submit",
+}
 TRANSCRIPT_TOKENS = {
     "gpa",
     "credits",
@@ -234,6 +252,19 @@ def classify_question_intent(question: str) -> str:
 
     if any(pattern in lowered for pattern in GREETING_PATTERNS):
         return "small_talk"
+    if any(token in lowered for token in WORKFLOW_TOKENS) and any(
+        token in lowered
+        for token in PROCESS_TOKENS
+        | {
+            "student organization",
+            "organizations",
+            "research",
+            "internship",
+            "internships",
+            "career",
+        }
+    ):
+        return "workflow_entrypoint"
     if (
         ("transcript" in lowered and any(token in lowered for token in {"get", "request", "order", "send"}))
         or any(token in lowered for token in {"withdraw", "withdrawal", "override", "permission", "clearance", "verification"})
@@ -846,6 +877,15 @@ def load_process_guidance_rows() -> tuple[dict[str, str], ...]:
 
 
 @lru_cache(maxsize=1)
+def load_workflow_entrypoint_rows() -> tuple[dict[str, str], ...]:
+    if not WORKFLOW_ENTRYPOINTS_PATH.exists():
+        return tuple()
+
+    with WORKFLOW_ENTRYPOINTS_PATH.open(newline="", encoding="utf-8") as file:
+        return tuple(csv.DictReader(file))
+
+
+@lru_cache(maxsize=1)
 def load_prerequisite_rows() -> tuple[dict[str, str], ...]:
     path = DATA_DIR / "prerequisites.csv"
     if not path.exists():
@@ -1037,6 +1077,29 @@ def _process_guidance_documents() -> List[RetrievedDocument]:
     return docs
 
 
+def _workflow_entrypoint_documents() -> List[RetrievedDocument]:
+    docs = []
+    for row in load_workflow_entrypoint_rows():
+        owner_office = _normalize(row.get("owner_office"))
+        docs.append(
+            RetrievedDocument(
+                source_type="workflow_entrypoint",
+                title=f"{_normalize(row.get('name'))} ({_normalize(row.get('category'))})",
+                content=(
+                    f"Owner Office: {owner_office}. "
+                    f"Email: {_normalize(row.get('contact_email'))}. "
+                    f"Phone: {_normalize(row.get('contact_phone'))}. "
+                    f"Overview: {_normalize(row.get('overview'))}. "
+                    f"Source URL: {_normalize(row.get('url'))}."
+                ),
+                department=owner_office or None,
+                major=owner_office or None,
+                contact=_normalize(row.get("contact_email")) or _normalize(row.get("contact_phone")) or None,
+            )
+        )
+    return docs
+
+
 @lru_cache(maxsize=1)
 def load_knowledge_documents() -> tuple[RetrievedDocument, ...]:
     docs = [
@@ -1050,6 +1113,7 @@ def load_knowledge_documents() -> tuple[RetrievedDocument, ...]:
         *_organization_documents(),
         *_opportunity_documents(),
         *_process_guidance_documents(),
+        *_workflow_entrypoint_documents(),
     ]
     return tuple(docs)
 
@@ -1083,12 +1147,12 @@ def _score_document(
     explicit_other_unit_query = _query_mentions_other_named_unit(query, user_major)
     score = float(len(overlap))
     if not explicit_other_unit_query:
-        if intent in {"people_contact_leadership", "office_resource", "organization_team", "policy_process"}:
+        if intent in {"people_contact_leadership", "office_resource", "organization_team", "policy_process", "workflow_entrypoint"}:
             score += float(len(major_overlap)) * 0.25
         else:
             score += float(len(major_overlap)) * 1.5
     if exact_major_match:
-        if intent in {"people_contact_leadership", "office_resource", "organization_team", "policy_process"}:
+        if intent in {"people_contact_leadership", "office_resource", "organization_team", "policy_process", "workflow_entrypoint"}:
             score += 1.0
         else:
             score += 2.0 if explicit_other_unit_query else 4.0
@@ -1099,7 +1163,7 @@ def _score_document(
     if explicit_doc_match:
         score += 8.0
 
-    if user_major and not explicit_other_unit_query and intent not in {"people_contact_leadership", "office_resource", "organization_team", "policy_process"}:
+    if user_major and not explicit_other_unit_query and intent not in {"people_contact_leadership", "office_resource", "organization_team", "policy_process", "workflow_entrypoint"}:
         user_major_lower = user_major.lower()
         if doc.major and user_major_lower in doc.major.lower():
             score += 3.0
@@ -1135,6 +1199,8 @@ def _score_document(
         score += 9.0
     if doc.source_type == "process_guidance" and any(token in query_tokens for token in PROCESS_TOKENS):
         score += 10.0
+    if doc.source_type == "workflow_entrypoint" and any(token in query_tokens for token in WORKFLOW_TOKENS | PROCESS_TOKENS | ORG_TOKENS | OPPORTUNITY_TOKENS):
+        score += 12.0
     if doc.source_type == "course" and any(token in query_tokens for token in {"course", "class", "take", "schedule", "prerequisite"}):
         score += 1.5
 
@@ -1168,6 +1234,8 @@ def _score_document(
         score += 10.0
     if {"verification", "graduation", "clearance"} & query_tokens and ("verification" in haystack or "graduation" in haystack or "registrar" in haystack):
         score += 10.0
+    if WORKFLOW_TOKENS & query_tokens and ("source url" in haystack or "starting point" in haystack or "official" in haystack or "page" in haystack):
+        score += 12.0
     if "robotics" in query_tokens and "robotics" in haystack:
         score += 12.0
     if {"organization", "organizations", "org", "orgs", "club", "clubs", "community", "involved"} & query_tokens and (
@@ -1202,6 +1270,13 @@ def _score_document(
             score += 5.0
         elif doc.source_type == "department":
             score += 1.0
+    elif intent == "workflow_entrypoint":
+        if doc.source_type == "workflow_entrypoint":
+            score += 12.0
+        elif doc.source_type == "process_guidance":
+            score += 6.0
+        elif doc.source_type in {"office", "support_resource", "opportunity", "organization"}:
+            score += 3.0
     elif intent == "organization_team":
         if doc.source_type == "organization":
             score += 8.0

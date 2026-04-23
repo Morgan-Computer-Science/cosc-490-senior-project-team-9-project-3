@@ -585,3 +585,59 @@ def test_chat_fallback_returns_accommodations_process_path(client, auth_headers,
     assert response.status_code == 200
     body = response.json()["ai_message"]["content"]
     assert "Accessibility Support Services" in body or "accessibility@morgan.edu" in body
+
+
+def test_chat_fallback_returns_workflow_entrypoint_for_transcripts_and_withdrawal(client, auth_headers, monkeypatch):
+    monkeypatch.setattr(
+        "app.chat.generate_ai_reply",
+        lambda **_: (_ for _ in ()).throw(RuntimeError("Gemini unavailable")),
+    )
+    session_id = client.post("/chat/sessions", headers=auth_headers, json={"title": "Workflow"}).json()["id"]
+
+    transcript_response = client.post(
+        f"/chat/sessions/{session_id}/messages",
+        headers=auth_headers,
+        data={"content": "What page do I use for transcript requests at Morgan?"},
+    )
+    withdrawal_response = client.post(
+        f"/chat/sessions/{session_id}/messages",
+        headers=auth_headers,
+        data={"content": "Where is the withdrawal form at Morgan?"},
+    )
+
+    assert transcript_response.status_code == 200
+    assert withdrawal_response.status_code == 200
+
+    transcript_body = transcript_response.json()["ai_message"]["content"]
+    withdrawal_body = withdrawal_response.json()["ai_message"]["content"]
+
+    assert "morgan.edu/transcripts" in transcript_body or "Official Transcript" in transcript_body
+    assert "registrar/forms" in withdrawal_body or "Withdrawal/Cancellation Request" in withdrawal_body
+
+
+def test_chat_fallback_returns_workflow_entrypoint_for_student_orgs_and_research(client, auth_headers, monkeypatch):
+    monkeypatch.setattr(
+        "app.chat.generate_ai_reply",
+        lambda **_: (_ for _ in ()).throw(RuntimeError("Gemini unavailable")),
+    )
+    session_id = client.post("/chat/sessions", headers=auth_headers, json={"title": "Workflow"}).json()["id"]
+
+    org_response = client.post(
+        f"/chat/sessions/{session_id}/messages",
+        headers=auth_headers,
+        data={"content": "What page do I use to form a student organization at Morgan?"},
+    )
+    research_response = client.post(
+        f"/chat/sessions/{session_id}/messages",
+        headers=auth_headers,
+        data={"content": "Where should I start if I want undergraduate research at Morgan?"},
+    )
+
+    assert org_response.status_code == 200
+    assert research_response.status_code == 200
+
+    org_body = org_response.json()["ai_message"]["content"]
+    research_body = research_response.json()["ai_message"]["content"]
+
+    assert "forming-a-new-organization" in org_body or "Forming a New Student Organization" in org_body
+    assert "undergraduateresearch" in research_body or "Office of Undergraduate Research" in research_body

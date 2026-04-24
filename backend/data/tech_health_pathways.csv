@@ -1,0 +1,27 @@
+major,stage,focus_area,required_course,priority,notes
+Information Systems,core,tech_foundation,INSS201,1,Information Science students should move through the early INSS sequence before later systems planning.
+Information Systems,core,tech_foundation,INSS220,2,Information Systems students should build business data communication context before upper Information Systems work.
+Information Systems,upper,inss_progression,INSS310,3,Students should build enough lower-division context before advanced Information Systems planning.
+Information Systems,upper,inss_progression,INSS340,4,Analytics and decision-support coursework should follow the lower Information Systems sequence.
+Cloud Computing,core,cloud_foundation,COSC111,1,Cloud Computing students should build programming literacy early.
+Cloud Computing,core,cloud_foundation,CLDC220,2,Infrastructure and platform foundations should come before advanced cloud work.
+Cloud Computing,core,cloud_foundation,COSC241,3,Cloud Computing students benefit from systems-oriented programming before upper cloud work.
+Cloud Computing,upper,cloud_progression,CLDC310,4,Mid-level cloud progression should precede platform design and security-heavy coursework.
+Cloud Computing,upper,cloud_progression,CLDC340,5,Advanced cloud security should wait for lower progression.
+Cloud Computing,upper,cloud_progression,CLDC420,6,Distributed cloud architecture should follow the broader cloud sequence.
+Nursing,core,nursing_foundation,BIOL101,1,Nursing students should stay on pace with lower-division science preparation.
+Nursing,core,nursing_foundation,NURS101,2,Introduction to Nursing should stay early in the sequence.
+Nursing,core,nursing_foundation,BIOL102,3,Students should finish the intro biology progression before upper nursing work.
+Nursing,upper,nursing_progression,NURS201,4,Foundations of Nursing Practice should precede later nursing progression.
+Nursing,upper,nursing_progression,NURS220,5,Health Assessment should come before upper nursing coursework.
+Nursing,upper,nursing_progression,NURS301,6,Upper nursing work should wait until the earlier nursing sequence is in place.
+Nursing,upper,nursing_progression,NURS320,7,Community and population health nursing should follow the earlier nursing sequence.
+Biology,core,biology_foundation,BIOL102,1,Biology students should finish the intro sequence before upper biology.
+Biology,core,biology_foundation,CHEM101,2,Biology students should build core supporting science preparation early.
+Biology,core,biology_foundation,CHEM102,3,The chemistry sequence should stay ahead of upper biology planning.
+Biology,upper,biology_progression,BIOL320,4,Upper biology should follow the intro science sequence.
+Biology,upper,biology_progression,BIOL410,5,Advanced biology should wait for the earlier biology progression.
+Psychology,core,psych_foundation,PSYC210,1,Psychology students should move beyond the intro course before advanced psych planning.
+Psychology,core,psych_foundation,STAT302,2,Statistics should come before later psychology planning.
+Psychology,upper,psych_progression,PSYC301,3,Research Methods should stay ahead of advanced psychology topics.
+Psychology,upper,psych_progression,PSYC302,4,Experimental Psychology should follow methods preparation.

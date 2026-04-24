@@ -1,0 +1,130 @@
+course_code,prerequisites,notes
+COSC112,COSC111,Official Morgan course listings require Computer Science I before Intro to Computer Science II.
+COSC220,COSC112,Assembly language and computer organization follows the second introductory computer science course.
+COSC238,COSC112,Object oriented programming is typically taken after the introductory programming sequence.
+COSC241,COSC111,Builds on introductory programming.
+COSC242,COSC241,Data structures should follow Computer Science II.
+COSC243,COSC238,Computer architecture is strongest after object oriented programming and systems-oriented preparation.
+COSC310,COSC242,Database work is stronger after data structures.
+COSC331,COSC242,Algorithm analysis assumes data structures fluency.
+COSC332,COSC242,Operating systems should follow programming foundations.
+COSC350,COSC242,Software engineering is best after the core programming sequence.
+COSC490,COSC350; COSC331,Capstone should come after core upper-level preparation.
+MATH241,MATH141,Calculus II follows Calculus I.
+MATH242,MATH141,Linear algebra is typically taken after initial college math preparation.
+MATH243,MATH242,Multivariable calculus builds naturally after the early calculus sequence.
+MATH312,MATH243,Linear algebra for upper-level quantitative study is stronger after the multivariable calculus sequence.
+MATH331,MATH243,Applied probability and statistics is commonly taken after the multivariable calculus sequence in Morgan actuarial study.
+MATH340,MATH243,Intro to differential equations should follow the core calculus sequence.
+MATH346,MATH331; MATH340,Financial mathematics is strongest after probability and differential equations preparation.
+MATH363,MATH331; MATH346,Actuarial and stochastic modeling builds on probability and financial mathematics.
+MATH364,MATH363,The second actuarial and stochastic modeling course follows the first sequence course.
+MATH431,MATH331,Mathematical theory of statistics is strongest after applied probability and statistics.
+INSS220,INSS201,Business data communications builds on introductory information science and systems concepts.
+INSS310,INSS220,Systems analysis should follow early information science and communications coursework.
+INSS340,INSS220; STAT302,Analytics is stronger after business data communications and statistics.
+BIOL102,BIOL101,General Biology II follows General Biology I.
+CHEM102,CHEM101,General Chemistry II follows General Chemistry I.
+CHEM201,CHEM102,Organic Chemistry I follows the general chemistry sequence.
+CHEM202,CHEM201,Organic Chemistry II follows Organic Chemistry I.
+CHEM301,CHEM102,Quantitative analysis is typically taken after the general chemistry sequence.
+CHEM302,CHEM202; PHYS102,Physical chemistry is strongest after organic chemistry and the introductory physics sequence.
+PHYS102,PHYS101; MATH141,Physics II assumes Physics I and calculus readiness.
+BIOL320,BIOL102,Genetics should follow the introductory biology sequence.
+BIOL410,BIOL320; CHEM102,Cell biology is stronger after genetics and chemistry.
+PSYC210,PSYC101,Developmental psychology follows introductory psychology.
+PSYC301,PSYC101; STAT302,Research methods should follow intro psychology and statistics.
+PSYC302,PSYC301,Experimental psychology should follow research methods.
+ACCT202,ACCT201,Accounting II follows Accounting I.
+ECON202,ECON201,Macroeconomics follows introductory economics.
+ECON301,ECON201,Intermediate microeconomics builds directly on principles of microeconomics.
+ECON302,ECON202,Intermediate macroeconomics follows the principles of macroeconomics sequence.
+ECON401,ECON301; STAT302,Econometrics is strongest after intermediate economics and statistics.
+ECON410,ECON301; ECON302,Senior economics seminar should follow the intermediate theory sequence.
+MKTG331,MKTG210,Marketing management should follow principles of marketing.
+FINA300,ACCT201; ECON201,Finance is stronger after accounting and economics.
+FINA320,FINA300,Investment analysis should follow the introductory corporate finance foundation.
+FINA410,FINA300; ECON202,Financial markets study is strongest after corporate finance and macroeconomic context.
+MGMT330,MGMT220,Organizational behavior should follow the lower-division management core.
+MGMT410,MGMT330; ACCT201; ECON201,Strategic management should follow the core business progression.
+ENTR300,MGMT220; MKTG210,Entrepreneurship and venture creation should follow foundational management and marketing.
+ENTR410,ENTR300,Small business strategy should follow earlier venture creation work.
+POSC201,POSC101,International relations builds on the introductory political science survey.
+POSC307,POSC101,Research methods follows an initial political science foundation.
+POSC314,POSC101,Political theory follows the introductory political science survey.
+POSC385,POSC101,Public policy benefits from the introductory political science foundation.
+POSC402,POSC307; POSC314,Senior seminar should follow methods and theory preparation.
+PHYS201,PHYS102; MATH241,Modern physics follows the introductory physics sequence and calculus preparation.
+PHYS310,PHYS102; MATH243,Electromagnetism is strongest after the introductory physics sequence and multivariable calculus.
+PHYS320,PHYS102; MATH243,Thermodynamics and statistical physics benefit from physics foundations and multivariable calculus.
+PHYS401,PHYS201; PHYS310,Senior seminar should follow upper-level physics preparation.
+PHIL201,PHIL101,Logic builds on introductory philosophy and supports upper-level philosophical reasoning.
+PHIL310,PHIL101,Social and political philosophy is strongest after introductory philosophical foundations.
+PHIL330,PHIL101,Philosophy of religion follows the introductory philosophy survey.
+PHIL401,PHIL201; PHIL310,Senior seminar should follow logic and upper-level philosophy preparation.
+CMGT220,CMGT210,Construction estimating follows the introduction to construction materials and methods.
+CMGT310,CMGT220,Construction scheduling is strongest after early estimating and project foundations.
+CMGT410,CMGT310,Construction project management follows scheduling and control preparation.
+INTD220,INTD210,Interior materials and finishes follows the first interior design studio.
+INTD310,INTD210,The second interior design studio follows the first studio sequence.
+INTD410,INTD310,Professional practice follows the upper-level studio sequence.
+ENTR300,MGMT220; MKTG210,Venture creation is strongest after basic management and marketing preparation.
+ENTR410,ENTR300,Small business strategy follows venture-creation coursework.
+COSC470,COSC360; COSC459,Information assurance follows core security and networking preparation.
+COSC475,COSC310; STAT302,Data mining is strongest after database and statistics preparation.
+COSC480,COSC331; COSC350,Special topics should typically follow upper-level CS core preparation.
+ENGE102,ENGE101,Engineering Foundations II follows the first foundations course.
+EEGR203,ENGE102; MATH141,Circuit analysis depends on engineering foundations and calculus.
+EEGR205,ENGE102,Digital logic usually follows early engineering foundations.
+EEGR301,EEGR203; MATH241,Signals and systems should follow circuits and calculus.
+EEGR317,EEGR203; PHYS102,Electronics is stronger after circuits and the physics sequence.
+MATH310,MATH141,Discrete mathematics follows early college mathematics preparation.
+MATH320,MATH241,Differential equations should follow calculus preparation.
+ENGL220,ENGL102,Survey and literature study should follow the composition sequence.
+ENGL310,ENGL102,Advanced composition follows the writing foundation sequence.
+ENGL320,ENGL220,Literary theory is stronger after an early literature survey.
+ENGL350,ENGL102,Professional writing builds on the composition sequence.
+HIST102,HIST101,World History II follows the initial survey course.
+HIST210,ENGL102,Historical methods benefits from college-level writing preparation.
+HIST310,HIST101,Upper-level history coursework should follow early survey study.
+HIST320,HIST101,African American history is stronger after foundational survey work.
+SOCY201,SOCY101,Social problems follows introductory sociology.
+SOCY320,SOCY101; STAT302,Research methods should follow introductory sociology and statistics.
+ACCT301,ACCT202,Intermediate accounting follows the full introductory accounting sequence.
+ACCT302,ACCT301,Intermediate Accounting II follows Intermediate Accounting I.
+CEGR201,ENGE102; PHYS101,Statics follows engineering foundations and introductory physics.
+CEGR220,CEGR201,Civil engineering materials is stronger after statics.
+CEGR310,CEGR201; MATH241,Structural analysis follows statics and calculus.
+CEGR320,CEGR201,Transportation engineering should follow early civil engineering mechanics.
+NURS201,NURS101; BIOL101,Foundations of nursing practice follows early nursing orientation and biology.
+NURS220,NURS101; BIOL101,Health assessment follows introductory nursing and biology.
+NURS301,NURS201; NURS220; BIOL102,Adult health nursing should follow foundations health assessment and anatomy-related preparation.
+NURS320,NURS201; STAT302,Community health is stronger after nursing foundations and statistics.
+CLDC220,CLDC101; COSC111,Cloud infrastructure builds on introductory cloud concepts and programming comfort.
+CLDC310,CLDC220; COSC241,Automation and DevOps work is stronger after core cloud infrastructure and programming foundations.
+CLDC340,CLDC220,Cloud security assumes familiarity with cloud infrastructure and deployment models.
+CLDC420,CLDC310; CLDC340,Advanced architecture should follow both automation and cloud security preparation.
+ARCH102,ARCH101,Design Studio II follows the introductory studio sequence.
+ARCH201,ARCH101,Architectural history is most helpful once students have early studio context.
+ARCH220,ARCH101,Graphics and representation should follow the first studio experience.
+ARCH310,ARCH102; PHYS101,Building systems is stronger after studio foundations and introductory physics.
+ARCH320,ARCH102; MATH141,Structures for Designers should follow studio foundations and college mathematics.
+ARCH401,ARCH310; ARCH320,Advanced studio should come after building systems and structures.
+BIOL330,BIOL102,Microbiology follows the introductory biology sequence.
+BIOL360,BIOL102,Ecology is stronger after the full introductory biology sequence.
+PSYC315,PSYC101,Abnormal psychology follows introductory psychology.
+PSYC330,PSYC101,Cognitive psychology should build on the introductory survey course.
+MGMT330,MGMT220,Organizational behavior builds on lower-division management preparation.
+MGMT410,MGMT330; ACCT202,Strategic management is strongest after management and accounting foundations.
+MKTG350,MKTG210,Consumer behavior should follow the introductory marketing foundation.
+MKTG420,MKTG331; STAT302,Marketing research should follow marketing management and quantitative analysis preparation.
+CRJU210,CRJU101,Criminology follows introductory criminal justice foundations.
+CRJU305,CRJU210,Juvenile justice should follow the introductory criminal justice and criminology sequence.
+CRJU308,CRJU210,Criminal justice policy and society should follow the criminology foundation.
+CRJU331,CRJU305,Community-based corrections is stronger after earlier criminal justice systems study.
+CRJU408,CRJU308,Research methods in criminal justice should follow policy and systems grounding.
+EDUC220,EDUC200,Child development for teachers follows the education foundation course.
+EDUC310,EDUC200,Educational psychology should follow foundations of education.
+EDUC320,EDUC220; EDUC310,Reading methods should follow learner-development and educational-psychology preparation.
+EDUC330,EDUC310,Elementary curriculum and instruction should follow educational psychology.
+EDUC410,EDUC320; EDUC330,Internship seminar should follow the core elementary methods sequence.

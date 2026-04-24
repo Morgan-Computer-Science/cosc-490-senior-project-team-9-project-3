@@ -1,0 +1,22 @@
+course_code,bucket,role,notes
+COSC111,foundation,intro_programming,Intro programming foundation
+COSC112,foundation,intro_programming,Second programming foundation
+COSC220,core,systems_foundation,Assembly language and computer organization support for systems-heavy progression
+COSC238,core,software_foundation,Object-oriented programming support for software progression
+COSC241,core,systems_foundation,Computer systems and digital logic
+COSC242,core,data_structures,Data structures and algorithms backbone
+COSC243,core,systems_core,Computer architecture progression support
+COSC310,core,software_foundation,Upper-level core before capstone
+COSC320,upper_level,systems_elective,Upper-level computer organization signal for systems-heavy records
+COSC331,core,systems_core,Core systems sequence
+COSC332,core,software_core,Core software sequence
+COSC350,core,theory_core,Core theory sequence
+MATH141,math_support,calculus_foundation,Required lower-division math
+MATH241,math_support,advanced_calculus,Supports upper-level CS work
+MATH242,math_support,linear_algebra_support,Supports AI/data and upper-level CS
+STAT302,math_support,statistics_support,Supports AI/data work
+COSC459,upper_level,database_elective,Upper-level database planning signal
+COSC470,upper_level,ai_data_elective,AI and data focus-area elective
+COSC475,upper_level,cybersecurity_elective,Cybersecurity focus-area elective
+COSC480,upper_level,cloud_systems_elective,Cloud and systems focus-area elective
+COSC490,capstone,capstone,Senior project capstone

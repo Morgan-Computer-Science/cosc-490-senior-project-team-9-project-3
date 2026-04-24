@@ -641,3 +641,49 @@ def test_chat_fallback_returns_workflow_entrypoint_for_student_orgs_and_research
 
     assert "forming-a-new-organization" in org_body or "Forming a New Student Organization" in org_body
     assert "undergraduateresearch" in research_body or "Office of Undergraduate Research" in research_body
+
+
+def test_chat_fallback_returns_calendar_and_deadline_guidance(client, auth_headers, monkeypatch):
+    monkeypatch.setattr(
+        "app.chat.generate_ai_reply",
+        lambda **_: (_ for _ in ()).throw(RuntimeError("Gemini unavailable")),
+    )
+    session_id = client.post("/chat/sessions", headers=auth_headers, json={"title": "Calendar"}).json()["id"]
+
+    calendar_response = client.post(
+        f"/chat/sessions/{session_id}/messages",
+        headers=auth_headers,
+        data={"content": "Where is the academic calendar at Morgan?"},
+    )
+    graduation_response = client.post(
+        f"/chat/sessions/{session_id}/messages",
+        headers=auth_headers,
+        data={"content": "When should I apply for graduation at Morgan?"},
+    )
+
+    assert calendar_response.status_code == 200
+    assert graduation_response.status_code == 200
+
+    calendar_body = calendar_response.json()["ai_message"]["content"]
+    graduation_body = graduation_response.json()["ai_message"]["content"]
+
+    assert "academic-calendar" in calendar_body or "Academic Calendar" in calendar_body
+    assert "graduation" in graduation_body.lower() or "apply-to-graduate" in graduation_body.lower()
+
+
+def test_chat_fallback_returns_financial_aid_timeline_guidance(client, auth_headers, monkeypatch):
+    monkeypatch.setattr(
+        "app.chat.generate_ai_reply",
+        lambda **_: (_ for _ in ()).throw(RuntimeError("Gemini unavailable")),
+    )
+    session_id = client.post("/chat/sessions", headers=auth_headers, json={"title": "Aid Deadlines"}).json()["id"]
+
+    response = client.post(
+        f"/chat/sessions/{session_id}/messages",
+        headers=auth_headers,
+        data={"content": "Where do I find financial aid deadlines at Morgan?"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()["ai_message"]["content"]
+    assert "timelines" in body.lower() or "March 1" in body or "finaid@morgan.edu" in body

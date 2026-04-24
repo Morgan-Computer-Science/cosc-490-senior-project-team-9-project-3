@@ -460,13 +460,14 @@ def _fallback_advising_reply(
 
     intent = classify_question_intent(question)
     relevant = documents[:3]
-    if intent in {"people_contact_leadership", "office_resource", "organization_team", "policy_process", "workflow_entrypoint"} and relevant:
+    if intent in {"people_contact_leadership", "office_resource", "organization_team", "policy_process", "workflow_entrypoint", "calendar_deadline"} and relevant:
         opening_map = {
             "people_contact_leadership": "Here is the closest Morgan leadership or contact path I found.",
             "office_resource": "Here is the best Morgan office path I found for that question.",
             "organization_team": "Here is the closest Morgan organization or support path I found.",
             "policy_process": "Here is the best official Morgan process path I found for that question.",
             "workflow_entrypoint": "Here is the best official Morgan starting page I found for that question.",
+            "calendar_deadline": "Here is the safest official Morgan calendar or deadline page I found for that question.",
         }
         lines = [opening_map[intent]]
         for doc in relevant[:2]:

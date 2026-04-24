@@ -261,6 +261,39 @@ def test_retrieval_supports_research_and_accessibility_entrypoint_questions():
     assert "Office of Undergraduate Research" in research_joined or "undergraduate research" in research_joined.lower()
 
 
+def test_retrieval_supports_calendar_and_deadline_questions():
+    calendar_docs = retrieve_relevant_documents(
+        "Where is the academic calendar at Morgan?",
+        top_k=8,
+    )
+    withdrawal_docs = retrieve_relevant_documents(
+        "Where do I find the withdrawal deadline at Morgan?",
+        top_k=8,
+    )
+    graduation_docs = retrieve_relevant_documents(
+        "When should I apply for graduation at Morgan?",
+        top_k=8,
+    )
+
+    calendar_joined = "\n".join(f"{doc.title} {doc.content}" for doc in calendar_docs)
+    withdrawal_joined = "\n".join(f"{doc.title} {doc.content}" for doc in withdrawal_docs)
+    graduation_joined = "\n".join(f"{doc.title} {doc.content}" for doc in graduation_docs)
+
+    assert "Academic Calendar" in calendar_joined or "academic calendar" in calendar_joined.lower()
+    assert "Academic Calendar" in withdrawal_joined or "withdrawal deadline" in withdrawal_joined.lower()
+    assert "Graduation" in graduation_joined or "apply to graduate" in graduation_joined.lower()
+
+
+def test_retrieval_supports_financial_aid_timing_questions():
+    docs = retrieve_relevant_documents(
+        "Where do I find financial aid deadlines at Morgan?",
+        top_k=8,
+    )
+
+    joined = "\n".join(f"{doc.title} {doc.content}" for doc in docs)
+    assert "Financial Aid Timeline" in joined or "March 1" in joined or "financial aid" in joined.lower()
+
+
 @pytest.mark.parametrize(
     "question,expected_intent",
     [
@@ -270,6 +303,7 @@ def test_retrieval_supports_research_and_accessibility_entrypoint_questions():
         ("What office handles transfer advising?", "office_resource"),
         ("How do I withdraw from a class?", "policy_process"),
         ("What page do I use for transcript requests?", "workflow_entrypoint"),
+        ("Where is the academic calendar?", "calendar_deadline"),
         ("Who runs the robotics team?", "organization_team"),
         ("What is my GPA?", "transcript_import"),
         ("How are you?", "small_talk"),

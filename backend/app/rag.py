@@ -17,6 +17,7 @@ ORGANIZATIONS_PATH = DATA_DIR / "organizations.csv"
 OPPORTUNITIES_PATH = DATA_DIR / "opportunities.csv"
 PROCESS_GUIDANCE_PATH = DATA_DIR / "process_guidance.csv"
 WORKFLOW_ENTRYPOINTS_PATH = DATA_DIR / "workflow_entrypoints.csv"
+CALENDAR_DEADLINES_PATH = DATA_DIR / "calendar_deadlines.csv"
 STOPWORDS = {
     "a",
     "an",
@@ -186,6 +187,16 @@ WORKFLOW_TOKENS = {
     "entrypoints",
     "submit",
 }
+CALENDAR_TOKENS = {
+    "calendar",
+    "deadline",
+    "deadlines",
+    "date",
+    "dates",
+    "timeline",
+    "timelines",
+    "when",
+}
 TRANSCRIPT_TOKENS = {
     "gpa",
     "credits",
@@ -247,36 +258,37 @@ def _normalize(value: Optional[str]) -> str:
 
 def classify_question_intent(question: str) -> str:
     lowered = _normalize(question).lower()
+    query_tokens = _tokenize(lowered)
     if not lowered:
         return "degree_planning"
 
     if any(pattern in lowered for pattern in GREETING_PATTERNS):
         return "small_talk"
-    if any(token in lowered for token in WORKFLOW_TOKENS) and any(
-        token in lowered
-        for token in PROCESS_TOKENS
-        | {
-            "student organization",
-            "organizations",
-            "research",
-            "internship",
-            "internships",
-            "career",
-        }
+    if (
+        query_tokens & CALENDAR_TOKENS
+        and (
+            query_tokens & PROCESS_TOKENS
+            or query_tokens & {"graduation", "registration", "financial", "aid", "scholarship", "scholarships"}
+        )
+    ) or "academic calendar" in lowered:
+        return "calendar_deadline"
+    if query_tokens & WORKFLOW_TOKENS and (
+        query_tokens & PROCESS_TOKENS
+        or query_tokens & {"organization", "organizations", "research", "internship", "internships", "career"}
     ):
         return "workflow_entrypoint"
     if (
         ("transcript" in lowered and any(token in lowered for token in {"get", "request", "order", "send"}))
-        or any(token in lowered for token in {"withdraw", "withdrawal", "override", "permission", "clearance", "verification"})
-        or ("transfer" in lowered and "credit" in lowered)
-        or ("registration" in lowered and any(token in lowered for token in {"problem", "issue", "override", "cannot", "can't"}))
+        or query_tokens & {"withdraw", "withdrawal", "override", "permission", "clearance", "verification"}
+        or ("transfer" in query_tokens and "credit" in query_tokens)
+        or ("registration" in query_tokens and query_tokens & {"problem", "issue", "override", "cannot", "cant"})
         or ("accommodation" in lowered or "accommodations" in lowered)
     ):
         return "policy_process"
-    if any(token in lowered for token in TRANSCRIPT_TOKENS):
+    if query_tokens & TRANSCRIPT_TOKENS:
         return "transcript_import"
     if (
-        any(token in lowered for token in {"program", "major"})
+        query_tokens & {"program", "major"}
         or any(token in lowered for token in DEGREE_PLANNING_TOKENS)
     ) and not any(
         token in lowered
@@ -298,15 +310,15 @@ def classify_question_intent(question: str) -> str:
         }
     ):
         return "degree_planning"
-    if any(token in lowered for token in ORG_TOKENS):
+    if query_tokens & ORG_TOKENS:
         return "organization_team"
-    if any(token in lowered for token in OFFICE_TOKENS):
+    if query_tokens & OFFICE_TOKENS:
         return "office_resource"
-    if any(token in lowered for token in LEADERSHIP_TOKENS) or any(
+    if query_tokens & {"dean", "chair", "director", "head", "lead", "leader", "runs", "run", "charge"} or any(
         phrase in lowered for phrase in ("who is", "who should i contact", "who do i contact")
     ):
         return "people_contact_leadership"
-    if any(token in lowered for token in COURSE_PREREQ_TOKENS):
+    if query_tokens & {"prerequisite", "prereq", "before", "requires", "need"}:
         return "course_prerequisite"
     if any(token in lowered for token in DEGREE_PLANNING_TOKENS):
         return "degree_planning"
@@ -886,6 +898,15 @@ def load_workflow_entrypoint_rows() -> tuple[dict[str, str], ...]:
 
 
 @lru_cache(maxsize=1)
+def load_calendar_deadline_rows() -> tuple[dict[str, str], ...]:
+    if not CALENDAR_DEADLINES_PATH.exists():
+        return tuple()
+
+    with CALENDAR_DEADLINES_PATH.open(newline="", encoding="utf-8") as file:
+        return tuple(csv.DictReader(file))
+
+
+@lru_cache(maxsize=1)
 def load_prerequisite_rows() -> tuple[dict[str, str], ...]:
     path = DATA_DIR / "prerequisites.csv"
     if not path.exists():
@@ -1100,6 +1121,29 @@ def _workflow_entrypoint_documents() -> List[RetrievedDocument]:
     return docs
 
 
+def _calendar_deadline_documents() -> List[RetrievedDocument]:
+    docs = []
+    for row in load_calendar_deadline_rows():
+        owner_office = _normalize(row.get("owner_office"))
+        docs.append(
+            RetrievedDocument(
+                source_type="calendar_deadline",
+                title=f"{_normalize(row.get('name'))} ({_normalize(row.get('category'))})",
+                content=(
+                    f"Owner Office: {owner_office}. "
+                    f"Email: {_normalize(row.get('contact_email'))}. "
+                    f"Phone: {_normalize(row.get('contact_phone'))}. "
+                    f"Overview: {_normalize(row.get('overview'))}. "
+                    f"Source URL: {_normalize(row.get('url'))}."
+                ),
+                department=owner_office or None,
+                major=owner_office or None,
+                contact=_normalize(row.get("contact_email")) or _normalize(row.get("contact_phone")) or None,
+            )
+        )
+    return docs
+
+
 @lru_cache(maxsize=1)
 def load_knowledge_documents() -> tuple[RetrievedDocument, ...]:
     docs = [
@@ -1114,6 +1158,7 @@ def load_knowledge_documents() -> tuple[RetrievedDocument, ...]:
         *_opportunity_documents(),
         *_process_guidance_documents(),
         *_workflow_entrypoint_documents(),
+        *_calendar_deadline_documents(),
     ]
     return tuple(docs)
 
@@ -1147,12 +1192,12 @@ def _score_document(
     explicit_other_unit_query = _query_mentions_other_named_unit(query, user_major)
     score = float(len(overlap))
     if not explicit_other_unit_query:
-        if intent in {"people_contact_leadership", "office_resource", "organization_team", "policy_process", "workflow_entrypoint"}:
+        if intent in {"people_contact_leadership", "office_resource", "organization_team", "policy_process", "workflow_entrypoint", "calendar_deadline"}:
             score += float(len(major_overlap)) * 0.25
         else:
             score += float(len(major_overlap)) * 1.5
     if exact_major_match:
-        if intent in {"people_contact_leadership", "office_resource", "organization_team", "policy_process", "workflow_entrypoint"}:
+        if intent in {"people_contact_leadership", "office_resource", "organization_team", "policy_process", "workflow_entrypoint", "calendar_deadline"}:
             score += 1.0
         else:
             score += 2.0 if explicit_other_unit_query else 4.0
@@ -1163,7 +1208,7 @@ def _score_document(
     if explicit_doc_match:
         score += 8.0
 
-    if user_major and not explicit_other_unit_query and intent not in {"people_contact_leadership", "office_resource", "organization_team", "policy_process", "workflow_entrypoint"}:
+    if user_major and not explicit_other_unit_query and intent not in {"people_contact_leadership", "office_resource", "organization_team", "policy_process", "workflow_entrypoint", "calendar_deadline"}:
         user_major_lower = user_major.lower()
         if doc.major and user_major_lower in doc.major.lower():
             score += 3.0
@@ -1201,6 +1246,8 @@ def _score_document(
         score += 10.0
     if doc.source_type == "workflow_entrypoint" and any(token in query_tokens for token in WORKFLOW_TOKENS | PROCESS_TOKENS | ORG_TOKENS | OPPORTUNITY_TOKENS):
         score += 12.0
+    if doc.source_type == "calendar_deadline" and any(token in query_tokens for token in CALENDAR_TOKENS | PROCESS_TOKENS):
+        score += 13.0
     if doc.source_type == "course" and any(token in query_tokens for token in {"course", "class", "take", "schedule", "prerequisite"}):
         score += 1.5
 
@@ -1235,6 +1282,8 @@ def _score_document(
     if {"verification", "graduation", "clearance"} & query_tokens and ("verification" in haystack or "graduation" in haystack or "registrar" in haystack):
         score += 10.0
     if WORKFLOW_TOKENS & query_tokens and ("source url" in haystack or "starting point" in haystack or "official" in haystack or "page" in haystack):
+        score += 12.0
+    if CALENDAR_TOKENS & query_tokens and ("calendar" in haystack or "deadline" in haystack or "timeline" in haystack or "march 1" in haystack):
         score += 12.0
     if "robotics" in query_tokens and "robotics" in haystack:
         score += 12.0
@@ -1277,6 +1326,13 @@ def _score_document(
             score += 6.0
         elif doc.source_type in {"office", "support_resource", "opportunity", "organization"}:
             score += 3.0
+    elif intent == "calendar_deadline":
+        if doc.source_type == "calendar_deadline":
+            score += 12.0
+        elif doc.source_type in {"workflow_entrypoint", "process_guidance"}:
+            score += 5.0
+        elif doc.source_type in {"office", "support_resource", "opportunity"}:
+            score += 2.0
     elif intent == "organization_team":
         if doc.source_type == "organization":
             score += 8.0

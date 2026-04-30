@@ -470,7 +470,8 @@ def _fallback_advising_reply(
             "calendar_deadline": "Here is the safest official Morgan calendar or deadline page I found for that question.",
         }
         lines = [opening_map[intent]]
-        for doc in relevant[:2]:
+        visible_docs = relevant[:3] if intent == "organization_team" else relevant[:2]
+        for doc in visible_docs:
             line = f"- {doc.title}"
             if doc.contact:
                 line += f" | Contact: {doc.contact}"

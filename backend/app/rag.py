@@ -126,6 +126,7 @@ ORG_TOKENS = {
     "robotics",
     "society",
     "group",
+    "groups",
     "chapter",
     "lab",
     "labs",
@@ -1287,6 +1288,10 @@ def _score_document(
         score += 12.0
     if "robotics" in query_tokens and "robotics" in haystack:
         score += 12.0
+    if "robotics" in query_tokens and "paul wang" in haystack:
+        score += 18.0
+        if {"charge", "head", "lead", "leader", "runs", "run", "contact"} & query_tokens:
+            score += 8.0
     if {"organization", "organizations", "org", "orgs", "club", "clubs", "community", "involved"} & query_tokens and (
         "student organization" in haystack
         or "student organizations" in haystack
@@ -1295,6 +1300,14 @@ def _score_document(
         or "community" in haystack
     ):
         score += 10.0
+    if {"group", "groups", "club", "clubs", "society", "chapter"} & query_tokens and (
+        "computer science club" in haystack
+        or "student organization" in haystack
+        or "student group" in haystack
+        or "sacs" in haystack
+        or "acm-msu" in haystack
+    ):
+        score += 12.0
     if {"center", "research"} & query_tokens and "student research center" in haystack:
         score += 12.0
 

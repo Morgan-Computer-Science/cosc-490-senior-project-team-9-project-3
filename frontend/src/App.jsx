@@ -431,7 +431,7 @@ const App = () => {
           </div>
         </header>
 
-        <div className="ms-page">
+        <div className={`ms-page ${activeTab === "advisor" ? "advisor-page" : ""}`}>
           {activeTab === "advisor" && <Chatbot token={token} user={user} />}
 
           {activeTab === "catalog" && (

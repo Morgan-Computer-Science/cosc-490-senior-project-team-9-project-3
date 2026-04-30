@@ -94,6 +94,20 @@ def test_organization_queries_return_supported_team_or_contact_context():
 
     assert docs
     assert any(doc.source_type in {"organization", "faculty", "department"} for doc in docs[:4])
+    joined = "\n".join(f"{doc.title} {doc.content}" for doc in docs[:4])
+    assert "Dr. Paul Wang" in joined
+
+
+def test_robotics_research_context_keeps_csv_fields_aligned():
+    docs = retrieve_relevant_documents(
+        "Who should I contact about AI or robotics research at Morgan?",
+        top_k=6,
+    )
+
+    joined = "\n".join(f"{doc.title} {doc.content}" for doc in docs)
+    assert "Dr. Paul Wang" in joined
+    assert "Email: Center for Equitable" not in joined
+    assert "Phone: kofi.nyarko@morgan.edu" not in joined
 
 
 def test_retrieval_supports_undergraduate_research_contact_queries():
@@ -149,6 +163,28 @@ def test_retrieval_surfaces_named_ai_and_robotics_labs():
 
     joined = "\n".join(f"{doc.title} {doc.content}" for doc in docs)
     assert "RAIN" in joined or "MINDS" in joined or "CEAMLS" in joined
+
+
+def test_retrieval_surfaces_hax_lab_for_dr_mack_questions():
+    docs = retrieve_relevant_documents(
+        "Does Dr. Mack have something called HAX Lab?",
+        top_k=8,
+    )
+
+    joined = "\n".join(f"{doc.title} {doc.content}" for doc in docs)
+    assert "Human-AI eXperience" in joined
+    assert "naja.mack@morgan.edu" in joined
+
+
+def test_retrieval_surfaces_sacs_for_computer_science_group_questions():
+    docs = retrieve_relevant_documents(
+        "Are there any computer science groups like SACHS at Morgan?",
+        top_k=8,
+    )
+
+    joined = "\n".join(f"{doc.title} {doc.content}" for doc in docs)
+    assert "Society for the Advancement of Computer Science" in joined
+    assert "ACM-MSU" in joined
 
 
 def test_retrieval_supports_internship_and_career_questions():

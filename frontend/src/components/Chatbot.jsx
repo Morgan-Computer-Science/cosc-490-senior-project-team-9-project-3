@@ -321,6 +321,15 @@ const Chatbot = ({ token, user }) => {
     }
   };
 
+  const handleComposerKeyDown = (event) => {
+    if (event.key !== "Enter" || event.shiftKey) {
+      return;
+    }
+
+    event.preventDefault();
+    handleSend(event);
+  };
+
   const handleVoiceInput = () => {
     if (!recognitionRef.current) {
       setVoiceStatus("Voice input is not supported in this browser.");
@@ -484,6 +493,7 @@ const Chatbot = ({ token, user }) => {
             rows="1"
             value={input}
             onChange={(event) => setInput(event.target.value)}
+            onKeyDown={handleComposerKeyDown}
             placeholder="Ask about courses, faculty, or degree requirements..."
           />
 

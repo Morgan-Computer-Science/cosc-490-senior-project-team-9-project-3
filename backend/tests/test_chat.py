@@ -423,10 +423,31 @@ def test_chat_fallback_returns_research_or_robotics_support_path(client, auth_he
     assert (
         "csdept@morgan.edu" in body
         or "ece@morgan.edu" in body
+        or "paul.wang@morgan.edu" in body
         or "radhouane.chouchane@morgan.edu" in body
         or "kofi.nyarko@morgan.edu" in body
         or "jamell.dacon@morgan.edu" in body
     )
+
+
+def test_chat_fallback_names_paul_wang_for_robotics_lead_questions(client, auth_headers, monkeypatch):
+    monkeypatch.setattr(
+        "app.chat.generate_ai_reply",
+        lambda **_: (_ for _ in ()).throw(RuntimeError("Gemini unavailable")),
+    )
+    session_id = client.post("/chat/sessions", headers=auth_headers, json={"title": "Robotics"}).json()["id"]
+
+    response = client.post(
+        f"/chat/sessions/{session_id}/messages",
+        headers=auth_headers,
+        data={"content": "Who is in charge of robotics at Morgan?"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()["ai_message"]["content"]
+    assert "Dr. Paul Wang" in body
+    assert "paul.wang@morgan.edu" in body
+    assert "Phone: kofi.nyarko@morgan.edu" not in body
 
 
 def test_chat_fallback_returns_student_organizations_contact_path(client, auth_headers, monkeypatch):
@@ -464,6 +485,44 @@ def test_chat_fallback_surfaces_named_lab_paths_when_available(client, auth_head
     assert response.status_code == 200
     body = response.json()["ai_message"]["content"]
     assert "RAIN" in body or "MINDS" in body or "CEAMLS" in body
+
+
+def test_chat_fallback_surfaces_hax_lab_for_dr_mack_questions(client, auth_headers, monkeypatch):
+    monkeypatch.setattr(
+        "app.chat.generate_ai_reply",
+        lambda **_: (_ for _ in ()).throw(RuntimeError("Gemini unavailable")),
+    )
+    session_id = client.post("/chat/sessions", headers=auth_headers, json={"title": "HAX"}).json()["id"]
+
+    response = client.post(
+        f"/chat/sessions/{session_id}/messages",
+        headers=auth_headers,
+        data={"content": "Does Dr. Mack have something called HAX LAB?"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()["ai_message"]["content"]
+    assert "Human-AI eXperience" in body
+    assert "naja.mack@morgan.edu" in body
+
+
+def test_chat_fallback_surfaces_sacs_for_cs_group_questions(client, auth_headers, monkeypatch):
+    monkeypatch.setattr(
+        "app.chat.generate_ai_reply",
+        lambda **_: (_ for _ in ()).throw(RuntimeError("Gemini unavailable")),
+    )
+    session_id = client.post("/chat/sessions", headers=auth_headers, json={"title": "SACS"}).json()["id"]
+
+    response = client.post(
+        f"/chat/sessions/{session_id}/messages",
+        headers=auth_headers,
+        data={"content": "Are there any computer science groups you have knowledge about?"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()["ai_message"]["content"]
+    assert "Society for the Advancement of Computer Science" in body
+    assert "SACSMSU1@Gmail.com" in body
 
 
 def test_chat_fallback_returns_internship_and_career_path(client, auth_headers, monkeypatch):

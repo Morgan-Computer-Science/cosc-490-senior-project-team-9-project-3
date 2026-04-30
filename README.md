@@ -19,6 +19,85 @@
 
 Morgan State AI Faculty Advisor is a full-stack student advising system built for a university-wide advising experience. It combines authentication, degree-progress tracking, retrieval-augmented advising, student-state analysis, and multimodal chat features into one launch-oriented application.
 
+## Presentation quick start
+
+Use this path when running the project on another laptop. Docker is the most reliable option because it runs the frontend and backend with the same versions across Windows and macOS.
+
+### Required before launch
+
+- Git installed
+- Docker Desktop installed and running
+- A valid Gemini API key
+- Internet connection for the first Docker build and live Gemini responses
+
+The Gemini key is not tied to one laptop. It is tied to the Google/Gemini project quota. Do not commit the key to GitHub.
+
+### Fresh laptop setup
+
+#### Windows Git Bash
+
+```bash
+cd ~/Desktop
+git clone https://github.com/Morgan-Computer-Science/cosc-490-senior-project-team-9-project-3.git
+cd cosc-490-senior-project-team-9-project-3
+printf "GEMINI_API_KEY=your_working_key_here\n" > backend/.env
+docker compose up --build -d
+docker compose ps
+```
+
+#### macOS Terminal
+
+```bash
+cd ~/Desktop
+git clone https://github.com/Morgan-Computer-Science/cosc-490-senior-project-team-9-project-3.git
+cd cosc-490-senior-project-team-9-project-3
+printf "GEMINI_API_KEY=your_working_key_here\n" > backend/.env
+docker compose up --build -d
+docker compose ps
+```
+
+#### If the repo is already cloned
+
+```bash
+cd ~/Desktop/cosc-490-senior-project-team-9-project-3
+git pull origin main
+printf "GEMINI_API_KEY=your_working_key_here\n" > backend/.env
+docker compose up --build -d
+docker compose ps
+```
+
+### Open these URLs
+
+- App: `http://127.0.0.1:5173`
+- Backend health: `http://127.0.0.1:8000/health`
+- Backend API docs: `http://127.0.0.1:8000/docs`
+
+### Presentation smoke test
+
+After the app opens, create a new account and test a few known-good prompts:
+
+```text
+Hello how are you?
+```
+
+```text
+Does Dr. Mack have something called HAX Lab?
+```
+
+```text
+Who is in charge of robotics at Morgan?
+```
+
+```text
+What is SACS at Morgan State?
+```
+
+```text
+What classes should I take next?
+```
+
+If live Gemini is unavailable, the app still uses a grounded Morgan State fallback answer from local advising data.
+
 ## Current capabilities
 
 - Secure student signup and login
@@ -98,7 +177,7 @@ GEMINI_API_KEY=your_api_key_here
 #### 3. Start the app
 
 ```bash
-docker compose up --build
+docker compose up --build -d
 ```
 
 #### 4. Open the app
@@ -113,7 +192,7 @@ docker compose up --build
 - If you change Dockerfiles or dependencies, rebuild with:
 
 ```bash
-docker compose up --build
+docker compose up --build -d
 ```
 
 - To stop the app:
@@ -276,6 +355,9 @@ npm run dev
 
 - The backend expects a Gemini key in `backend/.env`.
 - If the live advisor falls back to grounded-only responses, restart the backend after checking the API key.
+- If Gemini says quota, free-tier limit, or prepayment credits are depleted, use a Gemini key from a project with available quota or enable billing/prepay in Google AI Studio.
+- If Docker says port `8000` or `5173` is already allocated, stop the older process or run `docker compose down`, then start again.
+- Docker Desktop must be open and fully running before `docker compose up --build -d`.
 - If an older local virtual environment like `.venv312` causes issues, create a fresh `backend/.venv` and reinstall from `requirements.txt`.
 - If PowerShell blocks local script execution, run:
 

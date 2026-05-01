@@ -102,6 +102,8 @@ def build_saved_import_summary_context(
             lines.append(f"- Earned credits shown in the uploaded document: {preview.transcript_summary.earned_credits}")
         if preview.transcript_summary.standing:
             lines.append(f"- Standing shown in the uploaded document: {preview.transcript_summary.standing}")
+        if preview.transcript_summary.advisor:
+            lines.append(f"- Advisor shown in the uploaded document: {preview.transcript_summary.advisor}")
     if preview.completed_course_codes:
         lines.append(f"- Imported completed courses: {', '.join(preview.completed_course_codes)}")
     if preview.planned_course_codes:
@@ -128,4 +130,6 @@ def answer_from_saved_import_summary(
         return f"Your uploaded document shows {summary.earned_credits} earned credits."
     if "standing" in lowered and summary.standing:
         return f"Your uploaded document lists your standing as {summary.standing}."
+    if "advisor" in lowered and summary.advisor:
+        return f"Your uploaded document lists your advisor as {summary.advisor}."
     return None

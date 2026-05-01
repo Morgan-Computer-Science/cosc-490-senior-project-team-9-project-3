@@ -83,6 +83,7 @@ OFFICE_TOKENS = {
     "contact",
     "advising",
     "advisor",
+    "advisors",
     "registrar",
     "transfer",
     "support",
@@ -313,12 +314,13 @@ def classify_question_intent(question: str) -> str:
         return "degree_planning"
     if query_tokens & ORG_TOKENS:
         return "organization_team"
-    if query_tokens & OFFICE_TOKENS:
-        return "office_resource"
-    if query_tokens & {"dean", "chair", "director", "head", "lead", "leader", "runs", "run", "charge"} or any(
-        phrase in lowered for phrase in ("who is", "who should i contact", "who do i contact")
+    if (
+        query_tokens & {"dean", "chair", "director", "head", "lead", "leader", "runs", "run", "charge", "advisor", "advisors", "faculty", "professor", "professors"}
+        and any(phrase in lowered for phrase in ("who is", "who are", "who should i contact", "who do i contact"))
     ):
         return "people_contact_leadership"
+    if query_tokens & OFFICE_TOKENS:
+        return "office_resource"
     if query_tokens & {"prerequisite", "prereq", "before", "requires", "need"}:
         return "course_prerequisite"
     if any(token in lowered for token in DEGREE_PLANNING_TOKENS):
@@ -1219,7 +1221,7 @@ def _score_document(
     if doc.source_type == "degree_requirements" and any(token in query_tokens for token in {"requirement", "required", "need", "graduate"}):
         score += 2.5
     leadership_query = any(token in query_tokens for token in {"dean", "chair", "director", "head"})
-    if doc.source_type == "faculty" and any(token in query_tokens for token in {"faculty", "professor", "teacher", "instructor", "dean", "chair", "director", "head"}):
+    if doc.source_type == "faculty" and any(token in query_tokens for token in {"faculty", "professor", "professors", "teacher", "instructor", "advisor", "advisors", "advising", "dean", "chair", "director", "head"}):
         score += 2.5
         if leadership_query:
             leadership_title = doc.title.lower()
@@ -1231,7 +1233,7 @@ def _score_document(
                 score += 5.0
             if "director" in query_tokens and "director" in leadership_title:
                 score += 4.0
-    if doc.source_type == "department" and any(token in query_tokens for token in {"department", "office", "advisor", "contact"}):
+    if doc.source_type == "department" and any(token in query_tokens for token in {"department", "office", "advisor", "advisors", "contact"}):
         score += 2.0
     if doc.source_type == "program" and any(token in query_tokens for token in {"program", "major", "school", "college", "path"}):
         score += 2.5
@@ -2154,5 +2156,4 @@ def get_degree_progress(
         "notes": _normalize(matching_row.get("notes")) or None,
         "advising_tips": _normalize(matching_row.get("advising_tips")) or None,
     }
-
 

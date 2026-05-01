@@ -43,6 +43,7 @@ class TranscriptSummary(BaseModel):
     gpa: Optional[str] = None
     earned_credits: Optional[str] = None
     standing: Optional[str] = None
+    advisor: Optional[str] = None
 
 
 class CompletedCoursesImportPreview(BaseModel):
@@ -253,4 +254,3 @@ class ChatSendResponse(BaseModel):
     user_message: ChatMessageOut
     ai_message: ChatMessageOut
     advisor_insights: AdvisorInsights
-

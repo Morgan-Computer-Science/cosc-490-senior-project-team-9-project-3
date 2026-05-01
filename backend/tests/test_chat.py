@@ -1,6 +1,6 @@
 from io import BytesIO
 
-from app.attachments import AttachmentContext, DocumentCourseSignals
+from app.attachments import AttachmentContext, DocumentCourseSignals, extract_transcript_summary
 from app.chat import _replace_attachment_document_type
 
 
@@ -383,6 +383,71 @@ def test_chat_fallback_for_office_query_prefers_support_contact_language(client,
     assert "Transfer Evaluation Office" in body
     assert "transfercredit@morgan.edu" in body
     assert "Most relevant retrieved information" not in body
+
+
+def test_chat_fallback_lists_computer_science_advisors(client, auth_headers, monkeypatch):
+    monkeypatch.setattr(
+        "app.chat.generate_ai_reply",
+        lambda **_: (_ for _ in ()).throw(RuntimeError("Gemini unavailable")),
+    )
+    session_id = client.post("/chat/sessions", headers=auth_headers, json={"title": "CS Advisors"}).json()["id"]
+
+    response = client.post(
+        f"/chat/sessions/{session_id}/messages",
+        headers=auth_headers,
+        data={"content": "Who are the computer science advisors?"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()["ai_message"]["content"]
+    assert "Dr. Naja Mack" in body
+    assert "Dr. Blessing Ojeme" in body
+    assert "naja.mack@morgan.edu" in body
+    assert "provided context does not list" not in body.lower()
+
+
+def test_chat_answers_advisor_from_prior_uploaded_degree_audit(client, auth_headers, monkeypatch):
+    monkeypatch.setattr(
+        "app.chat.generate_ai_reply",
+        lambda **_: (_ for _ in ()).throw(RuntimeError("Gemini unavailable")),
+    )
+    session_id = client.post("/chat/sessions", headers=auth_headers, json={"title": "Degree Works"}).json()["id"]
+
+    uploaded = client.post(
+        f"/chat/sessions/{session_id}/messages",
+        headers=auth_headers,
+        data={"content": "Please read my degree works."},
+        files={
+            "attachment": (
+                "degreeworks.txt",
+                BytesIO(
+                    b"Degree Works audit\nOverall GPA 3.090\nAcademic Standing Good Standing\nAdvisor Roshan Paudel\nCOSC 490 SENIOR PROJECT IP (3)"
+                ),
+                "text/plain",
+            )
+        },
+    )
+    assert uploaded.status_code == 200
+
+    response = client.post(
+        f"/chat/sessions/{session_id}/messages",
+        headers=auth_headers,
+        data={"content": "Who is my advisor?"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["ai_message"]["content"] == "Your uploaded document lists your advisor as Roshan Paudel."
+
+
+def test_extract_transcript_summary_reads_degreeworks_advisor():
+    summary = extract_transcript_summary(
+        "Overall GPA\n3.090\nAcademic Standing  Good Standing   Graduation Term No Application   Advisor Roshan Paudel",
+        "degree_audit",
+    )
+
+    assert summary.gpa == "3.090"
+    assert summary.standing == "Good Standing"
+    assert summary.advisor == "Roshan Paudel"
 
 
 def test_chat_fallback_returns_tutoring_contact_path(client, auth_headers, monkeypatch):

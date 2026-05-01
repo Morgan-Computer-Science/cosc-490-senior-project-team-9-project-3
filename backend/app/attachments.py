@@ -38,6 +38,7 @@ class TranscriptSummary:
     gpa: Optional[str] = None
     earned_credits: Optional[str] = None
     standing: Optional[str] = None
+    advisor: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -118,18 +119,24 @@ def extract_transcript_summary(extracted_text: Optional[str], document_type: str
         normalized,
     )
     standing_match = re.search(
-        r"(?i)(?:academic\s+standing|class\s+standing|student\s+standing)\s*[:=]?\s*([A-Za-z ]{3,40})",
+        r"(?i)(?:academic\s+standing|class\s+standing|student\s+standing)\s*[:=]?\s*([A-Za-z ]{3,40}?)(?=\s+Graduation\s+Term|\s+Advisor|\n|$)",
+        normalized,
+    )
+    advisor_match = re.search(
+        r"(?im)\b(?:primary\s+)?advisor\s*[:=]?\s+([A-Za-z][A-Za-z .,'-]{1,80})\s*$",
         normalized,
     )
 
     gpa = next((group for group in (gpa_match.group(1), gpa_match.group(2)) if group), None) if gpa_match else None
     earned_credits = earned_credits_match.group(1) if earned_credits_match else None
     standing = standing_match.group(1).strip(" .") if standing_match else None
+    advisor = advisor_match.group(1).strip(" .") if advisor_match else None
 
     return TranscriptSummary(
         gpa=gpa,
         earned_credits=earned_credits,
         standing=standing,
+        advisor=advisor,
     )
 
 

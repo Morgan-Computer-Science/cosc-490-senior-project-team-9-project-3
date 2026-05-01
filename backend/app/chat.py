@@ -390,7 +390,7 @@ def _build_attachment_summary_context(attachment_context) -> str:
         return ""
 
     summary = attachment_context.transcript_summary
-    if not any([summary.gpa, summary.earned_credits, summary.standing]):
+    if not any([summary.gpa, summary.earned_credits, summary.standing, summary.advisor]):
         return ""
 
     lines = ["Attachment summary fields:"]
@@ -400,7 +400,43 @@ def _build_attachment_summary_context(attachment_context) -> str:
         lines.append(f"- Earned credits shown in the uploaded document: {summary.earned_credits}")
     if summary.standing:
         lines.append(f"- Standing shown in the uploaded document: {summary.standing}")
+    if summary.advisor:
+        lines.append(f"- Advisor shown in the uploaded document: {summary.advisor}")
     return "\n".join(lines)
+
+
+def _build_persisted_attachment_facts(attachment_context) -> str:
+    if not attachment_context:
+        return ""
+
+    summary = attachment_context.transcript_summary
+    facts = []
+    if summary.gpa:
+        facts.append(f"GPA: {summary.gpa}")
+    if summary.earned_credits:
+        facts.append(f"earned credits: {summary.earned_credits}")
+    if summary.standing:
+        facts.append(f"standing: {summary.standing}")
+    if summary.advisor:
+        facts.append(f"advisor: {summary.advisor}")
+
+    if not facts:
+        return ""
+    return "Extracted document facts: " + "; ".join(facts)
+
+
+def _answer_from_prior_attachment_facts(question: str, history: List[models.ChatMessage]) -> str | None:
+    lowered = (question or "").lower()
+    if "advisor" not in lowered:
+        return None
+
+    for message in reversed(history):
+        match = re.search(r"(?i)Extracted document facts:.*?\badvisor:\s*([^;\n]+)", message.content)
+        if match:
+            advisor = match.group(1).strip(" .")
+            if advisor:
+                return f"Your uploaded document lists your advisor as {advisor}."
+    return None
 
 
 def _answer_from_attachment_summary(question: str, attachment_context, saved_import_preview=None) -> str | None:
@@ -416,6 +452,8 @@ def _answer_from_attachment_summary(question: str, attachment_context, saved_imp
             return f"Your uploaded document shows {summary.earned_credits} earned credits."
     if "standing" in lowered and summary.standing:
         return f"Your uploaded document lists your standing as {summary.standing}."
+    if "advisor" in lowered and summary.advisor:
+        return f"Your uploaded document lists your advisor as {summary.advisor}."
     return answer_from_saved_import_summary(question, saved_import_preview)
 
 
@@ -459,7 +497,8 @@ def _fallback_advising_reply(
         return summary_answer
 
     intent = classify_question_intent(question)
-    relevant = documents[:3]
+    is_advisor_list_query = "advisor" in question.lower() or "advisors" in question.lower()
+    relevant = documents[:8] if is_advisor_list_query else documents[:3]
     if intent in {"people_contact_leadership", "office_resource", "organization_team", "policy_process", "workflow_entrypoint", "calendar_deadline"} and relevant:
         opening_map = {
             "people_contact_leadership": "Here is the closest Morgan leadership or contact path I found.",
@@ -470,7 +509,7 @@ def _fallback_advising_reply(
             "calendar_deadline": "Here is the safest official Morgan calendar or deadline page I found for that question.",
         }
         lines = [opening_map[intent]]
-        visible_docs = relevant[:3] if intent == "organization_team" else relevant[:2]
+        visible_docs = relevant[:6] if is_advisor_list_query else relevant[:3] if intent == "organization_team" else relevant[:2]
         for doc in visible_docs:
             line = f"- {doc.title}"
             if doc.contact:
@@ -625,10 +664,15 @@ async def send_message(
         attachment_context = await extract_attachment_context(attachment)
     effective_attachment_document_type = _refine_attachment_document_type(clean_content, attachment_context)
 
+    persisted_attachment_facts = _build_persisted_attachment_facts(attachment_context)
+    user_content = clean_content if not attachment_context else f"{clean_content}\n\nAttachment: {attachment_context.filename}"
+    if persisted_attachment_facts:
+        user_content = f"{user_content}\n{persisted_attachment_facts}"
+
     user_msg = models.ChatMessage(
         session_id=session.id,
         sender="user",
-        content=clean_content if not attachment_context else f"{clean_content}\n\nAttachment: {attachment_context.filename}",
+        content=user_content,
     )
     db.add(user_msg)
     db.flush()
@@ -650,6 +694,30 @@ async def send_message(
         }
         for message in history[-12:]
     ]
+
+    prior_attachment_answer = _answer_from_prior_attachment_facts(clean_content, history[:-1])
+    if prior_attachment_answer and not attachment_context:
+        student_state_context, student_state = _build_student_state_context(clean_content, current_user)
+        advisor_insights = schemas.AdvisorInsights(
+            intent="document_lookup",
+            emotional_tone=str(student_state["emotional_tone"]),
+            needs_support=bool(student_state["needs_support"]),
+            matched_signals=[str(signal) for signal in student_state.get("matched_signals", [])],
+        )
+        ai_msg = models.ChatMessage(
+            session_id=session.id,
+            sender="assistant",
+            content=prior_attachment_answer,
+        )
+        db.add(ai_msg)
+        db.commit()
+        db.refresh(user_msg)
+        db.refresh(ai_msg)
+        return schemas.ChatSendResponse(
+            user_message=user_msg,
+            ai_message=ai_msg,
+            advisor_insights=advisor_insights,
+        )
 
     small_talk_response = _small_talk_reply(clean_content, current_user, attachment_context)
     if small_talk_response:
@@ -795,6 +863,3 @@ async def send_message(
         ai_message=ai_msg,
         advisor_insights=advisor_insights,
     )
-
-
-

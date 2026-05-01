@@ -26,3 +26,6 @@ backend/.venv312/
 backend/.tmp/
 backend/*.log
 frontend/dist/
+
+pytest-cache-files-*/
+.pytest_cache/

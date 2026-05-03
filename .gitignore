@@ -1,0 +1,31 @@
+# Python virtual environments
+venv/
+backend/venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# SQLite database
+*.db
+
+# Environment variables
+.env
+
+# Node / frontend (future)
+node_modules/
+dist/
+build/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+
+backend/.venv312/
+backend/.tmp/
+backend/*.log
+frontend/dist/
+
+pytest-cache-files-*/
+.pytest_cache/

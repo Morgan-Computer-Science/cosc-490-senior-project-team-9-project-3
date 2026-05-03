@@ -1,0 +1,865 @@
+from dataclasses import replace
+import logging
+import os
+import re
+from typing import List
+
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
+from sqlalchemy.orm import Session
+
+from . import models, schemas
+from .attachments import (
+    AttachmentContext,
+    DocumentCourseSignals,
+    build_document_course_signals,
+    extract_attachment_context,
+)
+from .ai_client import generate_ai_reply
+from .auth import get_current_user
+from .db import get_db
+from .import_snapshot import (
+    answer_from_saved_import_summary,
+    build_saved_import_summary_context,
+    load_saved_import_preview,
+    merge_degree_progress_with_import_preview,
+)
+from .rag import (
+    RetrievedDocument,
+    classify_question_intent,
+    compare_degree_audit,
+    evaluate_course_plan,
+    format_retrieved_context,
+    get_course_documents_by_code,
+    get_degree_progress,
+    retrieve_relevant_documents,
+    summarize_schedule_plan,
+)
+from .student_state import analyze_student_state
+from .rate_limit import limit_chat
+
+router = APIRouter(prefix="/chat", tags=["chat"])
+logger = logging.getLogger(__name__)
+SMALL_TALK_PATTERNS = (
+    r"\bhello\b",
+    r"\bhi\b",
+    r"\bhey\b",
+    r"\bhow are you\b",
+    r"\bhow's it going\b",
+    r"\bwhats up\b",
+    r"\bwhat's up\b",
+    r"\bgood morning\b",
+    r"\bgood afternoon\b",
+    r"\bgood evening\b",
+)
+
+
+def _refine_attachment_document_type(question: str, attachment_context) -> str | None:
+    if not attachment_context:
+        return None
+
+    base_type = attachment_context.document_type
+    if base_type not in {"image_screenshot", "pdf_document", "generic_file", "text_document"}:
+        return base_type
+
+    lowered = (question or "").lower()
+    keyword_map = {
+        "degree_audit": {"audit", "degree", "degreeworks", "requirements", "remaining", "graduate"},
+        "schedule": {"schedule", "calendar", "timetable", "next term", "next semester", "load", "credits"},
+        "transcript": {"transcript", "completed", "history", "grades", "took", "taken"},
+        "academic_form": {"form", "approval", "registration", "petition", "withdraw", "override"},
+    }
+
+    for document_type, keywords in keyword_map.items():
+        if any(keyword in lowered for keyword in keywords):
+            return document_type
+
+    return base_type
+
+
+def _build_student_context(user: models.User, effective_completed_codes: list[str] | None = None) -> str:
+    pieces = ["Student profile context:"]
+    pieces.append(f"- Name: {user.full_name or 'Not provided'}")
+    pieces.append(f"- Major: {user.major or 'Undeclared'}")
+    pieces.append(f"- Year: {user.year or 'Not provided'}")
+    completed_codes = effective_completed_codes or [course.course_code for course in user.completed_courses]
+    if completed_codes:
+        pieces.append(f"- Completed Courses: {', '.join(sorted(completed_codes))}")
+    return "\n".join(pieces)
+
+
+def _build_degree_progress_context(
+    user: models.User,
+    effective_completed_codes: list[str] | None = None,
+    planning_interest: str | None = None,
+    saved_import_preview=None,
+) -> str:
+    summary = get_degree_progress(
+        user.major,
+        effective_completed_codes or [course.course_code for course in user.completed_courses],
+        planning_interest=planning_interest,
+    )
+    summary = merge_degree_progress_with_import_preview(summary, saved_import_preview)
+    if not summary["required_courses"]:
+        return ""
+
+    lines = ["Degree progress context:"]
+    lines.append(f"- Major: {summary['major']}")
+    lines.append(f"- Completion: {summary['completion_percent']}%")
+    lines.append(
+        f"- Remaining Required Courses: {', '.join(summary['remaining_courses']) or 'None listed'}"
+    )
+    if summary["recommended_next_courses"]:
+        lines.append(
+            f"- Recommended Next Courses: {', '.join(summary['recommended_next_courses'])}"
+        )
+    if summary["blocked_courses"]:
+        lines.append(
+            f"- Courses Still Blocked By Prerequisites: {', '.join(summary['blocked_courses'][:6])}"
+        )
+    if summary.get("program_guidance"):
+        lines.append(
+            f"- Program guidance: {' '.join(summary['program_guidance'][:3])}"
+        )
+    if summary.get("pathway_recommendations"):
+        lines.append("- Computer Science pathway suggestions:")
+        for pathway in summary["pathway_recommendations"][:2]:
+            lines.append(
+                f"  - {pathway['pathway']}: recommended {', '.join(pathway['recommended_courses']) or 'review foundations first'}"
+            )
+            if pathway["missing_foundations"]:
+                lines.append(
+                    f"    Missing foundations: {', '.join(pathway['missing_foundations'])}"
+                )
+            if pathway.get("relevant_contact"):
+                lines.append(f"    Relevant contact: {pathway['relevant_contact']}")
+    if summary.get("capstone_readiness", {}).get("status") != "unknown":
+        lines.append(
+            f"- COSC490 Readiness: {summary['capstone_readiness']['status'].replace('_', ' ')}"
+        )
+        if summary["capstone_readiness"]["missing_foundations"]:
+            lines.append(
+                f"  Missing foundations before capstone: {', '.join(summary['capstone_readiness']['missing_foundations'])}"
+            )
+    if summary.get("cs_audit_summary"):
+        cs_audit = summary["cs_audit_summary"]
+        lines.append("- Computer Science audit interpretation:")
+        if cs_audit["foundations"]["completed"]:
+            lines.append(
+                f"  Completed CS foundations: {', '.join(cs_audit['foundations']['completed'])}"
+            )
+        if cs_audit["foundations"]["remaining"]:
+            lines.append(
+                f"  Foundations still missing: {', '.join(cs_audit['foundations']['remaining'])}"
+            )
+        if cs_audit["core_progress"]["completed"]:
+            lines.append(
+                f"  Completed CS core: {', '.join(cs_audit['core_progress']['completed'])}"
+            )
+        if cs_audit["core_progress"]["remaining"]:
+            lines.append(
+                f"  Core CS courses still missing: {', '.join(cs_audit['core_progress']['remaining'])}"
+            )
+        if cs_audit["pathway_direction"]["primary_pathway"]:
+            lines.append(
+                f"  Current pathway leaning: {cs_audit['pathway_direction']['primary_pathway']}"
+            )
+        if cs_audit["unmapped_courses"]:
+            lines.append(
+                f"  CS courses still needing advisor confirmation: {', '.join(cs_audit['unmapped_courses'])}"
+            )
+        for summary_line in cs_audit["summary_lines"][:3]:
+            lines.append(f"  {summary_line}")
+    if summary["notes"]:
+        lines.append(f"- Notes: {summary['notes']}")
+    if summary["advising_tips"]:
+        lines.append(f"- Advising Tips: {summary['advising_tips']}")
+    return "\n".join(lines)
+
+
+def _build_advisor_insights(
+    user: models.User,
+    student_state: dict[str, object],
+    retrieved_docs: List[RetrievedDocument],
+    attachment_summary: str | None = None,
+    effective_completed_codes: list[str] | None = None,
+    planning_interest: str | None = None,
+    saved_import_preview=None,
+) -> schemas.AdvisorInsights:
+    degree_progress = get_degree_progress(
+        user.major,
+        effective_completed_codes or [course.course_code for course in user.completed_courses],
+        planning_interest=planning_interest,
+    )
+    degree_progress = merge_degree_progress_with_import_preview(degree_progress, saved_import_preview)
+    contact_candidates: list[str] = []
+    source_titles: list[str] = []
+    for doc in retrieved_docs[:4]:
+        source_titles.append(doc.title)
+        if doc.contact and doc.contact not in contact_candidates:
+            contact_candidates.append(doc.contact)
+
+    return schemas.AdvisorInsights(
+        intent=str(student_state["intent"]),
+        emotional_tone=str(student_state["emotional_tone"]),
+        needs_support=bool(student_state["needs_support"]),
+        matched_signals=[str(signal) for signal in student_state.get("matched_signals", [])],
+        recommended_next_courses=[
+            str(code) for code in degree_progress.get("recommended_next_courses", [])[:4]
+        ],
+        blocked_courses=[str(code) for code in degree_progress.get("blocked_courses", [])[:4]],
+        pathway_recommendations=degree_progress.get("pathway_recommendations", [])[:2],
+        capstone_readiness=degree_progress.get(
+            "capstone_readiness",
+            {"status": "unknown", "missing_foundations": [], "notes": None},
+        ),
+        suggested_contacts=contact_candidates[:3],
+        retrieved_sources=source_titles,
+        attachment_summary=attachment_summary,
+    )
+
+
+def _build_student_state_context(question: str, user: models.User) -> tuple[str, dict[str, object]]:
+    state = analyze_student_state(question, major=user.major)
+    lines = ["Student state analysis:"]
+    lines.append(f"- Intent: {state['intent']}")
+    lines.append(f"- Emotional Tone: {state['emotional_tone']}")
+    lines.append(f"- Needs Support Escalation: {'yes' if state['needs_support'] else 'no'}")
+    if state["matched_signals"]:
+        lines.append(f"- Matched Signals: {', '.join(state['matched_signals'])}")
+    return "\n".join(lines), state
+
+
+def _merge_retrieved_documents(*groups: List[RetrievedDocument]) -> list[RetrievedDocument]:
+    merged: list[RetrievedDocument] = []
+    seen: set[tuple[str, str]] = set()
+    for group in groups:
+        for doc in group:
+            key = (doc.source_type, doc.title)
+            if key in seen:
+                continue
+            seen.add(key)
+            merged.append(doc)
+    return merged
+
+
+def _build_attachment_course_context(attachment_context) -> tuple[str, list[RetrievedDocument]]:
+    if not attachment_context or not attachment_context.extracted_text:
+        return "", []
+
+    matched_codes = list(attachment_context.signals.matched_course_codes)
+    if not matched_codes:
+        return "", []
+
+    matched_docs = get_course_documents_by_code(matched_codes, limit=6)
+    lines = [
+        "Attachment-derived advising evidence:",
+        (
+            f"- Possible Morgan course codes recognized in the uploaded "
+            f"{attachment_context.document_type.replace('_', ' ')}: {', '.join(matched_codes)}"
+        ),
+    ]
+    if matched_docs:
+        lines.append(format_retrieved_context(matched_docs))
+    return "\n".join(lines), matched_docs
+
+
+def _replace_attachment_document_type(
+    attachment_context: AttachmentContext,
+    document_type: str,
+) -> AttachmentContext:
+    if not attachment_context or attachment_context.document_type == document_type:
+        return attachment_context
+
+    updated_context_text = attachment_context.context_text.replace(
+        attachment_context.document_type.replace("_", " "),
+        document_type.replace("_", " "),
+    )
+    updated_summary = attachment_context.summary.replace(
+        attachment_context.document_type.replace("_", " ").title(),
+        document_type.replace("_", " ").title(),
+    )
+    if updated_summary == attachment_context.summary:
+        updated_summary = f"{document_type.replace('_', ' ').title()} review ready."
+    updated_signals = build_document_course_signals(
+        attachment_context.extracted_text,
+        document_type,
+    )
+
+    return replace(
+        attachment_context,
+        context_text=updated_context_text,
+        summary=updated_summary,
+        document_type=document_type,
+        signals=updated_signals,
+    )
+
+
+def _build_attachment_signal_context(
+    attachment_context,
+    attachment_signals: DocumentCourseSignals,
+    user: models.User,
+    effective_completed_codes: list[str],
+) -> str:
+    if not attachment_context:
+        return ""
+
+    lines: list[str] = []
+    if attachment_signals.completed_codes:
+        lines.append(
+            f"- Recognized completed courses from the uploaded {attachment_context.document_type.replace('_', ' ')}: "
+            f"{', '.join(attachment_signals.completed_codes)}"
+        )
+    if attachment_signals.remaining_codes:
+        lines.append(
+            f"- Recognized remaining or needed courses from the uploaded {attachment_context.document_type.replace('_', ' ')}: "
+            f"{', '.join(attachment_signals.remaining_codes)}"
+        )
+        if attachment_context.document_type == "degree_audit":
+            audit_comparison = compare_degree_audit(
+                attachment_signals.remaining_codes,
+                effective_completed_codes,
+                user.major,
+            )
+            if audit_comparison["overlap_remaining"]:
+                lines.append(
+                    f"- Remaining courses that match the app's current degree-progress view: "
+                    f"{', '.join(audit_comparison['overlap_remaining'])}"
+                )
+            if audit_comparison["audit_only_remaining"]:
+                lines.append(
+                    f"- Remaining courses listed by the uploaded audit but not currently in the app's remaining-course set: "
+                    f"{', '.join(audit_comparison['audit_only_remaining'])}"
+                )
+            if audit_comparison["system_only_remaining"]:
+                lines.append(
+                    f"- Courses the app still expects as remaining that were not clearly recognized in the uploaded audit: "
+                    f"{', '.join(audit_comparison['system_only_remaining'][:8])}"
+                )
+    if attachment_signals.planned_codes:
+        schedule_evaluation = evaluate_course_plan(
+            attachment_signals.planned_codes,
+            effective_completed_codes,
+        )
+        schedule_summary = summarize_schedule_plan(
+            attachment_signals.planned_codes,
+            effective_completed_codes,
+            user.major,
+        )
+        lines.append(
+            f"- Recognized planned or scheduled courses from the uploaded {attachment_context.document_type.replace('_', ' ')}: "
+            f"{', '.join(attachment_signals.planned_codes)}"
+        )
+        if schedule_summary["total_credits"] is not None:
+            lines.append(
+                f"- Estimated total credits in the planned schedule: {schedule_summary['total_credits']}"
+            )
+        if schedule_evaluation["ready_courses"]:
+            lines.append(
+                f"- Planned courses that look ready based on known prerequisites: "
+                f"{', '.join(schedule_evaluation['ready_courses'])}"
+            )
+        if schedule_evaluation["blocked_courses"]:
+            lines.append(
+                f"- Planned courses that may be blocked by prerequisites: "
+                f"{'; '.join(schedule_evaluation['blocked_courses'])}"
+            )
+        if schedule_evaluation["already_completed_courses"]:
+            lines.append(
+                f"- Planned courses that already appear completed: "
+                f"{', '.join(schedule_evaluation['already_completed_courses'])}"
+            )
+        if schedule_summary["required_in_plan"]:
+            lines.append(
+                f"- Planned courses that match known required courses for the student's major: "
+                f"{', '.join(schedule_summary['required_in_plan'])}"
+            )
+        if schedule_summary["outside_known_requirements"]:
+            lines.append(
+                f"- Planned courses not currently listed in the known required-course set for the student's major: "
+                f"{', '.join(schedule_summary['outside_known_requirements'])}"
+            )
+
+    if not lines:
+        return ""
+
+    return "Attachment planning signals:\n" + "\n".join(lines)
+
+
+def _build_attachment_summary_context(attachment_context) -> str:
+    if not attachment_context:
+        return ""
+
+    summary = attachment_context.transcript_summary
+    if not any([summary.gpa, summary.earned_credits, summary.standing, summary.advisor]):
+        return ""
+
+    lines = ["Attachment summary fields:"]
+    if summary.gpa:
+        lines.append(f"- GPA shown in the uploaded document: {summary.gpa}")
+    if summary.earned_credits:
+        lines.append(f"- Earned credits shown in the uploaded document: {summary.earned_credits}")
+    if summary.standing:
+        lines.append(f"- Standing shown in the uploaded document: {summary.standing}")
+    if summary.advisor:
+        lines.append(f"- Advisor shown in the uploaded document: {summary.advisor}")
+    return "\n".join(lines)
+
+
+def _build_persisted_attachment_facts(attachment_context) -> str:
+    if not attachment_context:
+        return ""
+
+    summary = attachment_context.transcript_summary
+    facts = []
+    if summary.gpa:
+        facts.append(f"GPA: {summary.gpa}")
+    if summary.earned_credits:
+        facts.append(f"earned credits: {summary.earned_credits}")
+    if summary.standing:
+        facts.append(f"standing: {summary.standing}")
+    if summary.advisor:
+        facts.append(f"advisor: {summary.advisor}")
+
+    if not facts:
+        return ""
+    return "Extracted document facts: " + "; ".join(facts)
+
+
+def _answer_from_prior_attachment_facts(question: str, history: List[models.ChatMessage]) -> str | None:
+    lowered = (question or "").lower()
+    if "advisor" not in lowered:
+        return None
+
+    for message in reversed(history):
+        match = re.search(r"(?i)Extracted document facts:.*?\badvisor:\s*([^;\n]+)", message.content)
+        if match:
+            advisor = match.group(1).strip(" .")
+            if advisor:
+                return f"Your uploaded document lists your advisor as {advisor}."
+    return None
+
+
+def _answer_from_attachment_summary(question: str, attachment_context, saved_import_preview=None) -> str | None:
+    if not attachment_context:
+        return answer_from_saved_import_summary(question, saved_import_preview)
+
+    lowered = (question or "").lower()
+    summary = attachment_context.transcript_summary
+    if "gpa" in lowered and summary.gpa:
+        return f"Your uploaded document shows a GPA of {summary.gpa}."
+    if "earned credit" in lowered or "earned credits" in lowered:
+        if summary.earned_credits:
+            return f"Your uploaded document shows {summary.earned_credits} earned credits."
+    if "standing" in lowered and summary.standing:
+        return f"Your uploaded document lists your standing as {summary.standing}."
+    if "advisor" in lowered and summary.advisor:
+        return f"Your uploaded document lists your advisor as {summary.advisor}."
+    return answer_from_saved_import_summary(question, saved_import_preview)
+
+
+def _small_talk_reply(question: str, user: models.User, attachment_context=None) -> str | None:
+    if attachment_context:
+        return None
+
+    cleaned = re.sub(r"[^\w\s']", " ", (question or "").lower()).strip()
+    if not cleaned:
+        return None
+
+    word_count = len(cleaned.split())
+    if word_count > 8:
+        return None
+
+    if not any(re.search(pattern, cleaned) for pattern in SMALL_TALK_PATTERNS):
+        return None
+
+    if "how are you" in cleaned or "how's it going" in cleaned:
+        return (
+            "Hey, I'm doing well. I'm your Morgan State advisor whenever you're ready. "
+            "What would you like help with today?"
+        )
+
+    return (
+        f"Hey{f' {user.full_name.split()[0]}' if user.full_name else ''}, I'm here and ready to help. "
+        "What would you like to work on today?"
+    )
+
+
+def _fallback_advising_reply(
+    user: models.User,
+    question: str,
+    documents: List[RetrievedDocument],
+    student_state: dict[str, object],
+    attachment_context=None,
+    saved_import_preview=None,
+) -> str:
+    summary_answer = _answer_from_attachment_summary(question, attachment_context, saved_import_preview)
+    if summary_answer:
+        return summary_answer
+
+    intent = classify_question_intent(question)
+    is_advisor_list_query = "advisor" in question.lower() or "advisors" in question.lower()
+    relevant = documents[:8] if is_advisor_list_query else documents[:3]
+    if intent in {"people_contact_leadership", "office_resource", "organization_team", "policy_process", "workflow_entrypoint", "calendar_deadline"} and relevant:
+        opening_map = {
+            "people_contact_leadership": "Here is the closest Morgan leadership or contact path I found.",
+            "office_resource": "Here is the best Morgan office path I found for that question.",
+            "organization_team": "Here is the closest Morgan organization or support path I found.",
+            "policy_process": "Here is the best official Morgan process path I found for that question.",
+            "workflow_entrypoint": "Here is the best official Morgan starting page I found for that question.",
+            "calendar_deadline": "Here is the safest official Morgan calendar or deadline page I found for that question.",
+        }
+        lines = [opening_map[intent]]
+        visible_docs = relevant[:6] if is_advisor_list_query else relevant[:3] if intent == "organization_team" else relevant[:2]
+        for doc in visible_docs:
+            line = f"- {doc.title}"
+            if doc.contact:
+                line += f" | Contact: {doc.contact}"
+            lines.append(line)
+            lines.append(f"  {doc.content}")
+
+        if intent == "organization_team":
+            lines.append(
+                "If you need the current public lead for a team or organization, start with the contact path above and ask for the latest advisor or coordinator."
+            )
+        return "\n".join(lines)
+
+    opening = (
+        f"Live AI is unavailable right now, so here is a grounded Morgan State answer for a {user.year or 'current'} {user.major or 'student'}."
+    )
+    if student_state["needs_support"]:
+        opening = (
+            "Live AI is unavailable right now, but I do want to respond carefully. "
+            "It sounds like this may involve stress or personal support as well as academics."
+        )
+    lines = [opening]
+
+    if relevant:
+        lines.append("Most relevant retrieved information:")
+        for doc in relevant:
+            lines.append(f"- {doc.title}")
+            lines.append(f"  {doc.content}")
+            if doc.contact:
+                lines.append(f"  Contact: {doc.contact}")
+
+    lowered = question.lower()
+    if not documents:
+        lines.append(
+            "I do not yet have enough Morgan State source material for that question, so I would not want to guess."
+        )
+
+    if "after" in lowered or "next" in lowered or "plan" in lowered:
+        lines.append(
+            "For planning questions, compare required courses, course levels, semester offerings, and department guidance before locking a schedule."
+        )
+
+    if student_state["needs_support"] or any(token in lowered for token in ["stress", "anxious", "overwhelmed", "mental", "counseling"]):
+        lines.append(
+            "If the concern is also personal or wellness-related, the Counseling Center or University Advising may be a better immediate support contact."
+        )
+
+    contacts = [doc.contact for doc in documents if doc.contact]
+    if contacts:
+        lines.append(f"Best next contact from the retrieved context: {contacts[0]}")
+    else:
+        lines.append(
+            "If you need a final policy or degree decision, check with University Advising or the department that owns your major."
+        )
+    return "\n".join(lines)
+
+
+def _infer_completed_courses_from_attachment(attachment_context) -> list[str]:
+    if not attachment_context or not attachment_context.extracted_text:
+        return []
+    if attachment_context.document_type not in {"transcript", "degree_audit"}:
+        return []
+    return list(attachment_context.signals.completed_codes)
+
+
+def _get_user_session(db: Session, user_id: int, session_id: int) -> models.ChatSession:
+    session = (
+        db.query(models.ChatSession)
+        .filter(
+            models.ChatSession.id == session_id,
+            models.ChatSession.user_id == user_id,
+        )
+        .first()
+    )
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Chat session not found",
+        )
+    return session
+
+
+@router.post("/sessions", response_model=schemas.ChatSessionOut)
+def create_chat_session(
+    data: schemas.ChatSessionCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    session = models.ChatSession(
+        user_id=current_user.id,
+        title=(data.title or "New advising session").strip(),
+    )
+    db.add(session)
+    db.commit()
+    db.refresh(session)
+    return session
+
+
+@router.get("/sessions", response_model=List[schemas.ChatSessionOut])
+def list_chat_sessions(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    return (
+        db.query(models.ChatSession)
+        .filter(models.ChatSession.user_id == current_user.id)
+        .order_by(models.ChatSession.created_at.desc(), models.ChatSession.id.desc())
+        .all()
+    )
+
+
+@router.delete("/sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_chat_session(
+    session_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    session = _get_user_session(db, current_user.id, session_id)
+    db.delete(session)
+    db.commit()
+
+
+@router.get("/sessions/{session_id}/messages", response_model=List[schemas.ChatMessageOut])
+def list_messages(
+    session_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    session = _get_user_session(db, current_user.id, session_id)
+    return (
+        db.query(models.ChatMessage)
+        .filter(models.ChatMessage.session_id == session.id)
+        .order_by(models.ChatMessage.created_at.asc(), models.ChatMessage.id.asc())
+        .all()
+    )
+
+
+@router.post("/sessions/{session_id}/messages", response_model=schemas.ChatSendResponse)
+async def send_message(
+    session_id: int,
+    request: Request,
+    _: None = Depends(limit_chat),
+    content: str = Form(...),
+    attachment: UploadFile | None = File(default=None),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    session = _get_user_session(db, current_user.id, session_id)
+    clean_content = content.strip()
+    attachment_context = None
+    if attachment:
+        attachment_context = await extract_attachment_context(attachment)
+    effective_attachment_document_type = _refine_attachment_document_type(clean_content, attachment_context)
+
+    persisted_attachment_facts = _build_persisted_attachment_facts(attachment_context)
+    user_content = clean_content if not attachment_context else f"{clean_content}\n\nAttachment: {attachment_context.filename}"
+    if persisted_attachment_facts:
+        user_content = f"{user_content}\n{persisted_attachment_facts}"
+
+    user_msg = models.ChatMessage(
+        session_id=session.id,
+        sender="user",
+        content=user_content,
+    )
+    db.add(user_msg)
+    db.flush()
+
+    history = (
+        db.query(models.ChatMessage)
+        .filter(models.ChatMessage.session_id == session.id)
+        .order_by(models.ChatMessage.created_at.asc(), models.ChatMessage.id.asc())
+        .all()
+    )
+
+    if session.title == "New advising session" and clean_content:
+        session.title = clean_content[:40]
+
+    history_payload = [
+        {
+            "role": "assistant" if message.sender == "assistant" else "user",
+            "content": message.content,
+        }
+        for message in history[-12:]
+    ]
+
+    prior_attachment_answer = _answer_from_prior_attachment_facts(clean_content, history[:-1])
+    if prior_attachment_answer and not attachment_context:
+        student_state_context, student_state = _build_student_state_context(clean_content, current_user)
+        advisor_insights = schemas.AdvisorInsights(
+            intent="document_lookup",
+            emotional_tone=str(student_state["emotional_tone"]),
+            needs_support=bool(student_state["needs_support"]),
+            matched_signals=[str(signal) for signal in student_state.get("matched_signals", [])],
+        )
+        ai_msg = models.ChatMessage(
+            session_id=session.id,
+            sender="assistant",
+            content=prior_attachment_answer,
+        )
+        db.add(ai_msg)
+        db.commit()
+        db.refresh(user_msg)
+        db.refresh(ai_msg)
+        return schemas.ChatSendResponse(
+            user_message=user_msg,
+            ai_message=ai_msg,
+            advisor_insights=advisor_insights,
+        )
+
+    small_talk_response = _small_talk_reply(clean_content, current_user, attachment_context)
+    if small_talk_response:
+        student_state_context, student_state = _build_student_state_context(clean_content, current_user)
+        advisor_insights = schemas.AdvisorInsights(
+            intent="small_talk",
+            emotional_tone=str(student_state["emotional_tone"]),
+            needs_support=bool(student_state["needs_support"]),
+            matched_signals=[str(signal) for signal in student_state.get("matched_signals", [])],
+            attachment_summary=attachment_context.summary if attachment_context else None,
+        )
+        ai_msg = models.ChatMessage(
+            session_id=session.id,
+            sender="assistant",
+            content=small_talk_response,
+        )
+        db.add(ai_msg)
+        db.commit()
+        db.refresh(user_msg)
+        db.refresh(ai_msg)
+        return schemas.ChatSendResponse(
+            user_message=user_msg,
+            ai_message=ai_msg,
+            advisor_insights=advisor_insights,
+        )
+
+    retrieved_docs = retrieve_relevant_documents(
+        clean_content,
+        user_major=current_user.major,
+        top_k=6,
+    )
+    if attachment_context and effective_attachment_document_type:
+        attachment_context = _replace_attachment_document_type(
+            attachment_context,
+            effective_attachment_document_type,
+        )
+
+    attachment_course_context, attachment_course_docs = _build_attachment_course_context(
+        attachment_context
+    )
+    saved_import_preview = load_saved_import_preview(current_user)
+    attachment_signals = (
+        attachment_context.signals if attachment_context else DocumentCourseSignals()
+    )
+    inferred_completed_codes = _infer_completed_courses_from_attachment(attachment_context)
+    effective_completed_codes = sorted(
+        {
+            *[course.course_code for course in current_user.completed_courses],
+            *inferred_completed_codes,
+        }
+    )
+    attachment_signal_context = _build_attachment_signal_context(
+        attachment_context,
+        attachment_signals,
+        current_user,
+        effective_completed_codes,
+    )
+    attachment_summary_context = _build_attachment_summary_context(attachment_context)
+    combined_docs = _merge_retrieved_documents(retrieved_docs, attachment_course_docs)
+    retrieved_context = format_retrieved_context(combined_docs)
+    student_context = _build_student_context(current_user, effective_completed_codes)
+    degree_progress_context = _build_degree_progress_context(
+        current_user,
+        effective_completed_codes,
+        planning_interest=clean_content,
+        saved_import_preview=saved_import_preview,
+    )
+    student_state_context, student_state = _build_student_state_context(clean_content, current_user)
+    advisor_insights = _build_advisor_insights(
+        current_user,
+        student_state,
+        combined_docs,
+        attachment_context.summary if attachment_context else None,
+        effective_completed_codes,
+        clean_content,
+        saved_import_preview=saved_import_preview,
+    )
+    saved_import_summary_context = build_saved_import_summary_context(saved_import_preview)
+    extra_context = "\n\n".join(
+        part
+        for part in [
+            student_context,
+            degree_progress_context,
+            student_state_context,
+            attachment_context.context_text if attachment_context else "",
+            attachment_course_context,
+            attachment_signal_context,
+            attachment_summary_context,
+            saved_import_summary_context,
+            retrieved_context,
+        ]
+        if part
+    )
+
+    try:
+        ai_text = generate_ai_reply(
+            history=history_payload,
+            extra_context=extra_context,
+            attachment_path=attachment_context.temp_path if attachment_context else None,
+            attachment_mime_type=attachment_context.content_type if attachment_context else None,
+            attachment_summary=attachment_context.summary if attachment_context else None,
+            attachment_document_type=attachment_context.document_type if attachment_context else None,
+        )
+    except RuntimeError as exc:
+        logger.warning("Live AI unavailable, using grounded fallback: %s", exc)
+        ai_text = _fallback_advising_reply(
+            current_user,
+            clean_content,
+            combined_docs,
+            student_state,
+            attachment_context,
+            saved_import_preview,
+        )
+    except Exception as exc:
+        logger.exception("AI error in generate_ai_reply: %r", exc)
+        ai_text = _fallback_advising_reply(
+            current_user,
+            clean_content,
+            combined_docs,
+            student_state,
+            attachment_context,
+            saved_import_preview,
+        )
+    finally:
+        if attachment_context and attachment_context.temp_path:
+            try:
+                os.remove(attachment_context.temp_path)
+            except OSError:
+                pass
+
+    ai_msg = models.ChatMessage(
+        session_id=session.id,
+        sender="assistant",
+        content=ai_text,
+    )
+    db.add(ai_msg)
+    db.commit()
+    db.refresh(user_msg)
+    db.refresh(ai_msg)
+
+    return schemas.ChatSendResponse(
+        user_message=user_msg,
+        ai_message=ai_msg,
+        advisor_insights=advisor_insights,
+    )

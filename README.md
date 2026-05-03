@@ -374,4 +374,4 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 ## Current focus
 
-The project has moved beyond a Computer Science-only chatbot. The system now supports multiple Morgan State majors while remaining grounded in university-specific source material, OCR-assisted document understanding, connector-ready student data ingestion, and deeper department-specific advising logic.
+The project has moved beyond a Computer Science-only chatbot. The system now supports multiple Morgan State majors while remaining grounded in university-specific source material, OCR-assisted document understanding, connector-ready student data ingestion, and deeper department specific advising logic.
